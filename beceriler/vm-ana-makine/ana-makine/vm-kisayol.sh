@@ -145,13 +145,24 @@ fi" ;;
     GOVDE="exec gnome-boxes" ;;
   komut)
     SIMGE=computer
-    # Terminal olmadan çalışır; çıktı günlüğe gider. Hata olursa (ör. VM zaten açık, disk kilitli) bildirim.
+    # Terminal olmadan çalışır; çıktı birikerek günlüğe gider, beklenmedik kapanışta bildirim.
     GOVDE="KOMUT=$(printf '%q' "$KOMUT")
 GUNLUK=\"\${XDG_CACHE_HOME:-\$HOME/.cache}/$KISA.log\"
-mkdir -p \"\$(dirname \"\$GUNLUK\")\"
-if ! bash -c \"\$KOMUT\" >\"\$GUNLUK\" 2>&1; then
-  notify-send -a VM \"\$VM açılamadı\" \"Zaten açık olabilir. Ayrıntı: \$GUNLUK\" 2>/dev/null || true
-fi" ;;
+$(cat <<'GOVDE_SONU'
+# Günlük birikir (son 2000 satır). Her çalıştırma başlangıç, bitiş ve çıkış koduyla işaretlenir:
+#   0 = VM kapatıldı (içinden ya da QEMU penceresinde Ctrl+Alt+Q)   1 = açılamadı (ör. zaten açık)
+#   137 = dışarıdan öldürüldü (ör. ana makinede bellek bitti)        139 = QEMU çöktü (segfault)
+mkdir -p "$(dirname "$GUNLUK")"
+echo "=== $(date '+%F %T') başladı" >>"$GUNLUK"
+bash -c "$KOMUT" >>"$GUNLUK" 2>&1
+KOD=$?
+echo "=== $(date '+%F %T') bitti, çıkış kodu $KOD" >>"$GUNLUK"
+tail -n 2000 "$GUNLUK" >"$GUNLUK.tmp" && mv "$GUNLUK.tmp" "$GUNLUK"
+if [ "$KOD" -ne 0 ]; then
+  notify-send -a VM "$VM kapandı ya da açılamadı (kod $KOD)" "Ayrıntı: $GUNLUK" 2>/dev/null || true
+fi
+GOVDE_SONU
+)" ;;
 esac
 
 mkdir -p "$BIN" "$UYG"
