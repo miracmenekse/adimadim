@@ -355,3 +355,4 @@ VM'e:
 | VM'de kur.sh `sudo` şifresi istiyor | 1.3'ü uygula. |
 | Ctrl+Alt+S / Ctrl+Alt+N çalışmıyor | Masaüstündeki terminalde `adimadim kisayol`. |
 | Repo klasörünü taşıdın | `./kur.sh`'yi yeniden çalıştır. |
+| VM takılıyor, donuyor (QEMU) | VM'de *Ayarlar → Hakkında → Grafik* `llvmpipe` diyorsa ekran hızlandırması yok: qemu komutunda `-device virtio-vga -display gtk` yerine `-device virtio-vga-gl -display gtk,gl=on` (VM kapalıyken). Doğru olunca `virgl` yazar. Sürerse VM belleğini artır. |

@@ -124,6 +124,9 @@ veriyle üretilecek biçimde tasarla.
 
 ## Sık görülen fark kaynakları (Ubuntu)
 
+- VM takılıyor ya da donuyor: çoğunlukla ekran hızlandırması yoktur (VM'de *Hakkında → Grafik*: `llvmpipe`).
+  QEMU'da `virtio-vga` yerine `-device virtio-vga-gl -display gtk,gl=on` (virgl); sonra bellek.
+  Kullanıcı VM'i terk etmeyi düşünmeden önce bunu öner; VM, ana makinedeki veriyi en iyi yalıtan düzen.
 - `~/.local/bin` PATH'te değil: Ubuntu onu yalnızca oturum açılışında, klasör varsa ekler.
 - `pip --user` ile sistem Python'una kurulmuş eski paketler; venv kullan, onlara dokunma.
 - apt ile snap sürümleri farklı; hangisinin kullanılacağını kur betiği belirler.
