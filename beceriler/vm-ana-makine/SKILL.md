@@ -156,3 +156,6 @@ Ayrıntılar: CALISMA_DUZENI.md.
 - `sablonlar/kur.sh`: idempotent kur betiği iskeleti.
 - `sablonlar/CALISMA_DUZENI.md`: iki makinenin ilk kurulumu ve günlük akış, yer tutuculu.
 - `sablonlar/yoksay.txt`: VM'e özgü öğelerin varsayılan listesi.
+- `ana-makine/vm-kisayol.sh`: ana makinede VM'i açan kısayolu Sık Kullanılanlar'a ekler ve VM'i açar
+  (VirtualBox, libvirt/virt-manager, GNOME Boxes, VMware'i kendisi bulur). Kullanıcı VM'i nasıl
+  açacağını sorarsa bunu ver.

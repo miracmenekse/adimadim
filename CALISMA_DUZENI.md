@@ -241,6 +241,17 @@ adimadim cevir /tmp/deneme.wav
 `OpenVINO (GPU) kullanılamadı: …` yazarsa araç CPU'daki yedek motora düşmüştür; o satırı VM'deki
 Claude Code'a ver (5. bölüm).
 
+### 3.6 VM kısayolu (isteğe bağlı)
+
+VM'i açan bir simgeyi Sık Kullanılanlar'a (dock) ekler ve VM'i hemen açar:
+
+```bash
+~/adimadim/beceriler/vm-ana-makine/ana-makine/vm-kisayol.sh
+```
+
+Birden çok VM varsa adlarını listeler; istediğinin adını tırnak içinde ekleyerek yeniden çalıştır.
+Sonra VM'i dock'taki "VM: …" simgesinden açarsın. Kaldırmak için aynı komutun sonuna `--kaldir`.
+
 ## 4. Günlük akış
 
 **VM:**
