@@ -252,6 +252,16 @@ VM'i açan bir simgeyi Sık Kullanılanlar'a (dock) ekler ve VM'i hemen açar:
 Birden çok VM varsa adlarını listeler; istediğinin adını tırnak içinde ekleyerek yeniden çalıştır.
 Sonra VM'i dock'taki "VM: …" simgesinden açarsın. Kaldırmak için aynı komutun sonuna `--kaldir`.
 
+VM'i virt-manager/VirtualBox yerine kendi betiğinle ya da doğrudan `qemu-system-x86_64` ile açıyorsan
+kısayola o komutu ver:
+
+```bash
+~/adimadim/beceriler/vm-ana-makine/ana-makine/vm-kisayol.sh --komut "RAM=12G CPU=6 ~/vm-is/vm.sh ac" "VM İş"
+```
+
+Simge terminal açmadan çalışır; VM açılamazsa (ör. zaten açıksa) bildirim gösterir, ayrıntı
+`~/.cache/vm-ac-<ad>.log`'dadır.
+
 ## 4. Günlük akış
 
 **VM:**

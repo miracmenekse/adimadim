@@ -5,6 +5,9 @@
 #   vm-kisayol.sh              tek VM varsa onu kullanır; birden çoksa listeler
 #   vm-kisayol.sh "VM adı"     belirtilen VM için
 #   vm-kisayol.sh --kaldir     oluşturduğu kısayolları kaldırır
+#   vm-kisayol.sh --komut "KOMUT" "Ad"
+#                              VM kendi betiğinle ya da doğrudan qemu ile açılıyorsa: kısayol KOMUT'u
+#                              çalıştırır (ör. --komut "RAM=12G CPU=6 ~/vm-is/vm.sh ac" "VM İş")
 # Kısayolu ekledikten sonra VM'i de açar; yalnızca kısayol için ADIMADIM_ACMA=1 ver.
 #
 # Sanallaştırma yazılımını kendisi bulur: VirtualBox, libvirt (virt-manager / GNOME Boxes), VMware.
@@ -61,8 +64,12 @@ if [ "${1:-}" = "--kaldir" ]; then
 fi
 
 # ------------------------------------------------------------ yazılımı ve VM'leri bul
-YAZILIM=""; VMLER=(); URI=""
-if command -v VBoxManage >/dev/null; then
+YAZILIM=""; VMLER=(); URI=""; KOMUT=""
+if [ "${1:-}" = "--komut" ]; then
+  KOMUT="${2:-}"; [ -n "$KOMUT" ] || hata "--komut'tan sonra VM'i açan komutu tırnak içinde yaz."
+  YAZILIM=komut; VMLER=("${3:-VM}"); set -- "${3:-VM}"
+fi
+if [ -z "$YAZILIM" ] && command -v VBoxManage >/dev/null; then
   mapfile -t VMLER < <(VBoxManage list vms 2>/dev/null | sed -n 's/^"\(.*\)" {.*}$/\1/p')
   [ ${#VMLER[@]} -gt 0 ] && YAZILIM=virtualbox
 fi
@@ -79,7 +86,17 @@ fi
 if [ -z "$YAZILIM" ] && command -v gnome-boxes >/dev/null; then
   YAZILIM=boxes; VMLER=("GNOME Boxes")
 fi
-[ -n "$YAZILIM" ] || hata "VirtualBox, libvirt (virt-manager/Boxes) ya da VMware'de bir VM bulunamadı."
+if [ -z "$YAZILIM" ]; then
+  echo "VirtualBox, libvirt (virt-manager/Boxes) ya da VMware'de bir VM bulunamadı." >&2
+  mapfile -t ADAYLAR < <(grep -ls 'qemu-system' "$HOME"/*/*.sh 2>/dev/null | head -5)
+  if [ ${#ADAYLAR[@]} -gt 0 ]; then
+    echo "VM'i qemu ile açan betik(ler) bulundu; kısayolu şöyle oluştur:" >&2
+    for a in "${ADAYLAR[@]}"; do printf '  %s --komut "%s" "VM"\n' "$0" "${a/#$HOME/\~}" >&2; done
+  else
+    echo "VM'i başka bir komutla açıyorsan: $0 --komut \"KOMUT\" \"Ad\"" >&2
+  fi
+  exit 1
+fi
 
 VM="${1:-}"
 if [ -z "$VM" ]; then
@@ -90,7 +107,7 @@ if [ -z "$VM" ]; then
     printf '  "%s"\n' "${VMLER[@]}"
     exit 2
   fi
-elif [ "$YAZILIM" != boxes ] && ! printf '%s\n' "${VMLER[@]}" | grep -qxF -- "$VM"; then
+elif [ "$YAZILIM" != boxes ] && [ "$YAZILIM" != komut ] && ! printf '%s\n' "${VMLER[@]}" | grep -qxF -- "$VM"; then
   echo "Bulunamadı: $VM ($YAZILIM). Mevcut VM'ler:"; printf '  %s\n' "${VMLER[@]}"; exit 2
 fi
 AD="$(basename "$VM" .vmx)"
@@ -126,6 +143,15 @@ fi" ;;
   boxes)
     SIMGE=org.gnome.Boxes
     GOVDE="exec gnome-boxes" ;;
+  komut)
+    SIMGE=computer
+    # Terminal olmadan çalışır; çıktı günlüğe gider. Hata olursa (ör. VM zaten açık, disk kilitli) bildirim.
+    GOVDE="KOMUT=$(printf '%q' "$KOMUT")
+GUNLUK=\"\${XDG_CACHE_HOME:-\$HOME/.cache}/$KISA.log\"
+mkdir -p \"\$(dirname \"\$GUNLUK\")\"
+if ! bash -c \"\$KOMUT\" >\"\$GUNLUK\" 2>&1; then
+  notify-send -a VM \"\$VM açılamadı\" \"Zaten açık olabilir. Ayrıntı: \$GUNLUK\" 2>/dev/null || true
+fi" ;;
 esac
 
 mkdir -p "$BIN" "$UYG"
