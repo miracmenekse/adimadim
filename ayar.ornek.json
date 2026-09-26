@@ -1,0 +1,10 @@
+{
+  "klasor": "",
+  "ekran": "pencere",
+  "stt": "openvino",
+  "cihaz": "",
+  "ov_kaynak": "openai/whisper-medium",
+  "ov_model": "~/modeller/whisper-medium-ov",
+  "whisper_modeli": "small",
+  "dil": "tr"
+}

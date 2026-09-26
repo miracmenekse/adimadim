@@ -1,0 +1,21 @@
+# Konuşma tanımanın doğru yazması gereken terimler; her satıra bir terim.
+# Yalnızca GENEL sektör terimleri buraya (bu dosya repoda, VM'de ve GitHub'da durur).
+# Şirkete / ürüne özel terimler ana makinede ~/.config/adimadim/terimler.local.txt'e yazılır;
+# o dosya repoya girmez, araç ikisini birlikte kullanır.
+fatura
+fatura döngüsü
+tarife
+abonelik
+müşteri hesabı
+faturalı hat
+ön ödemeli
+ek paket
+hat taşıma
+numara taşıma
+SIM kart
+MSISDN
+sipariş
+kampanya
+ürün kataloğu
+iade
+tahsilat

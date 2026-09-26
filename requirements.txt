@@ -1,0 +1,9 @@
+# Doğrudan bağımlılıklar. Birebir sürümler requirements.lock'ta durur (kur.sh ilk kurulumda üretir).
+# PyTorch'u kur.sh ayrıca CPU sürümüyle kurar (NVIDIA/CUDA paketleri inmesin); buraya yazılmaz.
+# Aşağıdaki sabit sürümlerin Ubuntu 22.04 / Python 3.10'da birlikte çalıştığı doğrulandı.
+openvino-genai==2026.4.0.0      # konuşma tanıma (CPU / Intel GPU / NPU)
+optimum-intel[openvino]==2.2.0  # Whisper modelini OpenVINO'ya dönüştürmek için (optimum-cli)
+optimum==2.3.0
+transformers==5.5.4
+numpy
+faster-whisper                  # OpenVINO çalışmazsa yedek (yalnızca CPU)
