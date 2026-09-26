@@ -4,7 +4,12 @@ Ekrandan ekrana gezerken ekran görüntüsü alıp her adımı yazarak ya da ses
 sonunda elinde kullanım senaryosu (.md + .docx) olan yerel araç. Görüntüler, notlar ve
 ses kayıtları makineden çıkmaz.
 
+**İlk kez mi kuruyorsun?** VM'de geliştirme ve ana makinede kullanım düzeninin adım adım kurulumu:
+[CALISMA_DUZENI.md](CALISMA_DUZENI.md).
+
 ## Kurulum (VM'de ve ana makinede aynı)
+
+Repoyu klonladıktan sonra (klonlama ve GitHub erişimi: CALISMA_DUZENI.md):
 
     ./kur.sh     # sistem paketleri, Python ortamı, model, komut, kısayollar
     ./test.sh    # her şeyin çalıştığını doğrular
@@ -44,5 +49,6 @@ ses kayıtları makineden çıkmaz.
     Ana makine:   git pull && ./kur.sh && ./test.sh
     Sorun olursa: yalnızca hata metnini VM'deki Claude Code'a ver
 
+İlk kurulum, günlük akış, geri bildirim ve sorun giderme `CALISMA_DUZENI.md`'de;
 Claude Code'un kuralları `CLAUDE.md`'de, projenin arka planı ve kararları `KARARLAR.md`'de,
 iş planı `YOL_HARITASI.md`'de.

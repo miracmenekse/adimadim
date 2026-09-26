@@ -19,7 +19,10 @@ ayar_oku() { "$PY" -c 'import json,sys; print(json.load(open(sys.argv[1])).get(s
 baslik "Sistem paketleri"
 if [ -r /etc/os-release ]; then . /etc/os-release; fi
 [ "${VERSION_ID:-}" = "22.04" ] || uyari "Ubuntu 22.04 bekleniyordu, bulunan: ${PRETTY_NAME:-bilinmiyor}. Devam ediliyor."
-PAKETLER=(python3-venv git gnome-screenshot zenity pandoc alsa-utils libnotify-bin)
+# Aracın çağırdığı her dış komutun paketi burada; ana makinenin kurulumu eksik olabilir, hiçbiri varsayılmaz.
+# xdg-utils: xdg-open · xdg-user-dirs: xdg-user-dir · libglib2.0-bin: gsettings (kısayollar)
+PAKETLER=(python3-venv git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
+          xdg-utils xdg-user-dirs libglib2.0-bin)
 EKSIK=()
 for p in "${PAKETLER[@]}"; do
   dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || EKSIK+=("$p")

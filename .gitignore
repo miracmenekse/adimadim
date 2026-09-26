@@ -1,3 +1,11 @@
 __pycache__/
 *.pyc
 *.tmp
+
+# Şirkete ya da makineye özel dosyalar repoya girmez (CLAUDE.md, kural 4). Bunların yeri
+# ~/.config/adimadim/ ve doküman klasörüdür; yanlışlıkla repoya kopyalanırsa diye:
+*.local.*
+ayar.json
+sablon.docx
+oturum.json
+*.yedek

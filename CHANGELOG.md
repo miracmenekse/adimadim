@@ -9,8 +9,13 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 - Yeni komutlar: `cevir` (ses dosyasını metne çevirir), `yeniden` (bitmiş dokümanı baştan çevirir).
 - kur.sh (tekrarlanabilir kurulum), test.sh (duman testi + doğruluk ölçümü).
 - Belgeler: CLAUDE.md (kurallar), KARARLAR.md (arka plan ve kararlar), YOL_HARITASI.md (iş planı).
+- Çalışma düzeni: CALISMA_DUZENI.md (VM ve ana makinenin ilk kurulumu, günlük akış, geri bildirim,
+  sorun giderme); `.claude/settings.json` (VM'deki Claude Code push ve etiket için onay ister).
+- kur.sh aracın çağırdığı masaüstü yardımcılarını da kurar (xdg-utils, xdg-user-dirs, libglib2.0-bin);
+  eksik kurulu bir makinede de çalışsın diye. .gitignore makineye özel dosyaları dışarıda tutar.
 
-**Ana makinede yapılacaklar:** ilk kez repoyu klonla, sonra `./kur.sh && ./test.sh`.
+**Ana makinede yapılacaklar:** ilk kez repoyu klonla (CALISMA_DUZENI.md, 3. bölüm), sonra
+`./kur.sh && ./test.sh`. Önce VM'de üretilen `requirements.lock`'un push'lanmış olmasını bekle.
 Sonraki sürümlerde: `git pull && ./kur.sh && ./test.sh`
 - Eski `~/.local/bin/adimadim` kopyası `adimadim.eski` olarak yedeklenir; artık repodaki araç çalışır.
 - Mevcut `~/modeller/whisper-medium-ov` modeli kullanılır, yeniden dönüştürülmez.

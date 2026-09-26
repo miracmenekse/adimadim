@@ -22,7 +22,9 @@ Projenin arka planı, alınan kararlar ve gerekçeleri, ana makine hakkında bil
 
 Ana makineye yalnızca git üzerinden, etiketli sürümler gider:
 `git pull && ./kur.sh && ./test.sh`. Ana makinede senin yapacağın hiçbir şey yok;
-her şey bu üç komutla tekrarlanabilir olmalı.
+her şey bu üç komutla tekrarlanabilir olmalı. Ana makinenin Ubuntu kurulumu eksik olabilir: VM'de
+kurulu olduğu için çalışan hiçbir şeyi orada da var sayma. İki makinenin ilk kurulumu, günlük akış
+ve ana makineden geri bildirimin nasıl geldiği `CALISMA_DUZENI.md`'dedir.
 
 ## Kurallar
 
@@ -30,6 +32,9 @@ her şey bu üç komutla tekrarlanabilir olmalı.
    kısayol, dosya yolu) kur.sh ya da requirements üzerinden yapılır. Deneme için elle bir şey
    kurduysan ve kalacaksa kur.sh'ye işle, sonra kur.sh'yi yeniden çalıştırarak doğrula.
    kur.sh idempotent kalmalı ve ayar.json'daki mevcut değerleri ezmemeli (yalnızca eksik anahtar ekler).
+   Terminalde elle çalıştırdığın her kurulum ya da ayar komutu ya kur.sh'ye işlenir ya da, yalnızca
+   bir kez gerekiyorsa, CHANGELOG'daki "Ana makinede yapılacaklar"a birebir, kopyala-yapıştır komut
+   olarak yazılır. Kodun ya da testlerin çağırdığı her dış komutun paketi kur.sh'deki `PAKETLER`'dedir.
 2. **Bağımlılıklar.** Doğrudan bağımlılık requirements.txt'e yazılır; ardından
    `rm requirements.lock && ./kur.sh` ile kilit yeniden üretilip commit'lenir. PyTorch yalnızca
    CPU sürümü (CUDA paketi indirilmez). Python 3.10 uyumu zorunlu: 3.11+ sözdizimi ya da
@@ -46,10 +51,14 @@ her şey bu üç komutla tekrarlanabilir olmalı.
    yeni kontrol. Doğruluğu etkileyen her değişiklikten önce ve sonra `testler/stt_olc.py` ile ölç.
 7. **CHANGELOG.** Her sürümde: ne değişti, ölçüm sonucu, ve "Ana makinede yapılacaklar"
    (ör. "kur.sh yeni modeli dönüştürür, ~10 dk sürer").
-8. **Git.** Küçük, açıklamalı commit'ler. Push ve sürüm etiketi (v0.x.y) kullanıcı onayıyla.
+8. **Git.** Küçük, açıklamalı commit'ler. Push ve sürüm etiketi (v0.x.y) kullanıcı onayıyla
+   (`.claude/settings.json` ikisini de onaya bağlar). Ana makinenin izlediği dal `main`.
 9. **Dil.** Kullanıcıyla yazışma ve kullanıcıya dönük her metin (bildirim, hata mesajı, doküman) Türkçe.
 10. **GPU/NPU.** Bu VM'de GPU/NPU yok. Cihaza özgü kod her zaman CPU'ya ya da yedek motora zarifçe
     düşmeli; bu kısımları CHANGELOG'da "ana makinede doğrula" diye işaretle.
+11. **Yalnızca ana makinede yapılabilenler** (GPU/NPU, gerçek mikrofon, gerçek veriyle deneme): kullanıcıya
+    kopyala-yapıştır komut ver ve geri getirmesi gereken çıktıyı tam olarak söyle (ör. tek bir özet ya
+    da hata satırı). Şirket verisi içerebilecek çıktı (doküman metni, ekran görüntüsü) isteme.
 
 ## Mimari
 
