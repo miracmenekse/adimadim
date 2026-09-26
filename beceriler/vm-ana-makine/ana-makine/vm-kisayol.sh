@@ -150,11 +150,17 @@ fi" ;;
 GUNLUK=\"\${XDG_CACHE_HOME:-\$HOME/.cache}/$KISA.log\"
 $(cat <<'GOVDE_SONU'
 # Günlük birikir (son 2000 satır). Her çalıştırma başlangıç, bitiş ve çıkış koduyla işaretlenir:
-#   0 = VM kapatıldı (içinden ya da QEMU penceresinde Ctrl+Alt+Q)   1 = açılamadı (ör. zaten açık)
+#   0 = VM kapatıldı (içinden ya da QEMU penceresinde Ctrl+Alt+Q)   1 = açılamadı (ör. terminalden açılmış)
 #   137 = dışarıdan öldürüldü (ör. ana makinede bellek bitti)        139 = QEMU çöktü (segfault)
 mkdir -p "$(dirname "$GUNLUK")"
+# Bu kısayolla açılan VM çalıştığı sürece kilit tutulur; ikinci tıklama yeni kopya başlatmaz.
+exec 9>"$GUNLUK.kilit"
+if ! flock -n 9; then
+  notify-send -a VM "$VM zaten açık" 2>/dev/null || echo "$VM zaten açık"
+  exit 0
+fi
 echo "=== $(date '+%F %T') başladı" >>"$GUNLUK"
-bash -c "$KOMUT" >>"$GUNLUK" 2>&1
+bash -c "$KOMUT" >>"$GUNLUK" 2>&1 9>&-
 KOD=$?
 echo "=== $(date '+%F %T') bitti, çıkış kodu $KOD" >>"$GUNLUK"
 tail -n 2000 "$GUNLUK" >"$GUNLUK.tmp" && mv "$GUNLUK.tmp" "$GUNLUK"
