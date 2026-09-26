@@ -1,0 +1,18 @@
+# ortam.sh kaydet — VM'de tabandan sonra eklenenler ve sistem bilgisi. Elle düzenleme;
+# gereksiz öğeleri .ortam/yoksay.txt'e yaz. Ana makinede: .ortam/ortam.sh kontrol
+apt gnome-screenshot
+apt pandoc
+bin adimadim
+komut arecord
+komut git
+komut gnome-screenshot
+komut gsettings
+komut notify-send
+komut pandoc
+komut python3
+komut xdg-open
+komut xdg-user-dir
+komut zenity
+sistem mimari amd64
+sistem os ubuntu-22.04
+surum python3 3.10
