@@ -113,7 +113,23 @@ curl -fsSL https://claude.ai/install.sh | bash
 
 Yeni bir terminal aç ve `claude --version` ile kurulumu doğrula. İlk açılışta tarayıcıdan giriş ister.
 
-### 1.5 (İsteğe bağlı) Temiz anlık görüntü
+### 1.5 vm-ana-makine becerisi ve fark tabanı
+
+Bu repodaki `beceriler/vm-ana-makine`, VM ile ana makine arasındaki farkı kapatan Claude Code
+becerisidir (skill); proje ne olursa olsun geçerlidir. VM'de bir kez kullanıcı düzeyine bağla ve
+VM'in şimdiki (proje kurulumundan önceki) hâlini taban olarak kaydet:
+
+```bash
+mkdir -p ~/.claude/skills
+ln -sfn ~/adimadim/beceriler/vm-ana-makine ~/.claude/skills/vm-ana-makine   # git pull ile güncel kalır
+~/.claude/skills/vm-ana-makine/ortam.sh taban
+```
+
+Taban, `kur.sh`'den önce alınmalı: sonradan VM'e ne kurulursa `ortam.sh kaydet` onu görür, `denetle`
+kur betiğine işlenmemiş olanları gösterir, ana makinede `kontrol` eksikleri yazar. Başka projelerde
+Claude Code bu beceriyle aynı düzeni (`.ortam/`, kur betiği, bu belgenin bir benzeri) kendisi kurar.
+
+### 1.6 (İsteğe bağlı) Temiz anlık görüntü
 
 Bu noktada VM'in anlık görüntüsünü (snapshot) al. Bu hâli, ana makinenin "kur.sh'den önceki" durumuna
 benzer. Büyük bir sürümden önce bu görüntüden bir kopya açıp `git clone … && ./kur.sh && ./test.sh`
@@ -138,7 +154,9 @@ Claude Code'un bu turda yapacakları:
 2. `./test.sh` geçer.
 3. `requirements.lock` commit'lenir. Ana makine birebir aynı sürümleri bu dosyadan kurar.
    **Bu dosya push'lanmadan ana makinede `kur.sh` çalıştırma.**
-4. Onayınla `git push`; istersen sürüm etiketi: `git tag v0.1.0 && git push origin v0.1.0`.
+4. `.ortam/ortam.sh kaydet && .ortam/ortam.sh denetle`: VM'e kur.sh ile eklenenler `.ortam/vm.txt`'ye
+   yazılır ve commit'lenir; `denetle` kur.sh'ye işlenmemiş bir şey bırakmaz.
+5. Onayınla `git push`; istersen sürüm etiketi: `git tag v0.1.0 && git push origin v0.1.0`.
 
 Ardından YOL_HARITASI.md'deki "Başlarken" adımlarıyla devam eder (test kaydı ister, Windows
 desteğini sorar).
@@ -198,6 +216,7 @@ Masaüstündeki bir terminalde çalıştır (SSH ile bağlıyken klavye kısayol
 ```bash
 ./kur.sh      # apt-get için sudo şifreni sorar
 ./test.sh     # sonunda "SONUÇ: testler geçti" görmelisin
+.ortam/ortam.sh kontrol   # "ORTAM: fark yok" görmelisin; yoksa EKSIK/FARKLI satırlarını Claude Code'a ver
 ```
 
 Bu makinede kur.sh şunları yapar (CHANGELOG, v0.1.0):
@@ -237,7 +256,7 @@ CHANGELOG'a "Ana makinede yapılacaklar"ı yazar; push ve sürüm etiketi için 
 **Ana makine:**
 
 ```bash
-cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+cd ~/adimadim && git pull && ./kur.sh && ./test.sh && .ortam/ortam.sh kontrol
 ```
 
 Sonra CHANGELOG.md'nin en üstündeki sürümün "Ana makinede yapılacaklar" maddelerini sırayla uygula.
@@ -260,6 +279,8 @@ VM'deki Claude Code'a yalnızca senin getirdiğin metin ulaşır.
 Ana makinede <çalıştırdığım komut> çalıştırdım. Sürüm: <git log -1 --oneline çıktısı>
 Hata:
 <yalnızca hata satırları>
+Ortam:
+<.ortam/ortam.sh kontrol çıktısı>
 ```
 
 Sanallaştırma yazılımında pano paylaşımı açıksa yönünü "ana makineden VM'e" ile sınırla

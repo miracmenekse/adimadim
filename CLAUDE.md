@@ -24,7 +24,9 @@ Ana makineye yalnızca git üzerinden, etiketli sürümler gider:
 `git pull && ./kur.sh && ./test.sh`. Ana makinede senin yapacağın hiçbir şey yok;
 her şey bu üç komutla tekrarlanabilir olmalı. Ana makinenin Ubuntu kurulumu eksik olabilir: VM'de
 kurulu olduğu için çalışan hiçbir şeyi orada da var sayma. İki makinenin ilk kurulumu, günlük akış
-ve ana makineden geri bildirimin nasıl geldiği `CALISMA_DUZENI.md`'dedir.
+ve ana makineden geri bildirimin nasıl geldiği `CALISMA_DUZENI.md`'dedir. `vm-ana-makine` becerisini
+(`beceriler/vm-ana-makine/SKILL.md`) izle: push'tan önce `.ortam/ortam.sh kaydet && .ortam/ortam.sh denetle`
+temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çıktısıdır.
 
 ## Kurallar
 

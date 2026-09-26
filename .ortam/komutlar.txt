@@ -1,0 +1,11 @@
+# adimadim.py, kur.sh ve testlerin çağırdığı dış komutlar (ana makinede `ortam.sh kontrol` bunlara bakar).
+python3
+git
+gnome-screenshot
+zenity
+pandoc
+arecord
+notify-send
+xdg-open
+xdg-user-dir
+gsettings
