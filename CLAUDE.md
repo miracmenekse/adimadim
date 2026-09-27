@@ -70,9 +70,16 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   Oturum açıkken .md her kayıtta oturum.json'dan yeniden üretilir; bitince .md elle düzenlenebilir,
   `word` komutu .docx'i ondan üretir.
 - Konuşma tanıma: tümü `cevirici_olustur(ayar)` üzerinden geçer (OpenVINO GenAI WhisperPipeline;
-  hata olursa faster-whisper). Model kur.sh'de optimum-cli ile `ov_kaynak` → `ov_model` dönüştürülür.
+  hata olursa faster-whisper). Model kur.sh'de optimum-cli ile `ov_kaynak` → `ov_model` dönüştürülür
+  (`LC_ALL=C.UTF-8`: Türkçe locale tokenizer'ı bozar). Katmanlar: Silero VAD (konuşma yoksa boş),
+  `ipucu` (terimler.local + sözlük + terimler.txt, doğal cümleyle biten initial_prompt; ~700 karakter),
+  `duzeltme` (duzeltmeler.txt + .local, Türkçe eki koruyan "yanlış → doğru"). Model: whisper-medium
+  (Türkçe adaylar elendi, bkz. CHANGELOG v0.3.0). Resmi dile çevirme Rovo'da (`rovo/`).
 - Testler: `testler/duman_testi.py` (sahte ekran/mikrofon/model ile uçtan uca), `testler/stt_olc.py`
-  (testler/ses/*.wav + .txt ile WER ve terim isabeti).
+  (testler/ses/*.wav + .txt ile WER ve terim isabeti), `testler/karsilastir.py` (model/ayar
+  karşılaştırması: `--ses <klasör>` ya da `--fleurs 100`, `--ayar k=v`), `araclar/kayit_al.sh`
+  (ana makinede test kaydı; `paragraflar` ikinci set). Ana makinedeki arecord WAV başlık uzunluğunu
+  bozuk bırakabiliyor; okuyan kod veriyi sonuna kadar okur.
 
 ## Yol haritası
 

@@ -2,7 +2,9 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
-## Yayınlanmamış
+## v0.3.0 — model kararı, doğruluk katmanları, Rovo (2026-09-27)
+
+v0.2.0 ayrıca etiketlenmedi; model kararı (Faz 4) bu sürümde.
 
 - **Model kararı (gerçek kayıtlar, 29 kayıt, VM CPU):** whisper-medium kalır; Türkçe adaylar İngilizce
   terimleri Türkçe okunuşla yazıyor.
@@ -49,9 +51,17 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
   dönüştürülemiyor (OOM), önce fp16 kaydedilmeli; small-tr-2'nin tokenizer'ı eski, `openai/whisper-small`'dan
   alınmalı.
 
-**Ana makinede yapılacaklar:** `git pull && ./kur.sh && ./test.sh` (model yeniden indirilmez; test.sh 29 kaydı ölçtüğü için ~2-5 dk).
-Bozuk model varsa kur.sh çıktısında `Onarıldı: …openvino_tokenizer.xml` görünür. Geri getirilecek:
-test.sh'deki `✓ OpenVINO modeli yüklendi: … GPU` satırı (ya da `✗` satırı ve üstündeki hata).
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+- Model yeniden indirilmez. kur.sh `ipucu` ve `duzeltme` ayarlarını ekler, mevcut değerlere dokunmaz;
+  Türkçe locale'de bozulmuş model varsa `Onarıldı: …` yazar.
+- test.sh 29 kaydı GPU'da ölçer (~1-2 dk). Beklenen: `✓ OpenVINO modeli yüklendi: … GPU`,
+  `✓ gürültüde metin uydurmuyor`, `terim isabeti` ~88/95.
+- Şirkete özel düzeltmeler: `~/.config/adimadim/duzeltmeler.local.txt` ("yanlış → doğru").
+- Rovo: agent talimatı `rovo/ajan-talimati.md`, Confluence sözlüğü `rovo/confluence-sozluk.md`.
+- **Ana makinede doğrula:** gerçek bir akışta (`adimadim basla "…" --ses`) adımın son kelimesi kesilmiyor.
 
 ## v0.1.0 — iskelet
 
