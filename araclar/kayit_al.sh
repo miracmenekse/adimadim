@@ -10,7 +10,7 @@ while IFS= read -r cumle; do
   [ -f "$ad.wav" ] && continue
   echo; echo "[$n] Doğal hızınla oku, bitince Enter:"; echo "    $cumle"
   read -rp "Hazırsan Enter… " < /dev/tty
-  arecord -q -f S16_LE -r 16000 -c 1 "$ad.wav" & pid=$!
+  arecord -q -f S16_LE -r 16000 -c 1 "$ad.wav" 2>/dev/null & pid=$!
   read -r < /dev/tty; kill -INT "$pid"; wait "$pid" 2>/dev/null || true
   echo "$cumle" > "$ad.txt"
 done < testler/cumleler.txt
