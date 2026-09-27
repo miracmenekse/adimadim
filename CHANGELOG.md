@@ -4,6 +4,33 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 
 ## Yayınlanmamış
 
+- **Model kararı (gerçek kayıtlar, 29 kayıt, VM CPU):** whisper-medium kalır; Türkçe adaylar İngilizce
+  terimleri Türkçe okunuşla yazıyor.
+
+  | Model | Terim isabeti | WER | Ortografik WER |
+  |---|---|---|---|
+  | whisper-medium | %66,3 | %29,0 | %41,0 |
+  | Sercan/whisper-small-tr-2 | %28,4 | %46,8 | %64,3 |
+  | Sercan/distil-whisper-large-v3-tr | %14,7 | %58,9 | %70,0 |
+
+- **Doğruluk katmanları (whisper-medium, aynı 29 kayıt):**
+
+  | Ayar | Terim isabeti | WER | Ortografik WER |
+  |---|---|---|---|
+  | hiçbiri | %67,4 | %29,0 | %41,0 |
+  | düzeltme kuralları | %75,8 | %26,1 | %37,2 |
+  | ipucu (yalnız terim listesi) + düzeltme | %90,5 | %47,0 | %63,7 — model liste üslubuna geçip kelime atlıyor |
+  | **ipucu (doğal cümleyle biten) + düzeltme + VAD** | **%90,5** | **%16,4** | **%27,1** |
+
+  FLEURS'ta (genel Türkçe) aynı ayar bozmuyor: WER %12,5 → %12,0. İpucu ve kurallar bu kayıtlardaki
+  hatalara bakılarak seçildi; yeni kayıtlarda kazanç biraz daha düşük olabilir.
+- Yeni ayarlar: `ipucu` (varsayılan `prompt`) ve `duzeltme` (varsayılan açık). kur.sh eksik anahtarları ekler.
+  Yeni dosyalar: `duzeltmeler.txt` (genel kurallar), ana makinede `~/.config/adimadim/duzeltmeler.local.txt`.
+- **VAD:** OpenVINO yolunda Silero VAD (faster-whisper ile gelir). Gürültü/klavye sesinde model
+  "Altyazı M.K.", "tüm tüm tüm…" uyduruyordu; artık boş döner. test.sh gerçek modelle gürültü kontrolü yapar.
+- Kayıt durdurulmadan önce 0,5 sn beklenir (son kelime kayboluyordu). **Ana makinede doğrula.**
+- Rovo: `rovo/ajan-talimati.md` (agent talimatı), `rovo/confluence-sozluk.md` (sözlük sayfası).
+
 - **Düzeltme:** Türkçe locale'de dönüştürülen OpenVINO modellerinde tokenizer XML'ine `precision="STRiNG"`
   yazılıyor, model yüklenemiyor ve araç sessizce faster-whisper `small`'a (CPU) düşüyordu. kur.sh artık
   `LC_ALL=C.UTF-8` ile dönüştürüyor ve mevcut bozuk modeli yeniden dönüştürmeden onarıyor.
@@ -22,7 +49,7 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
   dönüştürülemiyor (OOM), önce fp16 kaydedilmeli; small-tr-2'nin tokenizer'ı eski, `openai/whisper-small`'dan
   alınmalı.
 
-**Ana makinede yapılacaklar:** `git pull && ./kur.sh && ./test.sh` (model yeniden indirilmez, ~1 dk).
+**Ana makinede yapılacaklar:** `git pull && ./kur.sh && ./test.sh` (model yeniden indirilmez; test.sh 29 kaydı ölçtüğü için ~2-5 dk).
 Bozuk model varsa kur.sh çıktısında `Onarıldı: …openvino_tokenizer.xml` görünür. Geri getirilecek:
 test.sh'deki `✓ OpenVINO modeli yüklendi: … GPU` satırı (ya da `✗` satırı ve üstündeki hata).
 

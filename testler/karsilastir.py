@@ -22,13 +22,6 @@ import stt_olc
 adimadim = stt_olc.adimadim
 SONUCLAR = stt_olc.REPO / "testler" / "sonuclar"
 FLEURS = Path.home() / ".cache" / "adimadim" / "fleurs"
-SOZLUK = stt_olc.REPO / "terim_sozlugu_ham_→_normalize.md"
-
-
-def terimler() -> list:
-    """terimler.txt (+ .local) ve terim sözlüğünün normalize biçimleri."""
-    ek = re.findall(r"^\s*normalize:\s*(.+?)\s*$", SOZLUK.read_text(encoding="utf-8"), re.M) if SOZLUK.exists() else []
-    return list(dict.fromkeys(stt_olc.terimleri_oku() + ek))
 
 
 def fleurs_hazirla(adet: int) -> Path:
@@ -67,9 +60,11 @@ def sure(wav: Path) -> float:
         return w.getnframes() / w.getframerate()
 
 
-def olc(model: Path, kayitlar: list, ayar: dict) -> dict:
+def olc(model: Path, kayitlar: list, ayar: dict, etiket: str = "") -> dict:
     basla = time.time()
-    cevir = adimadim.openvino_cevirici({**ayar, "ov_model": str(model)}, str(ayar.get("cihaz") or "CPU").upper())
+    ad, cevir = adimadim.cevirici_olustur({**ayar, "stt": "openvino", "ov_model": str(model)})
+    if not ad.startswith("OpenVINO"):
+        raise SystemExit(f"{model}: OpenVINO açılamadı ({ad})")
     yukleme = time.time() - basla
     hata = kelime = o_hata = o_kelime = t_sayi = t_dogru = 0
     kacan = {}
@@ -93,12 +88,12 @@ def olc(model: Path, kayitlar: list, ayar: dict) -> dict:
                 kacan[t] = kacan.get(t, 0) + 1
         if len(ornekler) < 5:
             ornekler.append((beklenen, cikti))
-    return {"model": model.name, "wer": 100 * hata / max(1, kelime), "orto": 100 * o_hata / max(1, o_kelime),
+    return {"model": model.name + etiket, "wer": 100 * hata / max(1, kelime), "orto": 100 * o_hata / max(1, o_kelime),
             "rtf": islem / max(ses, 1e-9), "terim": 100 * t_dogru / max(1, t_sayi), "t": f"{t_dogru}/{t_sayi}",
             "kacan": sorted(kacan.items(), key=lambda x: -x[1]), "yukleme": yukleme, "ornekler": ornekler}
 
 
-TERIMLER = terimler()
+TERIMLER = adimadim.terimleri_oku()
 
 
 def main() -> int:
@@ -106,23 +101,27 @@ def main() -> int:
     p.add_argument("modeller", nargs="+", type=lambda s: Path(s).expanduser())
     p.add_argument("--ses", type=Path)
     p.add_argument("--fleurs", type=int)
+    p.add_argument("--ayar", action="append", default=[], help='ör. ipucu=prompt, duzeltme=false (tekrarlanabilir)')
     a = p.parse_args()
     klasor = fleurs_hazirla(a.fleurs) if a.fleurs else a.ses
     kayitlar = sorted(w for w in klasor.glob("*.wav") if w.with_suffix(".txt").exists())
     ayar = adimadim.ayarlari_oku()
+    ek = {k: {"true": True, "false": False}.get(v, v) for k, v in (x.split("=", 1) for x in a.ayar)}
+    ayar.update(ek)
+    etiket = "".join(f" [{k}={v}]" for k, v in ek.items())
     cihaz = str(ayar.get("cihaz") or "CPU").upper()
     satirlar = [f"# Karşılaştırma — {klasor.name}, {len(kayitlar)} kayıt, {cihaz}", "",
                 "| Model | Terim isabeti | WER (normalize) | Ortografik WER | RTF | Yükleme (sn) |", "|---|---|---|---|---|---|"]
     ekler = []
     for model in a.modeller:
-        s = olc(model, kayitlar, ayar)
+        s = olc(model, kayitlar, ayar, etiket)
         print(f"{s['model']}: terim %{s['terim']:.1f} ({s['t']}) | WER %{s['wer']:.1f} | orto %{s['orto']:.1f} | RTF {s['rtf']:.2f} | yükleme {s['yukleme']:.1f} sn",
               flush=True)
         satirlar.append(f"| {s['model']} | %{s['terim']:.1f} ({s['t']}) | %{s['wer']:.1f} | %{s['orto']:.1f} | {s['rtf']:.2f} | {s['yukleme']:.1f} |")
         ekler += ["", f"## {s['model']} — kaçan terimler", ", ".join(f"{t} ({n})" for t, n in s["kacan"]) or "yok"]
         ekler += ["", f"## {s['model']} — örnekler"] + [f"- beklenen: {b}\n  çıktı:    {c}" for b, c in s["ornekler"]]
     SONUCLAR.mkdir(exist_ok=True)
-    cikti = SONUCLAR / f"karsilastirma_{datetime.date.today()}_{klasor.name}_{cihaz}.md"
+    cikti = SONUCLAR / f"karsilastirma_{datetime.date.today()}_{klasor.name}_{cihaz}{'_' + '_'.join(a.ayar) if a.ayar else ''}.md"
     cikti.write_text("\n".join(satirlar + ekler) + "\n", encoding="utf-8")
     print(f"\nTablo: {cikti}")
     return 0

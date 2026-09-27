@@ -96,7 +96,8 @@ class WhisperPipeline:
     def __init__(self, model, cihaz):
         self.cihaz = cihaz
     def generate(self, ses, **ayar):
-        return f"sahte çeviri {self.cihaz} {ayar.get('language')} {len(ses)} örnek"
+        ipucu = " ipuçlu" if ayar.get("initial_prompt", "").startswith("Anlatımda geçen terimler:") else ""
+        return f"sahte çeviri {self.cihaz} {ayar.get('language')} {len(ses)} örnek interaksiyonu{ipucu}"
 ''',
     "faster_whisper/__init__.py": r'''
 class _Parca:
@@ -235,6 +236,20 @@ def yedek_motor(env: dict, kok: Path) -> None:
     kontrol("sahte yedek çeviri" in r.stdout and "faster-whisper" in r.stderr, "faster-whisper'a düştü")
 
 
+def ipucu_ve_duzeltme(env: dict, kok: Path) -> None:
+    print("Terim ipucu ve düzeltme kuralları")
+    dizin = kok / "ipucu-ayar" / "adimadim"
+    dizin.mkdir(parents=True)
+    ayar = json.loads((kok / "home" / ".config" / "adimadim" / "ayar.json").read_text())
+    (dizin / "ayar.json").write_text(json.dumps({**ayar, "ipucu": "prompt"}))
+    (dizin / "duzeltmeler.local.txt").write_text("sahte çeviri → düzeltilmiş çeviri\n", encoding="utf-8")
+    ses = next((kok / "dokumanlar").glob("*/ses/adim-01.wav"))
+    r = calistir(env, "cevir", str(ses), XDG_CONFIG_HOME=str(dizin.parent))
+    kontrol("ipuçlu" in r.stdout, "ipucu=prompt: terimler Whisper'a veriliyor")
+    kontrol("düzeltilmiş çeviri" in r.stdout and "interaction'u" in r.stdout,
+            "düzeltmeler.txt + .local uygulanıyor, Türkçe ek korunuyor")
+
+
 def kisayollar(env: dict, kok: Path) -> None:
     print("GNOME kısayolları")
     kok_yol = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
@@ -260,6 +275,7 @@ def main() -> int:
             yazili_akis(env)
             sesli_akis(env)
             yedek_motor(env, kok)
+            ipucu_ve_duzeltme(env, kok)
             kisayollar(env, kok)
         finally:
             kayitcilari_temizle(kok)

@@ -20,9 +20,13 @@ echo "== 3/3 Konuşma tanıma doğruluğu (gerçek model)"
 # Araç OpenVINO açılamazsa sessizce faster-whisper'a düşer; burada yedeksiz yüklenmeli.
 if "$PY" -c "import sys; sys.path.insert(0, '$REPO/testler'); import stt_olc; a = stt_olc.adimadim.ayarlari_oku()
 if str(a.get('stt', 'openvino')).lower() == 'openvino':
-    stt_olc.adimadim.openvino_cevirici(a, str(a.get('cihaz') or 'CPU').upper()); print('✓ OpenVINO modeli yüklendi:', a.get('ov_model'), a.get('cihaz'))"; then :
+    c = stt_olc.adimadim.openvino_cevirici(a, str(a.get('cihaz') or 'CPU').upper()); print('✓ OpenVINO modeli yüklendi:', a.get('ov_model'), a.get('cihaz'))
+    import numpy as n, tempfile, wave
+    f = tempfile.mktemp(suffix='.wav'); w = wave.open(f, 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
+    w.writeframes((n.random.default_rng(0).normal(0, .03, 80000) * 32767).astype('<i2').tobytes()); w.close()
+    m = c(f); print(('✓ gürültüde metin uydurmuyor' if not m else f'✗ gürültüden metin uydurdu: {m!r}')); sys.exit(1 if m else 0)"; then :
 else
-  echo "✗ OpenVINO modeli yüklenemedi (araç faster-whisper'a düşerdi)"; HATA=1
+  echo "✗ OpenVINO modeli yüklenemedi ya da gürültüde metin uydurdu"; HATA=1
 fi
 if compgen -G "$REPO/testler/ses/*.wav" >/dev/null; then
   "$PY" "$REPO/testler/stt_olc.py" || HATA=1

@@ -40,9 +40,12 @@ Repoyu klonladıktan sonra (klonlama ve GitHub erişimi: CALISMA_DUZENI.md):
 | `ov_model`       | dönüştürülmüş modelin klasörü                               |
 | `whisper_modeli` | OpenVINO çalışmazsa yedek faster-whisper modeli             |
 | `dil`            | anlatım dili, varsayılan `tr`                               |
+| `ipucu`          | terimleri Whisper'a ipucu olarak ver: `prompt`, `hotwords` ya da boş (kapalı) |
+| `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
 
 Şirket Word şablonu: `~/.config/adimadim/sablon.docx`.
 Şirkete özel terimler: `~/.config/adimadim/terimler.local.txt` (repoya girmez).
+Şirkete özel düzeltmeler ("yanlış → doğru"): `~/.config/adimadim/duzeltmeler.local.txt` (repoya girmez).
 
 ## Geliştirme akışı
 

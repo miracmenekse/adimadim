@@ -150,7 +150,7 @@ Türkçe kalitesini gösterir.
 
 **Kabul:** Faz 2 ile aynı.
 
-## Faz 4 — Model kararı ve v0.2.0 🛑
+## Faz 4 — Model kararı ve v0.2.0 🛑 (sonuç: whisper-medium kalır, bkz. CHANGELOG)
 
 1. Referans ve iki aday için tüm setlerde karsilastir.py tablosunu hazırla.
 2. **Karar kuralı:**
@@ -183,20 +183,11 @@ yapılmaz, ayarla açılabilir kalır.
 
 **Kabul:** Her katmanın katkısı tabloda; test.sh geçiyor. 🛑 Push ve v0.3.0 onayı.
 
-## Faz 6 — LLM ile toparlama ve v0.4.0 🛑
+## Faz 6 — Rovo ile toparlama ✅ (karar: 2026-09-27)
 
-Ham anlatım, OCR metni ve terimlerle yerel bir LLM (OpenVINO GenAI LLMPipeline), konuşma dilindeki
-anlatımı resmi bir kullanım senaryosu cümlesine çevirir ("Kullanıcı Müşteri No alanına numarayı girer ve
-Ara'ya tıklar.").
-
-- 🛑 Başlamadan önce model seçimini kullanıcıyla konuş: Türkçe yeterliliği, boyutu ve CPU/GPU hızına göre
-  2-3 aday öner. Kullanıcının ana makinesinde ai-terminal aracılığıyla OpenVINO'da GPU'da çalışan bir LLM
-  zaten var; o modelin kullanılıp kullanılamayacağını sor.
-- LLM, anlatımda ve ekranda olmayan bilgi eklememeli. Bunu sentetik adımlarla test et: çıktıdaki alan
-  adları ve değerler anlatımda ya da OCR metninde geçmeli.
-- Ham metin dokümanda ayrıca saklanır; ayarla gizlenebilir.
-
-**Kabul:** test.sh geçiyor. 🛑 Push ve v0.4.0 onayı.
+Yerel LLM yerine şirketin resmi LLM'i Rovo kullanılır (kullanıcı kararı). adımadım ham ama terimleri
+düzeltilmiş .md üretir; resmi senaryo diline çevirme elle Rovo agent'ında yapılır.
+Agent talimatı: `rovo/ajan-talimati.md`; Confluence'taki sözlük sayfası: `rovo/confluence-sozluk.md`.
 
 ## Her sürümde: ana makine teslimi
 

@@ -1,0 +1,10 @@
+# Konuşma tanıma çıktısına uygulanan düzeltmeler: "yanlış → doğru", satır başına bir kural.
+# Büyük/küçük harf duyarsız; kelime başından eşleşir, Türkçe ek korunur ("interaksiyonu" → "interaction'u").
+# Yalnızca GENEL terimler buraya. Şirkete / ürüne özel kurallar ana makinede
+# ~/.config/adimadim/duzeltmeler.local.txt'e yazılır (repoya girmez).
+interaksiyon → interaction
+shopping kart → shopping cart
+drover → drawer
+komanda → command
+siyasar → CSR
+save & close → Save and Close

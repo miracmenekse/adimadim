@@ -26,6 +26,8 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   ov_model        dönüştürülmüş modelin klasörü (kur.sh yoksa oluşturur)
   whisper_modeli  OpenVINO çalışmazsa yedek faster-whisper modeli ("small" / "medium")
   dil             anlatım dili (varsayılan "tr")
+  ipucu           terimleri Whisper'a ipucu olarak ver: "prompt" (initial_prompt), "hotwords" ya da "" (kapalı)
+  duzeltme        duzeltmeler.txt (+ .local) kurallarını çıktıya uygula (true/false)
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -91,7 +93,7 @@ def belgeler_dizini() -> Path:
 VARSAYILAN_AYAR = {  # asıl kaynak repodaki ayar.ornek.json; bu yalnızca o dosya yoksa kullanılır
     "klasor": "", "ekran": "pencere", "stt": "openvino", "cihaz": "",
     "ov_kaynak": "openai/whisper-medium", "ov_model": "~/modeller/whisper-medium-ov",
-    "whisper_modeli": "small", "dil": "tr",
+    "whisper_modeli": "small", "dil": "tr", "ipucu": "prompt", "duzeltme": True,
 }
 
 
@@ -288,6 +290,7 @@ def kayit_baslat(dosya: Path) -> int | None:
 def kayit_durdur(pid: int | None) -> None:
     if not surec_calisiyor(pid):
         return
+    time.sleep(0.5)  # ses sunucusunun tamponundaki son kelime kaybolmasın
     with contextlib.suppress(OSError):
         os.kill(pid, signal.SIGINT)  # SIGINT'te WAV dosyası düzgün kapanır
     for _ in range(60):
@@ -350,7 +353,69 @@ def yaziya_dok(oturum: Path, veri: dict, ayar: dict) -> None:
         kaydet(oturum, veri)
 
 
+SOZLUK = REPO_DIZINI / "terim_sozlugu_ham_→_normalize.md"
+
+
+def satirlar(*dosyalar: Path) -> list:
+    """Dosyaların yorumsuz, boş olmayan satırları (olmayan dosya atlanır)."""
+    sonuc = []
+    for dosya in dosyalar:
+        if dosya.exists():
+            for satir in dosya.read_text(encoding="utf-8").splitlines():
+                satir = satir.split("#", 1)[0].strip()
+                if satir:
+                    sonuc.append(satir)
+    return sonuc
+
+
+def terimleri_oku() -> list:
+    """terimler.txt, terimler.local.txt ve (varsa) terim sözlüğünün normalize biçimleri."""
+    sozluk = re.findall(r"^\s*normalize:\s*(.+?)\s*$", SOZLUK.read_text(encoding="utf-8"), re.M) if SOZLUK.exists() else []
+    # Özel terimler önce: ipucu uzunsa kesilen genel terimler olsun.
+    return list(dict.fromkeys(satirlar(AYAR_DIZINI / "terimler.local.txt") + sozluk + satirlar(REPO_DIZINI / "terimler.txt")))
+
+
+def ipucu_metni() -> str:
+    """Whisper'a verilecek ipucu. Uzun ifadeler atlanır; Whisper ipucunu ~224 token'da (~700 karakter) keser."""
+    # Whisper ipucunun üslubunu taklit eder: yalnız liste verilirse cümle yerine liste yazar.
+    # Bu yüzden ipucu doğal, noktalamalı bir anlatım cümlesiyle biter.
+    son = " Şimdi bu ekranda ilgili butona tıklıyoruz, açılan sayfada bilgileri girip kaydediyoruz."
+    metin = "Anlatımda geçen terimler:"
+    for t in (t for t in terimleri_oku() if len(t.split()) <= 4):
+        if len(metin) + len(t) + 2 + len(son) > 700:
+            break
+        metin += (" " if metin.endswith(":") else ", ") + t
+    return metin + "." + son
+
+
+def duzeltme_kurallari() -> list:
+    """duzeltmeler.txt (+ .local): "yanlış → doğru" satırları; büyük/küçük harf duyarsız, tam kelime."""
+    kurallar = []
+    for satir in satirlar(REPO_DIZINI / "duzeltmeler.txt", AYAR_DIZINI / "duzeltmeler.local.txt"):
+        if "→" in satir:
+            yanlis, dogru = (x.strip() for x in satir.split("→", 1))
+            # Türkçe ek korunur: "interaksiyonu" -> "interaction'u"
+            kurallar.append((re.compile(rf"(?<!\w){re.escape(yanlis)}(\w*)", re.I),
+                             lambda m, d=dogru: d + ("'" + m.group(1) if m.group(1) else "")))
+    return kurallar
+
+
 def cevirici_olustur(ayar: dict):
+    """(açıklama, cevir) döndürür; ayarda duzeltme açıksa çıktıya duzeltmeler.txt kuralları uygulanır."""
+    ad, cevir = _cevirici(ayar)
+    if not ayar.get("duzeltme", True):
+        return ad, cevir
+    kurallar = duzeltme_kurallari()
+
+    def duzelterek(dosya: Path) -> str:
+        metin = cevir(dosya)
+        for kalip, dogru in kurallar:
+            metin = kalip.sub(dogru, metin)
+        return metin
+    return ad, duzelterek
+
+
+def _cevirici(ayar: dict):
     """(açıklama, cevir) döndürür; cevir(wav_yolu) -> metin. Tüm konuşma tanıma buradan geçer.
 
     Varsayılan OpenVINO: aynı model ve kod VM'de CPU'da, ana makinede GPU/NPU'da çalışır;
@@ -369,9 +434,21 @@ def faster_whisper_cevirici(ayar: dict):
     model = WhisperModel(ayar.get("whisper_modeli", "small"), device="cpu", compute_type="int8")
 
     def cevir(dosya: Path) -> str:
-        parcalar, _ = model.transcribe(str(dosya), language=ayar.get("dil", "tr"), vad_filter=True)
+        parcalar, _ = model.transcribe(str(dosya), language=ayar.get("dil", "tr"), vad_filter=True,
+                                       initial_prompt=ipucu_metni() if ayar.get("ipucu") else None)
         return " ".join(p.text.strip() for p in parcalar).strip()
     return cevir
+
+
+def konusma_bolumleri(ses):
+    """Silero VAD (faster-whisper ile gelir) ile yalnızca konuşma bölümlerini bırakır; VAD yoksa sesi aynen döndürür."""
+    try:
+        import numpy as np
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+    except ImportError:
+        return ses
+    bolumler = get_speech_timestamps(ses, VadOptions(min_silence_duration_ms=2000, speech_pad_ms=400))
+    return np.concatenate([ses[b["start"]:b["end"]] for b in bolumler]) if bolumler else ses[:0]
 
 
 def openvino_cevirici(ayar: dict, cihaz: str):
@@ -384,6 +461,11 @@ def openvino_cevirici(ayar: dict, cihaz: str):
         raise FileNotFoundError(f"OpenVINO modeli bulunamadı: {model_dizini}")
     boru = openvino_genai.WhisperPipeline(str(model_dizini), cihaz)
     dil = f"<|{ayar.get('dil', 'tr')}|>"
+    ek = {}
+    if ayar.get("ipucu") == "prompt":
+        ek["initial_prompt"] = ipucu_metni()
+    elif ayar.get("ipucu") == "hotwords":
+        ek["hotwords"] = ipucu_metni()
 
     def cevir(dosya: Path) -> str:
         with wave.open(str(dosya), "rb") as w:
@@ -393,7 +475,10 @@ def openvino_cevirici(ayar: dict, cihaz: str):
         ses = np.frombuffer(ham, dtype=np.int16).astype(np.float32) / 32768.0
         if ses.size == 0 or float(np.abs(ses).max()) < 0.01:  # sessiz kayıtta model uydurmasın
             return ""
-        sonuc = boru.generate(ses.tolist(), language=dil, task="transcribe")
+        ses = konusma_bolumleri(ses)
+        if ses.size == 0:  # gürültü var, konuşma yok: Whisper "Altyazı M.K." gibi metin uydurur
+            return ""
+        sonuc = boru.generate(ses.tolist(), language=dil, task="transcribe", **ek)
         return str(sonuc).strip()
     return cevir
 

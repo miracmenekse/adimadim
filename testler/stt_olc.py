@@ -41,21 +41,11 @@ def mesafe(a: list, b: list) -> int:
     return onceki[-1]
 
 
-def terimleri_oku() -> list:
-    dosyalar = [REPO / "terimler.txt", adimadim.AYAR_DIZINI / "terimler.local.txt"]
-    terimler = []
-    for dosya in dosyalar:
-        if dosya.exists():
-            for satir in dosya.read_text(encoding="utf-8").splitlines():
-                satir = satir.split("#", 1)[0].strip()
-                if satir:
-                    terimler.append(satir)
-    return terimler
-
-
 def gecer(terim: str, metin: str) -> bool:
     """Terim metinde geçiyor mu? Türkçe ekler serbest: "fatura döngüsü" ~ "fatura döngüsünü"."""
     t, m = kelimeler(terim), kelimeler(metin)
+    if len(t) > 1 and "".join(t) in "".join(m):  # "CSR360" ~ "CSR 360"
+        return True
     return bool(t) and any(all(m[i + k].startswith(t[k]) for k in range(len(t)))
                            for i in range(len(m) - len(t) + 1))
 
@@ -67,7 +57,7 @@ def main() -> int:
         return 0
     ayar = adimadim.ayarlari_oku()
     ad, cevir = adimadim.cevirici_olustur(ayar)
-    terimler = terimleri_oku()
+    terimler = adimadim.terimleri_oku()
     print(f"Motor: {ad} | model: {ayar.get('ov_model') if 'OpenVINO' in ad else ayar.get('whisper_modeli')}")
     toplam_hata = toplam_kelime = terim_sayisi = terim_dogru = 0
     toplam_sure = 0.0
