@@ -6,3 +6,5 @@ apt virtualbox-guest-*      # sanallaştırma misafir eklentileri
 apt spice-vdagent
 apt qemu-guest-agent
 apt open-vm-tools*
+apt claude-desktop          # Claude Desktop yalnızca VM'de
+apt gnupg                   # Claude Desktop deposunun anahtarı için kuruldu

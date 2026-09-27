@@ -1,6 +1,7 @@
 ---
 name: vm-ana-makine
 description: Kodun bir VM'de Claude Code ile geliştirildiği, git (GitHub) üzerinden ayrı bir ana makineye taşınıp orada kullanıcı tarafından çalıştırıldığı HER projede kullan; iki makine arasındaki kurulum farkını kapatır. Ana makinede Claude Code yoktur, Ubuntu kurulumu eksik olabilir, gerçek veri oradadır. Şu anlarda yükle - yeni bir projeye başlarken ya da bu düzeni kurarken; apt/pip/snap/npm ile bir şey kurmadan, sistem ayarı değiştirmeden, yeni bir dış komut ya da bağımlılık eklemeden önce; commit, push ya da sürüm etiketinden önce; kullanıcı ana makineden hata ya da "ana makinede çalışmıyor", "VM'de çalışıyor ama", "fark", "host" gibi bir geri bildirim getirdiğinde.
+disable-model-invocation: true
 ---
 
 # VM ↔ ana makine: farkı kapat
