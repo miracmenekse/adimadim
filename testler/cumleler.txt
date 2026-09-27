@@ -1,0 +1,15 @@
+Şimdi müşteri hesabı ekranına geçiyoruz, burada tarife seçiliyor.
+Müşterinin fatura döngüsünü ayın on beşine çekiyoruz.
+Faturalı hattan ön ödemeli hatta geçiş için önce sipariş oluşturuluyor.
+Numara taşıma talebinde MSISDN alanı otomatik doluyor.
+Ek paket sekmesinden kampanyayı seçip Kaydet butonuna basıyoruz.
+SIM kart değişikliğinde eski kart hemen pasife alınıyor.
+Ürün kataloğunda bu tarife görünmüyorsa abonelik tipini kontrol ediyoruz.
+İade ekranında tahsilat tutarı eksi olarak gösteriliyor.
+Hat taşıma işleminde adres bilgisi yeniden soruluyor.
+Burada kampanya bitiş tarihini seçip Onayla diyoruz.
+Siparişin durumu Tamamlandı olunca fatura yeniden hesaplanıyor.
+Müşteri hesabında birden fazla abonelik varsa listeden doğru olanı seçiyoruz.
+Ön ödemeli hatlarda ek paket yalnızca bakiye yeterliyse tanımlanıyor.
+Tahsilat başarısız olursa sipariş Beklemede durumunda kalıyor.
+Son olarak ekranın sağ üstündeki Kapat butonuna tıklıyoruz.
