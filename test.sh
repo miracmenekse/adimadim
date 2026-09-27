@@ -24,7 +24,7 @@ if str(a.get('stt', 'openvino')).lower() == 'openvino':
     import numpy as n, tempfile, wave
     f = tempfile.mktemp(suffix='.wav'); w = wave.open(f, 'wb'); w.setnchannels(1); w.setsampwidth(2); w.setframerate(16000)
     w.writeframes((n.random.default_rng(0).normal(0, .03, 80000) * 32767).astype('<i2').tobytes()); w.close()
-    m = c(f); print(('✓ gürültüde metin uydurmuyor' if not m else f'✗ gürültüden metin uydurdu: {m!r}')); sys.exit(1 if m else 0)"; then :
+    m = ' '.join(t for _, _, t in c(stt_olc.adimadim.wav_oku(stt_olc.adimadim.Path(f)))); print(('✓ gürültüde metin uydurmuyor' if not m else f'✗ gürültüden metin uydurdu: {m!r}')); sys.exit(1 if m else 0)"; then :
 else
   echo "✗ OpenVINO modeli yüklenemedi ya da gürültüde metin uydurdu"; HATA=1
 fi

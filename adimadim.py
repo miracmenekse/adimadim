@@ -340,7 +340,7 @@ def yaziya_dok(oturum: Path, veri: dict, ayar: dict) -> None:
         if not adim.get("ses") or adim.get("ses_metni") is not None:
             continue
         dosya = oturum / adim["ses"]
-        if dosya.exists() and dosya.stat().st_size > 16_000:  # ~0,5 sn'den uzun
+        if dosya.exists():
             bekleyen.append((adim, dosya))
         else:
             adim["ses_metni"] = ""
@@ -349,10 +349,35 @@ def yaziya_dok(oturum: Path, veri: dict, ayar: dict) -> None:
     bildir(f"{len(bekleyen)} anlatım metne çevriliyor… (model yükleniyor)")
     ad, cevir = cevirici_olustur(ayar)
     print(f"  Kullanılan: {ad}", flush=True)
-    for sira, (adim, dosya) in enumerate(bekleyen, 1):
-        print(f"  {sira}/{len(bekleyen)}  {dosya.name}", flush=True)
-        adim["ses_metni"] = cevir(dosya)
-        kaydet(oturum, veri)
+    for adim, metin in zip((a for a, _ in bekleyen), adimlara_dagit(cevir, [d for _, d in bekleyen])):
+        adim["ses_metni"] = metin
+    kaydet(oturum, veri)
+
+
+def wav_oku(dosya: Path):
+    """16 kHz mono 16-bit WAV → float32 dizi. Başlıktaki uzunluğa bakılmaz (arecord bozuk bırakabiliyor)."""
+    import wave
+    import numpy as np
+    with wave.open(str(dosya), "rb") as w:
+        if w.getframerate() != 16000 or w.getsampwidth() != 2 or w.getnchannels() != 1:
+            raise ValueError(f"{dosya.name}: 16 kHz mono 16-bit bekleniyordu")
+        ham = w.readframes(w.getnframes())
+    return np.frombuffer(ham, dtype=np.int16).astype(np.float32) / 32768.0
+
+
+def adimlara_dagit(cevir, dosyalar: list) -> list:
+    """Adımların seslerini birleştirip tek seferde çevirir, cümleleri başladıkları adıma dağıtır.
+
+    Kullanıcı konuşurken Ctrl+Alt+S'ye basınca cümle iki dosyaya bölünür; ayrı ayrı çevrilince
+    sınırdaki kelimeler kaybolur ve kısa parçalarda model cümleyi atlar."""
+    import numpy as np
+    sesler = [wav_oku(d) for d in dosyalar]
+    sinirlar = np.cumsum([0] + [len(x) for x in sesler]) / 16000
+    metinler = [[] for _ in dosyalar]
+    for bas, _son, metin in cevir.parcala(np.concatenate(sesler) if sesler else np.zeros(0, np.float32)):
+        sira = min(int(np.searchsorted(sinirlar, bas, side="right")) - 1, len(dosyalar) - 1)
+        metinler[max(sira, 0)].append(metin.strip())
+    return [cevir.duzelt(" ".join(m).strip()) for m in metinler]
 
 
 SOZLUK = REPO_DIZINI / "terim_sozlugu_ham_→_normalize.md"
@@ -404,21 +429,22 @@ def duzeltme_kurallari() -> list:
 
 def cevirici_olustur(ayar: dict):
     """(açıklama, cevir) döndürür; ayarda duzeltme açıksa çıktıya duzeltmeler.txt kuralları uygulanır."""
-    ad, cevir = _cevirici(ayar)
-    if not ayar.get("duzeltme", True):
-        return ad, cevir
-    kurallar = duzeltme_kurallari()
+    ad, parcala = _cevirici(ayar)
+    kurallar = duzeltme_kurallari() if ayar.get("duzeltme", True) else []
 
-    def duzelterek(dosya: Path) -> str:
-        metin = cevir(dosya)
+    def duzelt(metin: str) -> str:
         for kalip, dogru in kurallar:
             metin = kalip.sub(dogru, metin)
         return metin
-    return ad, duzelterek
+
+    def cevir(dosya: Path) -> str:
+        return duzelt(" ".join(m.strip() for _, _, m in parcala(wav_oku(dosya))).strip())
+    cevir.parcala, cevir.duzelt = parcala, duzelt
+    return ad, cevir
 
 
 def _cevirici(ayar: dict):
-    """(açıklama, cevir) döndürür; cevir(wav_yolu) -> metin. Tüm konuşma tanıma buradan geçer.
+    """(açıklama, parcala) döndürür; parcala(ses) -> [(başlangıç sn, bitiş sn, metin)]. Tüm konuşma tanıma buradan geçer.
 
     Varsayılan OpenVINO: aynı model ve kod VM'de CPU'da, ana makinede GPU/NPU'da çalışır;
     böylece VM'deki ölçümler ana makineyi temsil eder. OpenVINO kurulamazsa faster-whisper'a düşer."""
@@ -435,27 +461,28 @@ def faster_whisper_cevirici(ayar: dict):
     from faster_whisper import WhisperModel
     model = WhisperModel(ayar.get("whisper_modeli", "small"), device="cpu", compute_type="int8")
 
-    def cevir(dosya: Path) -> str:
-        parcalar, _ = model.transcribe(str(dosya), language=ayar.get("dil", "tr"), vad_filter=True,
+    def parcala(ses) -> list:
+        if ses.size == 0:
+            return []
+        parcalar, _ = model.transcribe(ses, language=ayar.get("dil", "tr"), vad_filter=True,
                                        initial_prompt=ipucu_metni() if ayar.get("ipucu") else None)
-        return " ".join(p.text.strip() for p in parcalar).strip()
-    return cevir
+        return [(p.start, p.end, p.text) for p in parcalar]
+    return parcala
 
 
-def konusma_bolumleri(ses):
-    """Silero VAD (faster-whisper ile gelir) ile yalnızca konuşma bölümlerini bırakır; VAD yoksa sesi aynen döndürür."""
+def konusma_bolumleri(ses) -> list:
+    """Silero VAD (faster-whisper ile gelir): konuşma bölümleri [(başlangıç, bitiş)] örnek olarak.
+    VAD yoksa sesin tamamı tek bölümdür."""
     try:
-        import numpy as np
         from faster_whisper.vad import VadOptions, get_speech_timestamps
     except ImportError:
-        return ses
-    bolumler = get_speech_timestamps(ses, VadOptions(min_silence_duration_ms=2000, speech_pad_ms=400))
-    return np.concatenate([ses[b["start"]:b["end"]] for b in bolumler]) if bolumler else ses[:0]
+        return [(0, len(ses))]
+    return [(b["start"], b["end"]) for b in
+            get_speech_timestamps(ses, VadOptions(min_silence_duration_ms=2000, speech_pad_ms=400))]
 
 
 def openvino_cevirici(ayar: dict, cihaz: str):
     """OpenVINO GenAI Whisper (CPU/GPU/NPU). Model kur.sh tarafından optimum-cli ile dönüştürülür."""
-    import wave
     import numpy as np
     import openvino_genai
     model_dizini = Path(str(ayar.get("ov_model", ""))).expanduser()
@@ -469,20 +496,22 @@ def openvino_cevirici(ayar: dict, cihaz: str):
     elif ayar.get("ipucu") == "hotwords":
         ek["hotwords"] = ipucu_metni()
 
-    def cevir(dosya: Path) -> str:
-        with wave.open(str(dosya), "rb") as w:
-            if w.getframerate() != 16000 or w.getsampwidth() != 2 or w.getnchannels() != 1:
-                raise ValueError(f"{dosya.name}: 16 kHz mono 16-bit bekleniyordu")
-            ham = w.readframes(w.getnframes())
-        ses = np.frombuffer(ham, dtype=np.int16).astype(np.float32) / 32768.0
+    def parcala(ses) -> list:
         if ses.size == 0 or float(np.abs(ses).max()) < 0.01:  # sessiz kayıtta model uydurmasın
-            return ""
-        ses = konusma_bolumleri(ses)
-        if ses.size == 0:  # gürültü var, konuşma yok: Whisper "Altyazı M.K." gibi metin uydurur
-            return ""
-        sonuc = boru.generate(ses.tolist(), language=dil, task="transcribe", **ek)
-        return str(sonuc).strip()
-    return cevir
+            return []
+        bolumler = konusma_bolumleri(ses)
+        if not bolumler:  # gürültü var, konuşma yok: Whisper "Altyazı M.K." gibi metin uydurur
+            return []
+        kisa = np.concatenate([ses[b:e] for b, e in bolumler])
+        sonuc = boru.generate(kisa.tolist(), language=dil, task="transcribe", return_timestamps=True, **ek)
+        # VAD sessizlikleri çıkardı: zaman damgalarını orijinal sese geri taşı
+        baslar = np.cumsum([0] + [e - b for b, e in bolumler[:-1]]) / 16000
+
+        def asil(t: float) -> float:
+            i = max(int(np.searchsorted(baslar, t, side="right")) - 1, 0)
+            return bolumler[i][0] / 16000 + t - baslar[i]
+        return [(asil(c.start_ts), asil(max(c.end_ts, c.start_ts)), c.text) for c in sonuc.chunks]
+    return parcala
 
 
 # --------------------------------------------------------------- komutlar

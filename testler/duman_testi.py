@@ -92,22 +92,29 @@ elif komut == "set":
 
 SAHTE_MODULLER = {
     "openvino_genai/__init__.py": r'''
+class _Parca:
+    def __init__(self, bas, son, metin):
+        self.start_ts, self.end_ts, self.text = bas, son, metin
+class _Sonuc:
+    def __init__(self, parcalar):
+        self.chunks = parcalar
 class WhisperPipeline:
     def __init__(self, model, cihaz):
         self.cihaz = cihaz
-    def generate(self, ses, **ayar):
+    def generate(self, ses, **ayar):  # sesin her saniyesi için bir parça: adımlara dağıtım sınanır
         ipucu = " ipuçlu" if ayar.get("initial_prompt", "").startswith("Anlatımda geçen terimler:") else ""
-        return f"sahte çeviri {self.cihaz} {ayar.get('language')} {len(ses)} örnek interaksiyonu{ipucu}"
+        return _Sonuc([_Parca(float(i), i + 1.0, f"sahte çeviri {self.cihaz} {ayar.get('language')} {i}. sn interaksiyonu{ipucu}")
+                       for i in range(max(1, len(ses) // 16000))])
 ''',
     "faster_whisper/__init__.py": r'''
 class _Parca:
-    def __init__(self, metin):
-        self.text = metin
+    def __init__(self, bas, son, metin):
+        self.start, self.end, self.text = bas, son, metin
 class WhisperModel:
     def __init__(self, *a, **k):
         pass
-    def transcribe(self, yol, **k):
-        return iter([_Parca(" sahte yedek"), _Parca(" çeviri ")]), None
+    def transcribe(self, ses, **k):
+        return iter([_Parca(0.0, 0.5, " sahte yedek"), _Parca(0.5, 1.0, " çeviri ")]), None
 ''',
 }
 

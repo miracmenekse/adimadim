@@ -29,6 +29,15 @@ channel
 Add Note
 Save and Close
 parent-child
+Change Plan
+Device Change
+Date of Plan Change
+subreason
+Save and Continue
+Summary
+Deliver
+Complete Order
+Order Summary
 # Genel telekom terimleri
 fatura
 fatura döngüsü

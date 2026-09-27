@@ -43,7 +43,10 @@ Kurallar:
   yazılmış bir sözlük terimine dokunma (ör. Unit Peace).
 - Ekran bilgisi: Interaction drawer'ın iki modu vardır: **filtreleme modu** (drawer ilk açıldığında) ve
   **detail modu** (kayda tıklanınca). "filtrinin modu", "filtre ile ve modu" gibi yazımlar filtreleme
-  modudur; drawer'da "oluşturma modu" diye bir mod yoktur.
+  modudur; drawer'da "oluşturma modu" diye bir mod yoktur. Bu kural **yalnızca Interaction drawer** içindir:
+  Manage butonuyla açılan Business Interaction menüsü/listesi bir drawer değildir, ona mod yazma.
+- **Koşulları koru.** "Eğer CSR … seçerse", "… olursa" gibi koşullu ifadeleri düz eyleme çevirme; koşulu
+  ve sonucunu birlikte yaz ("CSR Continue without plan change seçerse sistem plan change adımını atlar.").
 - Menü ya da sekme hiyerarşisi uydurma ("Reports, Dashboard" → "Reports > Dashboard" olmaz).
 - `[?]` yalnızca gerçekten emin olmadığın yere konur; sözlükte bulunan bir terime `[?]` koyma.
 - Anlamsız bir dolgu cümlesi ("akışı baştan anlatıyorum" gibi) atılabilir; bilgi taşıyan cümle atılamaz.

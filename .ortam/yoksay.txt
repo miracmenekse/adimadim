@@ -11,3 +11,4 @@ apt gnupg                   # Claude Desktop deposunun anahtarı için kuruldu
 snap core24                 # snapd-desktop-integration güncellemesiyle geldi; adimadim kullanmaz
 snap gnome-46-2404          # aynı
 snap mesa-2404              # aynı
+grup kvm                    # VM'de sanallaştırma için; adimadim kullanmaz

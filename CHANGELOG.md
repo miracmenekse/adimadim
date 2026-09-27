@@ -2,6 +2,25 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.4.0 — adımlar birlikte çevrilir (2026-09-28)
+
+- **Sorun (gerçek kullanımda görüldü):** kullanıcı konuşurken Ctrl+Alt+S'ye basınca cümle iki dosyaya
+  bölünüyor, her adım ayrı çevrilince sınırdaki kelimeler kayboluyor, kısa parçalarda model cümlenin
+  devamını atlıyor ve ipucundaki "Şimdi bu ekranda…" cümlesi metne sızıyordu ("altyazı", "Sıstak").
+- **Çözüm:** `bitir` ve `yeniden` adımların seslerini birleştirip tek seferde zaman damgalı çevirir;
+  her cümle başladığı adıma yazılır. VAD'nin kestiği sessizlikler için zaman damgaları asıl sese geri
+  taşınır. Motorlar artık `(başlangıç, bitiş, metin)` parçaları döndürür.
+- **Ölçüm (gerçek oturum, 12 adım, 135 sn, `testler/gercek/`, VM CPU):** WER %93,0 → **%7,6**,
+  terim 11/11, "bu ekran" sızıntısı 5 → 0. Paragrafları rastgele 14 adıma bölen benzetimde
+  WER %75,7 → %17,1. Tek kayıtlık setler değişmedi (29 kayıt: 88/95, WER %15,3; paragraflar: %93,9, WER %15,8).
+- Rovo talimatı: drawer kuralı yalnızca Interaction drawer için; koşullu ifadeler korunur.
+- terimler.txt: Device Change, Summary, Order Summary vb. ekran terimleri (ipucu sınırına sığmıyor;
+  ölçüm ve ileride ekran bazlı ipucu için).
+
+**Ana makinede yapılacaklar:** `cd ~/adimadim && git pull && ./test.sh`. Önceki bir dokümanı yeni
+yöntemle yeniden çevirmek için: `adimadim yeniden <doküman klasörü>` (eski .md `.yedek` olarak saklanır).
+Rovo agent talimatını `rovo/ajan-talimati.md`'deki güncel metinle değiştir.
+
 ## v0.3.1 — göreli doküman klasörü düzeltmesi (2026-09-27)
 
 - `klasor` ayarı göreli bir yolsa (ör. `...`) doküman terminalin bulunduğu dizine göre açılıyor,
