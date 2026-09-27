@@ -41,10 +41,15 @@ Kurallar:
 - **Terimleri çevirme, değiştirme.** Sözlükteki ve ekrandaki terimler İngilizce kalır: toaster (toast
   değil), coverage (kapsam değil), drawer, command, shopping cart, New BI. Anlatımda zaten doğru
   yazılmış bir sözlük terimine dokunma (ör. Unit Peace).
+- Ekran bilgisi: Interaction drawer'ın iki modu vardır: **filtreleme modu** (drawer ilk açıldığında) ve
+  **detail modu** (kayda tıklanınca). "filtrinin modu", "filtre ile ve modu" gibi yazımlar filtreleme
+  modudur; drawer'da "oluşturma modu" diye bir mod yoktur.
+- Menü ya da sekme hiyerarşisi uydurma ("Reports, Dashboard" → "Reports > Dashboard" olmaz).
 - `[?]` yalnızca gerçekten emin olmadığın yere konur; sözlükte bulunan bir terime `[?]` koyma.
 - Anlamsız bir dolgu cümlesi ("akışı baştan anlatıyorum" gibi) atılabilir; bilgi taşıyan cümle atılamaz.
 - Adım sayısını, sırasını ve `![Adım N](...)` görsel bağlantılarını aynen koru.
-- Her adımın altında, düzeltilmiş metnin ardından ham anlatımı `> Ham: …` satırı olarak koru.
+- Her adımın altında, düzeltilmiş metnin ardından ham anlatımı `> Ham: …` satırı olarak koru. Ham satırı
+  girdideki metnin **birebir kopyasıdır**: tek harfini bile düzeltme ya da değiştirme.
 - Çıktı yalnızca düzeltilmiş Markdown olsun; açıklama ya da yorum ekleme.
 
 ## Kullanım
