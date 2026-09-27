@@ -19,3 +19,29 @@ kampanya
 ürün kataloğu
 iade
 tahsilat
+product detail
+Manage
+business interaction
+Device Upgrade
+pop-up
+Change the plan
+Continue without plan change
+Qualification API
+Qualification
+device
+Payment
+Submit
+shopping cart
+CSR
+call center
+toaster
+interaction
+drawer
+detail modu
+category
+sub category
+reason
+channel
+Add Note
+Save and Close
+parent-child

@@ -22,6 +22,13 @@ import stt_olc
 adimadim = stt_olc.adimadim
 SONUCLAR = stt_olc.REPO / "testler" / "sonuclar"
 FLEURS = Path.home() / ".cache" / "adimadim" / "fleurs"
+SOZLUK = stt_olc.REPO / "terim_sozlugu_ham_→_normalize.md"
+
+
+def terimler() -> list:
+    """terimler.txt (+ .local) ve terim sözlüğünün normalize biçimleri."""
+    ek = re.findall(r"^\s*normalize:\s*(.+?)\s*$", SOZLUK.read_text(encoding="utf-8"), re.M) if SOZLUK.exists() else []
+    return list(dict.fromkeys(stt_olc.terimleri_oku() + ek))
 
 
 def fleurs_hazirla(adet: int) -> Path:
@@ -64,7 +71,8 @@ def olc(model: Path, kayitlar: list, ayar: dict) -> dict:
     basla = time.time()
     cevir = adimadim.openvino_cevirici({**ayar, "ov_model": str(model)}, str(ayar.get("cihaz") or "CPU").upper())
     yukleme = time.time() - basla
-    hata = kelime = o_hata = o_kelime = 0
+    hata = kelime = o_hata = o_kelime = t_sayi = t_dogru = 0
+    kacan = {}
     islem = ses = 0.0
     ornekler = []
     for wav in kayitlar:
@@ -77,10 +85,20 @@ def olc(model: Path, kayitlar: list, ayar: dict) -> dict:
         hata, kelime = hata + stt_olc.mesafe(r, h), kelime + len(r)
         r, h = orto_kelimeler(beklenen), orto_kelimeler(cikti)
         o_hata, o_kelime = o_hata + stt_olc.mesafe(r, h), o_kelime + len(r)
-        if len(ornekler) < 3:
+        for t in (t for t in TERIMLER if stt_olc.gecer(t, beklenen)):
+            t_sayi += 1
+            if stt_olc.gecer(t, cikti):
+                t_dogru += 1
+            else:
+                kacan[t] = kacan.get(t, 0) + 1
+        if len(ornekler) < 5:
             ornekler.append((beklenen, cikti))
     return {"model": model.name, "wer": 100 * hata / max(1, kelime), "orto": 100 * o_hata / max(1, o_kelime),
-            "rtf": islem / max(ses, 1e-9), "yukleme": yukleme, "ornekler": ornekler}
+            "rtf": islem / max(ses, 1e-9), "terim": 100 * t_dogru / max(1, t_sayi), "t": f"{t_dogru}/{t_sayi}",
+            "kacan": sorted(kacan.items(), key=lambda x: -x[1]), "yukleme": yukleme, "ornekler": ornekler}
+
+
+TERIMLER = terimler()
 
 
 def main() -> int:
@@ -94,13 +112,14 @@ def main() -> int:
     ayar = adimadim.ayarlari_oku()
     cihaz = str(ayar.get("cihaz") or "CPU").upper()
     satirlar = [f"# Karşılaştırma — {klasor.name}, {len(kayitlar)} kayıt, {cihaz}", "",
-                "| Model | WER (normalize) | Ortografik WER | RTF | Yükleme (sn) |", "|---|---|---|---|---|"]
+                "| Model | Terim isabeti | WER (normalize) | Ortografik WER | RTF | Yükleme (sn) |", "|---|---|---|---|---|---|"]
     ekler = []
     for model in a.modeller:
         s = olc(model, kayitlar, ayar)
-        print(f"{s['model']}: WER %{s['wer']:.1f} | orto %{s['orto']:.1f} | RTF {s['rtf']:.2f} | yükleme {s['yukleme']:.1f} sn",
+        print(f"{s['model']}: terim %{s['terim']:.1f} ({s['t']}) | WER %{s['wer']:.1f} | orto %{s['orto']:.1f} | RTF {s['rtf']:.2f} | yükleme {s['yukleme']:.1f} sn",
               flush=True)
-        satirlar.append(f"| {s['model']} | %{s['wer']:.1f} | %{s['orto']:.1f} | {s['rtf']:.2f} | {s['yukleme']:.1f} |")
+        satirlar.append(f"| {s['model']} | %{s['terim']:.1f} ({s['t']}) | %{s['wer']:.1f} | %{s['orto']:.1f} | {s['rtf']:.2f} | {s['yukleme']:.1f} |")
+        ekler += ["", f"## {s['model']} — kaçan terimler", ", ".join(f"{t} ({n})" for t, n in s["kacan"]) or "yok"]
         ekler += ["", f"## {s['model']} — örnekler"] + [f"- beklenen: {b}\n  çıktı:    {c}" for b, c in s["ornekler"]]
     SONUCLAR.mkdir(exist_ok=True)
     cikti = SONUCLAR / f"karsilastirma_{datetime.date.today()}_{klasor.name}_{cihaz}.md"
