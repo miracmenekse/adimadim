@@ -10,6 +10,10 @@ Konuşma tanıma doğruluğunu ölçmek için örnek kayıtlar. Her kayıt iki d
 Kayıtları ANA MAKİNEDE, dokümanı hazırlarken kullandığın mikrofonla al; asıl sorun mikrofon
 ve ortam koşulları olduğu için VM'deki mikrofon yanıltıcı olur.
 
+    ./araclar/kayit_al.sh      # testler/cumleler.txt cümlelerini sırayla kaydeder
+
+Elle tek kayıt:
+
     cd <repo>
     arecord -f S16_LE -r 16000 -c 1 testler/ses/01.wav      # konuş, bitince Ctrl+C
     echo "Müşterinin fatura döngüsünü ayın on beşine çekiyoruz." > testler/ses/01.txt

@@ -70,8 +70,15 @@ elif [ ! -x "$VENV/bin/optimum-cli" ]; then
 else
   echo "$OV_KAYNAK → $OV_MODEL dönüştürülüyor (bir kez yapılır, birkaç dakika sürer)…"
   mkdir -p "$(dirname "$OV_MODEL")"
-  "$VENV/bin/optimum-cli" export openvino --model "$OV_KAYNAK" --weight-format fp16 "$OV_MODEL"
+  # Türkçe locale'de OpenVINO "string" türünü "STRiNG" diye yazar ve dosyayı okuyamaz.
+  LC_ALL=C.UTF-8 "$VENV/bin/optimum-cli" export openvino --model "$OV_KAYNAK" --weight-format fp16 "$OV_MODEL"
 fi
+# Önceden Türkçe locale'de dönüştürülmüş modelleri onar (yeniden dönüştürmeden).
+for x in "$OV_MODEL"/openvino_*tokenizer.xml; do
+  if [ -f "$x" ] && grep -q 'precision="STRiNG"' "$x"; then
+    sed -i 's/precision="STRiNG"/precision="STRING"/g' "$x" && echo "Onarıldı: $x"
+  fi
+done
 
 # ------------------------------------------------------------------ 5. komut
 baslik "Komut: $BIN/adimadim"

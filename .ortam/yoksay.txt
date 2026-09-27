@@ -1,0 +1,13 @@
+# Ana makinede GEREKMEYEN, yalnızca VM'deki geliştirme için kurulan öğeler.
+# Biçim: <tür> <ad>   (tür: apt snap pip bin grup komut; ad'da * kullanılabilir)
+# Her satıra neden gerekmediğini yorum olarak yaz.
+bin claude                  # Claude Code yalnızca VM'de
+apt virtualbox-guest-*      # sanallaştırma misafir eklentileri
+apt spice-vdagent
+apt qemu-guest-agent
+apt open-vm-tools*
+apt claude-desktop          # Claude Desktop yalnızca VM'de
+apt gnupg                   # Claude Desktop deposunun anahtarı için kuruldu
+snap core24                 # snapd-desktop-integration güncellemesiyle geldi; adimadim kullanmaz
+snap gnome-46-2404          # aynı
+snap mesa-2404              # aynı

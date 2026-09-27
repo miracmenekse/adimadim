@@ -1,0 +1,29 @@
+Şimdi CSR 360 ekranında müşterinin Freedom faturalı hattına ait product'a tıklıyoruz, product detail sayfası açılıyor.
+Burada sağ üstteki Manage butonuna basıyoruz ve BI listesi geliyor.
+Listeden Device Upgrade'i seçiyoruz, karşımıza iki seçenekli bir pop-up çıkıyor.
+Change the plan seçeneğini seçip ilerliyoruz, Qualification API uygun planları getiriyor.
+Müşteriye uygun olan Fizz tarifesini seçiyoruz ve Next'e basıyoruz.
+Qualification bu kez seçilen plana ve müşterinin mevcut device'ına göre çalışıyor, uygun device'lar listeleniyor.
+Device'ı seçince Configurator aksesuar ve coverage ürünlerini shopping cart'a otomatik ekliyor.
+Payment adımında taksitli ödemeyi ve ödeme koşullarını seçip Submit'e basıyoruz, süreç tamamlanıyor.
+CSR sayfasında müşterinin Darwin ön ödemeli hattını açıp product detail ekranına geçiyoruz.
+Manage butonuna tıklıyoruz, business interaction'lar listeleniyor ve Device Upgrade'i seçiyoruz.
+Açılan pop-up'ta Continue without plan change diyoruz, plan seçim adımı atlanıyor.
+Qualification müşterinin mevcut planına ve device'ına göre çalışıyor, sadece uygun device'lar geliyor.
+Burada Number/SIM card için shopping cart üzerinde eksik kontrol var, bunu RM ticket olarak açıyoruz.
+Device'ı seçtikten sonra RIM stok bilgisini kontrol ediyor, Resource Inventory Management tarafında cihaz rezerve ediliyor.
+Peşin ödemeyi seçip Submit'e basıyoruz; BI tarafında bir hata çıkarsa Root ekibine iletiyoruz.
+Müşteri call center'ı arıyor ve bir CSR'a bağlanıyor.
+CSR müşterinin CSR 360 ekranına giriyor, ekranda bir toaster çıkıyor.
+Toaster'dan sonra otomatik olarak bir interaction başlıyor ve sağdaki drawer'da filtreleme modunda açılıyor.
+Açık olan yeni kayda tıklıyoruz, kayıt detail modunda açılıyor.
+Category olarak Fatura, sub category olarak Fatura İtirazı, reason olarak Yanlış Ücretlendirme, channel olarak Call Center seçiyoruz.
+Sistem Add Note butonunu aktifleştiriyor; Add Note'a basıp müşterinin itirazını not olarak yazıyoruz.
+Save and Close ile interaction'ı kapatıyoruz, sistem ana interaction ile notu parent-child olarak bağlıyor.
+Dhiragu müşterisi call center'ı arıyor, CSR çağrıyı alıp CSR sayfasını açıyor.
+Toaster görünüyor ve interaction drawer'da filtreleme modunda kendiliğinden açılıyor.
+Yeni kaydı detail modunda açıp category olarak Account Management'ı seçiyoruz.
+Sub category, reason ve channel alanlarını doldurunca Add Note aktif oluyor.
+Notta, ECA modülündeki adres değişikliği command'ının çalışmadığını yazıyoruz.
+Bu hata New BI geliştirmeleri kapsamında, Etiya Buddy üzerinden RM ticket açılıyor.
+Save and Close ile kapattığımızda notlar ana interaction'a child olarak bağlanıyor ve Unit Peace dashboard'unda görünüyor.

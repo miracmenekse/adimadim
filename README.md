@@ -5,7 +5,8 @@ sonunda elinde kullanım senaryosu (.md + .docx) olan yerel araç. Görüntüler
 ses kayıtları makineden çıkmaz.
 
 **İlk kez mi kuruyorsun?** VM'de geliştirme ve ana makinede kullanım düzeninin adım adım kurulumu:
-[CALISMA_DUZENI.md](CALISMA_DUZENI.md).
+[CALISMA_DUZENI.md](CALISMA_DUZENI.md). Aynı düzeni her projeye taşıyan Claude Code becerisi:
+[beceriler/vm-ana-makine](beceriler/vm-ana-makine/SKILL.md).
 
 ## Kurulum (VM'de ve ana makinede aynı)
 
