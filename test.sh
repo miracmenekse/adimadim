@@ -17,6 +17,13 @@ echo "== 2/3 Uçtan uca akış (sahte ekran, mikrofon ve model)"
 "$PY" "$REPO/testler/duman_testi.py" || HATA=1
 
 echo "== 3/3 Konuşma tanıma doğruluğu (gerçek model)"
+# Araç OpenVINO açılamazsa sessizce faster-whisper'a düşer; burada yedeksiz yüklenmeli.
+if "$PY" -c "import sys; sys.path.insert(0, '$REPO/testler'); import stt_olc; a = stt_olc.adimadim.ayarlari_oku()
+if str(a.get('stt', 'openvino')).lower() == 'openvino':
+    stt_olc.adimadim.openvino_cevirici(a, str(a.get('cihaz') or 'CPU').upper()); print('✓ OpenVINO modeli yüklendi:', a.get('ov_model'), a.get('cihaz'))"; then :
+else
+  echo "✗ OpenVINO modeli yüklenemedi (araç faster-whisper'a düşerdi)"; HATA=1
+fi
 if compgen -G "$REPO/testler/ses/*.wav" >/dev/null; then
   "$PY" "$REPO/testler/stt_olc.py" || HATA=1
 else
