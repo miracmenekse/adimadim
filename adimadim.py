@@ -110,7 +110,9 @@ def ayarlari_oku() -> dict:
             bildir(f"ayar.json okunamadı ({hata}); varsayılanlar kullanılıyor.")
     else:
         AYAR_DOSYASI.write_text(json.dumps(ayar, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    ayar["klasor"] = ayar.get("klasor") or str(belgeler_dizini() / "adimadim")
+    # Göreli yol ev dizinine göre: kısayol (GNOME) ile terminal farklı dizinlerden çalışır.
+    klasor = Path(ayar.get("klasor") or belgeler_dizini() / "adimadim").expanduser()
+    ayar["klasor"] = str(klasor if klasor.is_absolute() else Path.home() / klasor)
     ayar["cihaz"] = str(ayar.get("cihaz") or "CPU").upper()
     return ayar
 

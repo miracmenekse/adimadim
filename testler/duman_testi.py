@@ -150,9 +150,9 @@ def ortam_kur(kok: Path) -> dict:
     return env
 
 
-def calistir(env: dict, *arglar: str, beklenen: int = 0, **ek) -> subprocess.CompletedProcess:
+def calistir(env: dict, *arglar: str, beklenen: int = 0, cwd=None, **ek) -> subprocess.CompletedProcess:
     r = subprocess.run([PY, str(ARAC), *arglar], env={**env, **ek}, capture_output=True,
-                       text=True, timeout=120)
+                       text=True, timeout=120, cwd=cwd)
     if r.returncode != beklenen:
         print(f"    komut: adimadim {' '.join(arglar)} → çıkış {r.returncode} (beklenen {beklenen})")
         print("    " + (r.stdout + r.stderr).strip().replace("\n", "\n    "))
@@ -250,6 +250,21 @@ def ipucu_ve_duzeltme(env: dict, kok: Path) -> None:
             "düzeltmeler.txt + .local uygulanıyor, Türkçe ek korunuyor")
 
 
+def goreli_klasor(env: dict, kok: Path) -> None:
+    print("Göreli doküman klasörü (kısayol terminalden farklı dizinde çalışır)")
+    dizin = kok / "goreli-ayar" / "adimadim"
+    dizin.mkdir(parents=True)
+    ayar = json.loads((kok / "home" / ".config" / "adimadim" / "ayar.json").read_text())
+    (dizin / "ayar.json").write_text(json.dumps({**ayar, "klasor": "goreli-belgeler"}))
+    terminal, kisayol = kok / "terminal", kok / "home"
+    terminal.mkdir()
+    ek = {"XDG_CONFIG_HOME": str(dizin.parent)}
+    calistir(env, "basla", "Göreli", cwd=terminal, **ek)
+    kontrol(calistir(env, "cek", cwd=kisayol, **ek).returncode == 0, "başka dizinden 'cek' açık dokümanı buluyor")
+    kontrol((kok / "home" / "goreli-belgeler").is_dir(), "göreli klasör ev dizinine göre")
+    calistir(env, "bitir", cwd=terminal, **ek)
+
+
 def kisayollar(env: dict, kok: Path) -> None:
     print("GNOME kısayolları")
     kok_yol = "/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/"
@@ -276,6 +291,7 @@ def main() -> int:
             sesli_akis(env)
             yedek_motor(env, kok)
             ipucu_ve_duzeltme(env, kok)
+            goreli_klasor(env, kok)
             kisayollar(env, kok)
         finally:
             kayitcilari_temizle(kok)

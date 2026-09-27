@@ -2,6 +2,15 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.3.1 — göreli doküman klasörü düzeltmesi (2026-09-27)
+
+- `klasor` ayarı göreli bir yolsa (ör. `...`) doküman terminalin bulunduğu dizine göre açılıyor,
+  Ctrl+Alt+S ise GNOME'dan ev dizininde çalıştığı için "Açık doküman yok" diyordu. Göreli yol artık ev
+  dizinine göre çözülür. Duman testine kontrol eklendi.
+
+**Ana makinede yapılacaklar:** `cd ~/adimadim && git pull`; `~/.config/adimadim/ayar.json`'daki
+`klasor` değerini `""` (Belgeler/adimadim) ya da mutlak bir yol yap.
+
 ## v0.3.0 — model kararı, doğruluk katmanları, Rovo (2026-09-27)
 
 v0.2.0 ayrıca etiketlenmedi; model kararı (Faz 4) bu sürümde.
