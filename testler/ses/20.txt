@@ -1,0 +1,1 @@
+Category olarak Fatura, sub category olarak Fatura İtirazı, reason olarak Yanlış Ücretlendirme, channel olarak Call Center seçiyoruz.

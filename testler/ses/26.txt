@@ -1,0 +1,1 @@
+Sub category, reason ve channel alanlarını doldurunca Add Note aktif oluyor.

@@ -1,0 +1,1 @@
+Notta, ECA modülündeki adres değişikliği command'ının çalışmadığını yazıyoruz.

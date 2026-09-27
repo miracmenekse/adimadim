@@ -1,0 +1,1 @@
+Save and Close ile interaction'ı kapatıyoruz, sistem ana interaction ile notu parent-child olarak bağlıyor.

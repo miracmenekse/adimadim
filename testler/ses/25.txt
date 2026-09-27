@@ -1,0 +1,1 @@
+Yeni kaydı detail modunda açıp category olarak Account Management'ı seçiyoruz.

@@ -1,0 +1,1 @@
+Toaster görünüyor ve interaction drawer'da filtreleme modunda kendiliğinden açılıyor.

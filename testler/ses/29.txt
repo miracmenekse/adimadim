@@ -1,0 +1,1 @@
+Save and Close ile kapattığımızda notlar ana interaction'a child olarak bağlanıyor ve Unit Peace dashboard'unda görünüyor.

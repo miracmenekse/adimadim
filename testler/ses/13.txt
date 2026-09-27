@@ -1,0 +1,1 @@
+Burada Number/SIM card için shopping cart üzerinde eksik kontrol var, bunu RM ticket olarak açıyoruz.

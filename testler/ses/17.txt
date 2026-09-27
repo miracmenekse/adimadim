@@ -1,0 +1,1 @@
+CSR müşterinin CSR 360 ekranına giriyor, ekranda bir toaster çıkıyor.

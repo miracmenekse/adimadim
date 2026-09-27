@@ -1,0 +1,1 @@
+Peşin ödemeyi seçip Submit'e basıyoruz; BI tarafında bir hata çıkarsa Root ekibine iletiyoruz.

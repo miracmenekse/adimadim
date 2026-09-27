@@ -1,0 +1,1 @@
+Sistem Add Note butonunu aktifleştiriyor; Add Note'a basıp müşterinin itirazını not olarak yazıyoruz.

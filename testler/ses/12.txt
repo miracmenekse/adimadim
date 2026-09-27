@@ -1,0 +1,1 @@
+Qualification müşterinin mevcut planına ve device'ına göre çalışıyor, sadece uygun device'lar geliyor.

@@ -1,0 +1,1 @@
+Qualification bu kez seçilen plana ve müşterinin mevcut device'ına göre çalışıyor, uygun device'lar listeleniyor.

@@ -1,0 +1,1 @@
+Device'ı seçtikten sonra RIM stok bilgisini kontrol ediyor, Resource Inventory Management tarafında cihaz rezerve ediliyor.

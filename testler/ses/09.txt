@@ -1,0 +1,1 @@
+CSR sayfasında müşterinin Darwin ön ödemeli hattını açıp product detail ekranına geçiyoruz.

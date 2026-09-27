@@ -1,0 +1,1 @@
+Payment adımında taksitli ödemeyi ve ödeme koşullarını seçip Submit'e basıyoruz, süreç tamamlanıyor.

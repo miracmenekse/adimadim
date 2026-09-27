@@ -1,0 +1,1 @@
+Toaster'dan sonra otomatik olarak bir interaction başlıyor ve sağdaki drawer'da filtreleme modunda açılıyor.
