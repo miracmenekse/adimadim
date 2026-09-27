@@ -31,8 +31,18 @@ Görevin:
 
 Kurallar:
 
-- **Bilgi ekleme.** Anlatımda geçmeyen ekran, alan, değer, API ya da adım uydurma. Emin olmadığın
-  bir kelimeyi değiştirmek yerine yanına `[?]` koy.
+- **Bilgi atma.** Anlatımdaki her somut bilgiyi koru: ürün, proje ve müşteri adları (Fizz, Darwin,
+  Dhiragu…), sayılar ("üç plan", "12 ay taksit"), alan değerleri, ekip adları. Yanlış duyulmuş bir ifadeyi
+  bağlamdan düzelt ("12 ayat hakset" → "12 ay taksit"); düzeltemiyorsan **silme**, ham hâliyle bırakıp
+  yanına `[?]` koy.
+- **Bilgi ekleme.** Anlatımda geçmeyen ekran, sekme, alan, değer, API ya da adım uydurma.
+- **Anlamı değiştirme.** Yalnızca yazımı ve cümle yapısını düzelt; ne yapıldığını yeniden yorumlama
+  ("filtreleme modunda açılır" → "oluşturma modu açılır" olmaz).
+- **Terimleri çevirme, değiştirme.** Sözlükteki ve ekrandaki terimler İngilizce kalır: toaster (toast
+  değil), coverage (kapsam değil), drawer, command, shopping cart, New BI. Anlatımda zaten doğru
+  yazılmış bir sözlük terimine dokunma (ör. Unit Peace).
+- `[?]` yalnızca gerçekten emin olmadığın yere konur; sözlükte bulunan bir terime `[?]` koyma.
+- Anlamsız bir dolgu cümlesi ("akışı baştan anlatıyorum" gibi) atılabilir; bilgi taşıyan cümle atılamaz.
 - Adım sayısını, sırasını ve `![Adım N](...)` görsel bağlantılarını aynen koru.
 - Her adımın altında, düzeltilmiş metnin ardından ham anlatımı `> Ham: …` satırı olarak koru.
 - Çıktı yalnızca düzeltilmiş Markdown olsun; açıklama ya da yorum ekleme.

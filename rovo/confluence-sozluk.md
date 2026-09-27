@@ -53,6 +53,9 @@ dokümanları bu sayfaya göre düzeltir. Yeni bir hata gördüğünde tabloya s
 | Nibia, nevi ay | New BI |
 | etiyebadi, Etiya badi | Etiya Buddy |
 | unit piece, Unutpece | Unit Peace |
+| toster | toaster (toast değil) |
+| filtrinin modu, filtre ile ve modu | filtreleme modu |
+| yeni BI | New BI |
 
 ## Ekran ve süreç terimleri (yazımı ekrandaki gibi)
 
@@ -63,3 +66,5 @@ product detail, Manage, business interaction, Device Upgrade, pop-up, Change the
 - "bir ay" gerçekten "bir ay" (süre) da olabilir; yalnızca bağlam BI modülünü gösteriyorsa BI yaz.
 - "siyasal" bağlama göre CSR, CSR sayfası ya da CSR 360 olur: müşteri ekranı kastediliyorsa CSR 360.
 - "Ece" bir kişi adı da olabilir; modül kastediliyorsa ECA yaz.
+- Ekran terimleri çevrilmez: toaster, coverage, drawer, command, shopping cart İngilizce kalır.
+- Interaction drawer'da iki mod vardır: **filtreleme modu** (ilk açılış) ve **detail modu** (kayda tıklanınca).

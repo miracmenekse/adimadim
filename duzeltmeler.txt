@@ -9,3 +9,5 @@ komanda → command
 siyasar → CSR
 save & close → Save and Close
 addnote → Add Note
+komand → command
+toster → toaster
