@@ -1,0 +1,1 @@
+Açılan pop-up'ta bu sefer Change the plan seçeneğiyle ilerliyoruz. Qualification API müşteriye uygun üç plan getiriyor. Ben en yüksek paketi seçiyorum ve Next'e basıyorum, sistem bir sonraki adımda uygun device'ları listeliyor.

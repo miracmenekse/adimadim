@@ -1,0 +1,1 @@
+Payment adımında müşteri on iki ay taksit istiyor. Ödeme koşullarını seçip Submit'e basıyoruz. Eğer bu adımda BI tarafında bir hata alırsak ekran görüntüsüyle birlikte RM ticket açıp Root ekibine atıyoruz.

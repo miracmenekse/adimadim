@@ -1,0 +1,1 @@
+Detail modunda category olarak Device, sub category olarak Arıza, reason olarak Ekran Kırılması ve channel olarak Call Center seçiyoruz. Bu dört alan dolunca sistem Add Note butonunu aktif hale getiriyor.

@@ -1,0 +1,1 @@
+Şimdi Interaction Management tarafına geçiyoruz. Müşteri call center'ı aradığında CSR ekranında bir toaster çıkıyor ve sağdaki drawer'da yeni bir interaction filtreleme modunda açılıyor. Kayda tıklayınca detail moduna geçiyoruz.

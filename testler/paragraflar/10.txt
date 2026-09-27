@@ -1,0 +1,1 @@
+Son olarak Admin toolbox üzerinden Dhiragu müşterisinin ayarlarını güncelliyoruz. Unit Peace dashboard'unda reports / dashboards sekmesine geçip değişikliğin yansıdığını doğruluyoruz ve Etiya Buddy'de ilgili kaydı kapatıyoruz.

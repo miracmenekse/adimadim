@@ -1,0 +1,1 @@
+Geliştiriciler Windsurf ile Low-code bileşenleri üzerinde çalışıyor. Yeni command yapısını önce playground ortamında deniyoruz, ardından Hexagonal architecture kurallarına uygun olup olmadığını kod incelemesinde kontrol ediyoruz.

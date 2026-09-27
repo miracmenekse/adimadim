@@ -1,0 +1,1 @@
+Device listesinde stokta olmayan cihazlar gri görünüyor. Burada RIM, yani Resource Inventory Management tarafı stok bilgisini anlık getiriyor. Uygun bir device seçince Configurator, coverage ürünlerini shopping cart'a kendiliğinden ekliyor.

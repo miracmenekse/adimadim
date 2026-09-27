@@ -1,0 +1,1 @@
+Add Note'a basıp müşterinin anlattıklarını not olarak giriyoruz, sonra Save and Close diyoruz. Sistem ana interaction ile notu parent-child ilişkisiyle bağlıyor, böylece Account Management ekranından da geçmişe bakılabiliyor.

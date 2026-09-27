@@ -1,0 +1,1 @@
+Device Upgrade akışını baştan anlatıyorum. CSR 360 ekranında müşterinin Fizz hattını buluyoruz ve product detail sayfasını açıyoruz. Sağ üstteki Manage butonuna tıklayınca business interaction listesi geliyor, buradan Device Upgrade'i seçiyoruz.
