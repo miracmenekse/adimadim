@@ -231,6 +231,13 @@ def sesli_akis(env: dict) -> None:
     kontrol(r.returncode == 0 and (oturum / "Paket Değişikliği.md.yedek").exists(), "yeniden: yedek alıp tekrar çevirdi")
     r = calistir(env, "cevir", str(oturum / "ses" / "adim-01.wav"))
     kontrol("sahte çeviri CPU" in r.stdout, "cevir komutu")
+    md = oturum / "Paket Değişikliği.md"  # Rovo'nun işlenmiş çıktısı kopyalanmış gibi: bağlantı ve ### yok
+    md.write_text("Paket Değişikliği\n\nAna akış\nAdım 1\nPreview unavailable\nKullanıcı tıklar.\n"
+                  "Adım 2\nPreview unavailable\nSistem gösterir.\n", encoding="utf-8")
+    calistir(env, "word", str(oturum))
+    metin = md.read_text(encoding="utf-8")
+    kontrol("### Adım 2\n\n![Adım 2](gorseller/adim-02.png)" in metin and "Preview unavailable" not in metin,
+            "word: kopyalanan Rovo çıktısına görseller geri konuyor")
 
 
 def yedek_motor(env: dict, kok: Path) -> None:

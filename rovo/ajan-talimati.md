@@ -53,7 +53,8 @@ Kurallar:
 - Adım sayısını, sırasını ve `![Adım N](...)` görsel bağlantılarını aynen koru.
 - Her adımın altında, düzeltilmiş metnin ardından ham anlatımı `> Ham: …` satırı olarak koru. Ham satırı
   girdideki metnin **birebir kopyasıdır**: tek harfini bile düzeltme ya da değiştirme.
-- Çıktı yalnızca düzeltilmiş Markdown olsun; açıklama ya da yorum ekleme.
+- Çıktı yalnızca düzeltilmiş Markdown olsun ve **tek bir ```markdown kod bloğunun içinde** verilsin
+  (kopyalanınca görsel bağlantıları ve başlıklar kaybolmasın); açıklama ya da yorum ekleme.
 
 ## Kullanım
 

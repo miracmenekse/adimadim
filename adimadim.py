@@ -203,6 +203,26 @@ def md_bul(oturum: Path) -> Path | None:
     return adaylar[0] if adaylar else None
 
 
+def gorselleri_geri_koy(md: Path) -> None:
+    """Rovo'nun işlenmiş çıktısı kopyalanınca görsel bağlantıları ve ### başlıkları kaybolur.
+    "Adım N" satırlarını başlık yapar, görseli eksikse altına ekler, "Preview unavailable" satırlarını atar."""
+    metin = md.read_text(encoding="utf-8")
+    satirlar_, degisti = [], False
+    for satir in metin.splitlines():
+        if satir.strip() == "Preview unavailable":
+            degisti = True
+            continue
+        m = re.fullmatch(r"\s*(?:#+\s*)?Adım (\d+)\s*", satir)
+        gorsel = f"gorseller/adim-{int(m.group(1)):02d}.png" if m else ""
+        if m and gorsel not in metin and (md.parent / gorsel).exists():
+            satirlar_ += [f"### Adım {m.group(1)}", "", f"![Adım {m.group(1)}]({gorsel})", ""]
+            degisti = True
+        else:
+            satirlar_.append(satir)
+    if degisti:
+        md.write_text("\n".join(satirlar_) + "\n", encoding="utf-8")
+
+
 def word_uret(oturum: Path) -> bool:
     md = md_bul(oturum)
     if md is None:
@@ -211,6 +231,7 @@ def word_uret(oturum: Path) -> bool:
     if not shutil.which("pandoc"):
         bildir(f"Markdown hazır: {md}\nWord için: sudo apt install pandoc")
         return False
+    gorselleri_geri_koy(md)
     docx = md.with_suffix(".docx")
     # hard_line_breaks: notlardaki satır sonları Word'de de korunsun (Obsidian'daki gibi)
     komut = ["pandoc", f"./{md.name}", "-f", "markdown-implicit_figures+hard_line_breaks",

@@ -2,6 +2,13 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.4.1 — Rovo çıktısından Word (2026-09-28)
+
+- `adimadim word`: Rovo'nun işlenmiş çıktısı kopyalanınca kaybolan görsel bağlantılarını ve `### Adım N`
+  başlıklarını geri koyar, "Preview unavailable" satırlarını atar. Rovo talimatı: çıktı tek markdown kod bloğunda.
+
+**Ana makinede yapılacaklar:** `cd ~/adimadim && git pull`; Rovo talimatının son kuralını güncelle.
+
 ## v0.4.0 — adımlar birlikte çevrilir (2026-09-28)
 
 - **Sorun (gerçek kullanımda görüldü):** kullanıcı konuşurken Ctrl+Alt+S'ye basınca cümle iki dosyaya
