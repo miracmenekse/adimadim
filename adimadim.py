@@ -7,7 +7,7 @@ notlar ve ses kayıtları makineden hiçbir yere gönderilmez.
 Komutlar
   adimadim basla "Akış adı" [--ses]  yeni doküman başlatır
                                       --ses: adımları sesle anlat (yerel Whisper)
-  adimadim cek                       ekran görüntüsü al, yeni adım ekle  (Ctrl+Alt+S)
+  adimadim cek [--tam]               ekran görüntüsü al, yeni adım ekle  (Ctrl+Alt+S)
   adimadim not                       son adımın notunu yaz / düzenle     (Ctrl+Alt+N)
   adimadim geri                      son adımı sil
   adimadim durum                     açık dokümanı göster
@@ -585,7 +585,7 @@ def cmd_cek(args, ayar) -> int:
         no = len(veri["adimlar"]) + 1
         adim = {"id": uuid.uuid4().hex[:8], "gorsel": f"gorseller/adim-{no:02d}.png",
                 "ses": None, "ses_metni": None, "not": ""}
-        if not ekran_goruntusu(oturum / adim["gorsel"], ayar.get("ekran", "pencere")):
+        if not ekran_goruntusu(oturum / adim["gorsel"], "tam" if args.tam else ayar.get("ekran", "pencere")):
             bildir("Ekran görüntüsü alınamadı. Kurulu mu: sudo apt install gnome-screenshot")
             return 1
         if veri["mod"] == "ses":
@@ -791,7 +791,8 @@ def main(argv: list[str] | None = None) -> int:
     p = alt.add_parser("basla", help="yeni doküman başlat")
     p.add_argument("baslik", nargs="*", help="akışın adı")
     p.add_argument("--ses", action="store_true", help="adımları sesle anlat (yerel Whisper)")
-    alt.add_parser("cek", help="ekran görüntüsü al, yeni adım ekle (Ctrl+Alt+S)")
+    p = alt.add_parser("cek", help="ekran görüntüsü al, yeni adım ekle (Ctrl+Alt+S)")
+    p.add_argument("--tam", action="store_true", help="ayardan bağımsız tüm ekranı çek (bölge seçimi için)")
     alt.add_parser("not", help="son adımın notunu yaz/düzenle (Ctrl+Alt+N)")
     alt.add_parser("geri", help="son adımı sil")
     alt.add_parser("durum", help="açık dokümanı göster")

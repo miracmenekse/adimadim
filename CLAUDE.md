@@ -68,7 +68,9 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   Gerekirse modüllere bölünebilir; komut satırı arayüzü korunmalı.
 - `arayuz.py`: tkinter pencere, üç ekran (Başla → Kayıt: ekran önizlemeleri → Bitiş: .md önizlemesi).
   Düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır (çıktı `arayuz.log`'a, `ADIMADIM_ARAYUZ=1`
-  ile `bitir` klasör açmaz); durum oturum.json'u yoklayarak gösterilir, işlem sürerken bekleme çubuğu. Uygulama menüsü girdisini kur.sh yazar.
+  ile `bitir` klasör açmaz); durum oturum.json'u yoklayarak gösterilir, işlem sürerken bekleme çubuğu.
+  `Duzenleyici`: Pillow ile kırp/kutu/ok/yazı (orijinal `gorseller/.orijinal/`); bitiş ekranında
+  MD'yi kopyala ve Rovo alanı (.md'ye yazar, `word` çalıştırır). Uygulama menüsü girdisini kur.sh yazar.
 - Oturum klasörü: `oturum.json` (kaynak), `gorseller/`, `ses/`, `<Başlık>.md`, `<Başlık>.docx`.
   Oturum açıkken .md her kayıtta oturum.json'dan yeniden üretilir; bitince .md elle düzenlenebilir,
   `word` komutu .docx'i ondan üretir.

@@ -305,7 +305,8 @@ import arayuz as u
 assert "Ctrl+Alt+S" in u.ipucu({"adimlar": []}, False)
 if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
     print("ekran yok, pencere atlandı"); sys.exit(0)
-kok = tk.Tk(); p = u.Pencere(kok)
+kok = tk.Tk(); kok.withdraw(); kok.deiconify = lambda: None  # test sırasında pencere görünmesin
+p = u.Pencere(kok)
 def bekle(*komut):
     p.calistir(*komut); p.surec.wait(); p.guncelle(tekrar=False); kok.update()
 assert p.ekran == "basla", p.ekran
@@ -313,16 +314,33 @@ p.baslik.set("Pencere testi"); p.mod.set("yazi"); p.basla(); p.surec.wait(); p.g
 assert p.ekran == "kayit" and "Adım 0" in p.kayit_baslik["text"], p.kayit_baslik["text"]
 bekle("cek")
 assert "Adım 1" in p.kayit_baslik["text"] and len(p.resimler) == 1 and p.resimler[0], "çekilen ekran önizlemede"
+gorsel = u.a.aktif_oturum() / "gorseller/adim-01.png"
+from PIL import Image
+g0 = Image.open(gorsel).size
+d = u.Duzenleyici(kok, gorsel); d.withdraw()
+d.isaretler = [("kutu", (10, 10, 100, 60), "", []), ("ok", (200, 200, 120, 120), "", []),
+               ("yazi", (30, 30), "Buraya tıkla", []), ("kirp", (0, 0, 400, 300), "", [])]
+d.kaydet()
+assert Image.open(gorsel).size == (400, 300) and (gorsel.parent / ".orijinal/adim-01.png").exists(), "kırp + işaretle, orijinal saklandı"
+assert Image.open(gorsel).getpixel((50, 10))[0] > 200, "kırmızı kutu çizildi"
+p.guncelle(tekrar=False)
 bekle("bitir")
 assert p.ekran == "bitis" and u.a.aktif_oturum() is None, "Bitir → bitiş ekranı"
 assert "Adım 1" in p.onizleme.get("1.0", "end") and p.onizleme.image_names(), "doküman önizlemesi görselli"
 assert "Hazır" in u.son_satir(), u.son_satir()
+md = u.a.md_bul(p.bitmis)
+p.md_kopyala(); assert kok.clipboard_get() == md.read_text(encoding="utf-8"), "MD'yi kopyala"
+p.rovo.insert("1.0", "```markdown\\n# Resmî\\n\\nAdım 1\\n\\nKullanıcı ekranı açar.\\n```")
+p.rovo_uygula(); p.surec.wait(); p.guncelle(tekrar=False)
+yeni = md.read_text(encoding="utf-8")
+assert "```" not in yeni and "Kullanıcı ekranı açar." in yeni and "![Adım 1](gorseller/adim-01.png)" in yeni, yeni
+assert md.with_name(md.name + ".yedek").exists() and "Kullanıcı ekranı açar." in p.onizleme.get("1.0", "end"), "Rovo alanı .md + Word"
 p.yeni(); assert p.ekran == "basla"
 kok.destroy(); print("pencere tamam")
 """
     r = subprocess.run([PY, "-c", betik, str(REPO)], env={**env, "ZENITY_METIN": "Pencereden not."},
                        capture_output=True, text=True, timeout=120)
-    kontrol(r.returncode == 0, "arayüz: başla → önizlemeli kayıt → bitir → bitiş önizlemesi"
+    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı"
             + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-400:]})"))
     print("    " + r.stdout.strip())
 

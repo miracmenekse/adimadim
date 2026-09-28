@@ -17,7 +17,8 @@ Repoyu klonladıktan sonra (klonlama ve GitHub erişimi: CALISMA_DUZENI.md):
 
 ## Kullanım
 
-Uygulama menüsünden **adımadım**'ı aç: bütün adımlar düğmelerle yapılır. Komut satırı da aynen çalışır:
+Uygulama menüsünden **adımadım**'ı aç: bütün adımlar düğmelerle yapılır. Çekilen görsele tıklayınca kırpılabilir, üzerine kutu/ok/yazı eklenebilir;
+bitiş ekranında .md panoya kopyalanır ve Rovo çıktısı yapıştırılınca .md ile Word güncellenir. Komut satırı da aynen çalışır:
 
     adimadim basla "Sipariş iptal akışı"      # sesle anlatmak için sonuna --ses
     Ctrl+Alt+S                                # her ekranda: görüntü al, notunu yaz / anlat

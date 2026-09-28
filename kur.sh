@@ -21,8 +21,8 @@ if [ -r /etc/os-release ]; then . /etc/os-release; fi
 [ "${VERSION_ID:-}" = "22.04" ] || uyari "Ubuntu 22.04 bekleniyordu, bulunan: ${PRETTY_NAME:-bilinmiyor}. Devam ediliyor."
 # Aracın çağırdığı her dış komutun paketi burada; ana makinenin kurulumu eksik olabilir, hiçbiri varsayılmaz.
 # xdg-utils: xdg-open · xdg-user-dirs: xdg-user-dir · libglib2.0-bin: gsettings (kısayollar)
-# python3-tk: düğmeli pencere (arayuz.py)
-PAKETLER=(python3-venv python3-tk git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
+# python3-tk: düğmeli pencere (arayuz.py) · fonts-dejavu-core: görsele yazılan işaret yazısı
+PAKETLER=(python3-venv python3-tk fonts-dejavu-core git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
           xdg-utils xdg-user-dirs libglib2.0-bin)
 EKSIK=()
 for p in "${PAKETLER[@]}"; do

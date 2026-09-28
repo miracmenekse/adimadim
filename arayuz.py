@@ -11,9 +11,11 @@ import re
 import subprocess
 import sys
 import time
+import math
+import shutil
 import tkinter as tk
 from pathlib import Path
-from tkinter import ttk
+from tkinter import simpledialog, ttk
 
 import adimadim as a
 
@@ -43,8 +45,15 @@ def ipucu(veri: dict, kayit: bool) -> str:
     if not veri["adimlar"]:
         return "Adım 0: belgeleyeceğin ilk ekrana geç ve Ctrl+Alt+S'ye bas (ya da 'Ekranı çek')."
     if kayit:
-        return "Anlatman kaydediliyor. Cümleni bitir, sonraki ekrana geç, Ctrl+Alt+S. Son ekrandan sonra 'Bitir'."
+        return "Görsele tıkla: kırp / işaretle. Anlatman kaydediliyor. Cümleni bitir, sonraki ekrana geç, Ctrl+Alt+S. Son ekrandan sonra 'Bitir'."
     return "Sonraki ekrana geç, Ctrl+Alt+S. Hepsi bitince 'Bitir'."
+
+
+def mtime(yol: Path) -> float:
+    try:
+        return yol.stat().st_mtime
+    except OSError:
+        return 0.0
 
 
 def kucult(yol: Path, genislik: int) -> tk.PhotoImage | None:
@@ -55,6 +64,129 @@ def kucult(yol: Path, genislik: int) -> tk.PhotoImage | None:
         return None
     oran = max(1, -(-resim.width() // genislik))
     return resim.subsample(oran) if oran > 1 else resim
+
+
+YAZI_TIPI = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # fonts-dejavu-core (kur.sh)
+KIRMIZI = "#e53935"
+
+
+def isaretleri_uygula(yol: Path, isaretler: list) -> None:
+    """İşaretleri (görselin kendi piksel koordinatlarında) çizer, kırpma varsa en son kırpar.
+    İlk düzenlemede orijinal görsel gorseller/.orijinal/ altına saklanır."""
+    from PIL import Image, ImageDraw, ImageFont
+    yedek = yol.parent / ".orijinal" / yol.name
+    if not yedek.exists():
+        yedek.parent.mkdir(exist_ok=True)
+        shutil.copy2(yol, yedek)
+    resim = Image.open(yol).convert("RGB")
+    ciz = ImageDraw.Draw(resim)
+    kalin = max(3, resim.width // 400)
+    try:
+        yazi_tipi = ImageFont.truetype(YAZI_TIPI, max(18, resim.height // 35))
+    except OSError:
+        yazi_tipi = ImageFont.load_default()
+    kirp = None
+    for tur, k, metin in isaretler:
+        if tur == "kirp":
+            kirp = (min(k[0], k[2]), min(k[1], k[3]), max(k[0], k[2]), max(k[1], k[3]))
+        elif tur == "kutu":
+            ciz.rectangle((min(k[0], k[2]), min(k[1], k[3]), max(k[0], k[2]), max(k[1], k[3])),
+                          outline=KIRMIZI, width=kalin)
+        elif tur == "ok":
+            ciz.line(k, fill=KIRMIZI, width=kalin)
+            aci, boy = math.atan2(k[3] - k[1], k[2] - k[0]), kalin * 6
+            ciz.polygon([(k[2], k[3])] + [(k[2] - boy * math.cos(aci + d), k[3] - boy * math.sin(aci + d))
+                                           for d in (0.45, -0.45)], fill=KIRMIZI)
+        elif tur == "yazi":
+            ciz.text((k[0], k[1]), metin, fill=KIRMIZI, font=yazi_tipi, stroke_width=2, stroke_fill="white")
+    if kirp and kirp[2] - kirp[0] > 5 and kirp[3] - kirp[1] > 5:
+        resim = resim.crop(kirp)
+    resim.save(yol)
+
+
+class Duzenleyici(tk.Toplevel):
+    """Görseli kırpma ve işaretleme penceresi (kutu, ok, yazı). Kaydet görseli yerinde değiştirir."""
+
+    def __init__(self, ust, yol: Path, arac: str = "kutu", bitince=None):
+        from PIL import Image, ImageTk
+        super().__init__(ust)
+        self.yol, self.bitince, self.isaretler, self.cizim = yol, bitince, [], None
+        self.title(f"Kırp / işaretle: {yol.name}")
+        self.attributes("-topmost", True)
+        resim = Image.open(yol)
+        self.oran = min(1.0, self.winfo_screenwidth() * 0.9 / resim.width,
+                        self.winfo_screenheight() * 0.75 / resim.height)
+        self.foto = ImageTk.PhotoImage(resim.resize((int(resim.width * self.oran), int(resim.height * self.oran))))
+        ust_cubuk = ttk.Frame(self, padding=4)
+        ust_cubuk.pack(fill="x")
+        self.arac = tk.StringVar(value=arac)
+        for metin, deger in (("Kırp", "kirp"), ("Kutu", "kutu"), ("Ok", "ok"), ("Yazı", "yazi")):
+            ttk.Radiobutton(ust_cubuk, text=metin, variable=self.arac, value=deger).pack(side="left", padx=4)
+        ttk.Button(ust_cubuk, text="Kaydet", command=self.kaydet).pack(side="right", padx=2)
+        ttk.Button(ust_cubuk, text="Vazgeç", command=self.destroy).pack(side="right", padx=2)
+        ttk.Button(ust_cubuk, text="Geri al", command=self.geri_al).pack(side="right", padx=2)
+        ttk.Label(self, text="Kırp/Kutu/Ok: sürükle · Yazı: tıkla, yazını gir · Kaydet'e basınca görsel değişir "
+                             "(orijinali gorseller/.orijinal/ altında saklanır)", foreground="#666").pack(anchor="w", padx=6)
+        self.tuval = tk.Canvas(self, width=self.foto.width(), height=self.foto.height(), cursor="crosshair",
+                               highlightthickness=0)
+        self.tuval.pack(padx=6, pady=6)
+        self.tuval.create_image(0, 0, image=self.foto, anchor="nw")
+        self.tuval.bind("<ButtonPress-1>", self.bas)
+        self.tuval.bind("<B1-Motion>", self.surukle)
+        self.tuval.bind("<ButtonRelease-1>", self.birak)
+        self.bind("<Control-z>", lambda _: self.geri_al())
+        self.bind("<Return>", lambda _: self.kaydet())
+        self.bind("<Escape>", lambda _: self.destroy())
+
+    def gercek(self, *k: float) -> tuple:
+        return tuple(round(v / self.oran) for v in k)
+
+    def bas(self, olay) -> None:
+        tur = self.arac.get()
+        if tur == "yazi":
+            metin = simpledialog.askstring("Yazı", "Görsele yazılacak metin:", parent=self)
+            if metin:
+                oge = self.tuval.create_text(olay.x, olay.y, text=metin, anchor="nw", fill=KIRMIZI,
+                                             font=("", 14, "bold"))
+                self.isaretler.append(("yazi", self.gercek(olay.x, olay.y), metin, [oge]))
+            return
+        if tur == "ok":
+            oge = self.tuval.create_line(olay.x, olay.y, olay.x, olay.y, fill=KIRMIZI, width=3, arrow="last")
+        else:
+            oge = self.tuval.create_rectangle(olay.x, olay.y, olay.x, olay.y, width=2 if tur == "kirp" else 3,
+                                              outline="#1e88e5" if tur == "kirp" else KIRMIZI,
+                                              dash=(6, 4) if tur == "kirp" else None)
+        self.cizim = (tur, olay.x, olay.y, oge)
+
+    def surukle(self, olay) -> None:
+        if self.cizim:
+            _, x, y, oge = self.cizim
+            self.tuval.coords(oge, x, y, olay.x, olay.y)
+
+    def birak(self, olay) -> None:
+        if not self.cizim:
+            return
+        tur, x, y, oge = self.cizim
+        self.cizim = None
+        if abs(olay.x - x) < 5 and abs(olay.y - y) < 5:  # tıklama, çizim değil
+            self.tuval.delete(oge)
+            return
+        if tur == "kirp":  # tek kırpma alanı: öncekini kaldır
+            for eski in [i for i in self.isaretler if i[0] == "kirp"]:
+                self.isaretler.remove(eski)
+                self.tuval.delete(*eski[3])
+        self.isaretler.append((tur, self.gercek(x, y, olay.x, olay.y), "", [oge]))
+
+    def geri_al(self) -> None:
+        if self.isaretler:
+            self.tuval.delete(*self.isaretler.pop()[3])
+
+    def kaydet(self) -> None:
+        if self.isaretler:
+            isaretleri_uygula(self.yol, [i[:3] for i in self.isaretler])
+        self.destroy()
+        if self.bitince:
+            self.bitince()
 
 
 def dugmeler(ust, satirlar) -> None:
@@ -68,7 +200,7 @@ class Pencere:
     def __init__(self, kok: tk.Tk):
         self.kok, self.surec, self.calisan, self.bas_zamani = kok, None, None, 0.0
         self.bitmis: Path | None = None  # bitiş ekranında gösterilen doküman
-        self.resimler, self.onizlenen, self.md_imza, self.ekran = [], None, None, None
+        self.resimler, self.onizlenen, self.md_imza, self.ekran, self.sonra = [], None, None, None, None
         kok.title(a.UYGULAMA)
         c = ttk.Frame(kok, padding=10)
         c.pack(fill="both", expand=True)
@@ -104,6 +236,7 @@ class Pencere:
         d = ttk.Frame(f)
         d.grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
         dugmeler(d, (("Ekranı çek", self.cek, "Ctrl+Alt+S ile aynı"),
+                     ("Bölge çek", lambda: self.cek(bolge=True), "Alanı seç, işaretle"),
                      ("Son adıma not yaz", lambda: self.calistir("not"), "Son ekrana yazılı açıklama ekler"),
                      ("Son adımı sil", lambda: self.calistir("geri"), "Yanlış çekilen son ekranı siler"),
                      ("Bitir", lambda: self.calistir("bitir"), "Dokümanı üretir")))
@@ -114,16 +247,26 @@ class Pencere:
         f.rowconfigure(1, weight=1)
         self.bitis_baslik = ttk.Label(f, font=("", 11, "bold"))
         self.bitis_baslik.grid(row=0, column=0, sticky="w")
-        self.onizleme = tk.Text(f, width=80, height=24, wrap="word", relief="flat", padx=8, pady=8,
+        self.onizleme = tk.Text(f, width=80, height=18, wrap="word", relief="flat", padx=8, pady=8,
                                 font=("", 10))
         self.onizleme.tag_configure("baslik", font=("", 12, "bold"), spacing1=8)
         yukari = ttk.Scrollbar(f, command=self.onizleme.yview)
         self.onizleme.configure(yscrollcommand=yukari.set)
         self.onizleme.grid(row=1, column=0, sticky="nsew", pady=4)
         yukari.grid(row=1, column=1, sticky="ns")
+        r = ttk.Frame(f)
+        r.grid(row=3, column=0, columnspan=2, sticky="we", pady=(6, 0))
+        r.columnconfigure(0, weight=1)
+        ttk.Label(r, text="Rovo çıktısını buraya yapıştır (Ctrl+V): .md ve Word kendiliğinden güncellenir",
+                  font=("", 9, "bold")).grid(row=0, column=0, sticky="w")
+        self.rovo = tk.Text(r, height=4, wrap="word", font=("", 9))
+        self.rovo.grid(row=1, column=0, sticky="we")
+        self.rovo.bind("<<Paste>>", lambda _: self.kok.after(100, self.rovo_uygula))
+        ttk.Button(r, text="Uygula", command=self.rovo_uygula).grid(row=1, column=1, sticky="ns", padx=(4, 0))
         d = ttk.Frame(f)
         d.grid(row=2, column=0, columnspan=2, sticky="w")
-        dugmeler(d, (("Word'ü aç", lambda: self.ac(".docx"), "Hazır Word dosyası"),
+        dugmeler(d, (("MD'yi kopyala", self.md_kopyala, "Rovo'ya yapıştırmak için"),
+                     ("Word'ü aç", lambda: self.ac(".docx"), "Hazır Word dosyası"),
                      ("Klasörü aç", lambda: self.ac(""), "Görseller, sesler, .md"),
                      ("Word'ü yenile", lambda: self.calistir("word", str(self.bitmis)), ".md'yi elle düzelttiysen"),
                      ("Sesi baştan çevir", lambda: self.calistir("yeniden", str(self.bitmis)), "Metni sesten yeniden yazar"),
@@ -162,11 +305,38 @@ class Pencere:
         self.bitmis = None
         self.calistir("basla", baslik, *(["--ses"] if self.mod.get() == "ses" else []))
 
-    def cek(self) -> None:
+    def cek(self, bolge: bool = False) -> None:
         if self.surec:
             return
         self.kok.withdraw()  # "pencere" kipinde arayüzün kendisi çekilmesin: odak önceki pencereye döner
-        self.kok.after(400, lambda: self.calistir("cek"))
+        if bolge:  # tüm ekranı çek, sonra düzenleyicide kırp
+            self.sonra = lambda: self.duzenle(-1, "kirp")
+        self.kok.after(400, lambda: self.calistir("cek", *(["--tam"] if bolge else [])))
+
+    def duzenle(self, sira: int, arac: str = "kutu") -> None:
+        oturum = a.aktif_oturum()
+        adimlar = a.yukle(oturum)["adimlar"] if oturum else []
+        if adimlar and not self.surec:
+            Duzenleyici(self.kok, oturum / adimlar[sira]["gorsel"], arac, bitince=lambda: self.guncelle(tekrar=False))
+
+    def md_kopyala(self) -> None:
+        md = a.md_bul(self.bitmis) if self.bitmis else None
+        if md:
+            self.kok.clipboard_clear()
+            self.kok.clipboard_append(md.read_text(encoding="utf-8"))
+            self.ipucu["text"] = "Kopyalandı. Rovo'ya yapıştır, çıktısını aşağıdaki alana yapıştır."
+
+    def rovo_uygula(self) -> None:
+        """Rovo çıktısını .md'ye yazar (öncekini .md.yedek'e alır), sonra Word'ü yeniler."""
+        metin = self.rovo.get("1.0", "end").strip()
+        metin = re.sub(r"^```[a-z]*\n|\n```$", "", metin).strip()  # Rovo tek kod bloğu döndürür
+        md = a.md_bul(self.bitmis) if self.bitmis else None
+        if not metin or not md or self.surec:
+            return
+        shutil.copy2(md, md.with_name(md.name + ".yedek"))
+        md.write_text(metin + "\n", encoding="utf-8")
+        self.rovo.delete("1.0", "end")
+        self.calistir("word", str(self.bitmis))
 
     def ac(self, uzanti: str) -> None:
         md = a.md_bul(self.bitmis) if self.bitmis else None
@@ -186,6 +356,9 @@ class Pencere:
         self.surec = self.calisan = None
         self.bekle_cubuk.stop()
         self.kok.deiconify()
+        if self.sonra:
+            self.sonra, sonra = None, self.sonra
+            sonra()
         self.md_imza = None  # word/yeniden .md'yi değiştirmiş olabilir
         if komut == "bitir":
             son = a.klasor_sec(None)
@@ -202,7 +375,7 @@ class Pencere:
         self.ekran = ad
 
     def seridi_yenile(self, oturum: Path, veri: dict) -> None:
-        imza = (oturum, tuple((x["gorsel"], bool(x.get("not"))) for x in veri["adimlar"]))
+        imza = (oturum, tuple((x["gorsel"], bool(x.get("not")), mtime(oturum / x["gorsel"])) for x in veri["adimlar"]))
         if imza == self.onizlenen:  # yalnızca adım değişince görseller yeniden yüklenir
             return
         self.onizlenen = imza
@@ -214,7 +387,9 @@ class Pencere:
             self.resimler.append(resim)
             kutu = ttk.Frame(self.serit, padding=3)
             kutu.pack(side="left")
-            ttk.Label(kutu, image=resim or "", text="" if resim else "(görsel yok)").pack()
+            gorsel = ttk.Label(kutu, image=resim or "", text="" if resim else "(görsel yok)", cursor="hand2")
+            gorsel.pack()
+            gorsel.bind("<Button-1>", lambda _, i=no - 1: self.duzenle(i))
             ek = " · not var" if adim.get("not") else (" · ses" if adim.get("ses") else "")
             ttk.Label(kutu, text=f"Adım {no}{ek}", font=("", 9)).pack()
         self.kok.update_idletasks()
@@ -243,7 +418,7 @@ class Pencere:
                 elif satir.startswith("#"):
                     t.insert("end", satir.lstrip("#").strip() + "\n", "baslik")
                 else:
-                    t.insert("end", satir.replace("**", "") + "\n")
+                    t.insert("end", re.sub(r"^(\s*)- ", r"\1• ", satir.replace("**", "")) + "\n")
         t.configure(state="disabled")
 
     def guncelle(self, tekrar: bool = True) -> None:
@@ -266,7 +441,8 @@ class Pencere:
             self.goster("bitis")
             self.bitis_baslik["text"] = f"Doküman hazır: {self.bitmis.name}"
             self.onizlemeyi_yenile()
-            self.ipucu["text"] = "Word'ü açıp kontrol et. .md'yi elle düzelttiysen 'Word'ü yenile'."
+            self.ipucu["text"] = ("Rovo ile resmîleştirmek için: 1) MD'yi kopyala  2) Rovo'ya yapıştır  "
+                                  "3) Rovo'nun çıktısını alttaki alana yapıştır. Sonra Word'ü aç ve kontrol et.")
         else:
             self.goster("basla")
             self.ipucu["text"] = "Adını yaz, sesli ya da yazılı seç, Başla'ya bas."

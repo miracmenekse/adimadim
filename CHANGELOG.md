@@ -2,6 +2,27 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.7.0 — bölge çekme, işaretleme, Rovo alanı (2026-09-28)
+
+Ana makinedeki denemeden gelen istekler:
+- **Bölge çek:** kayıt ekranındaki düğme tüm ekranı çeker, sonra kırpma/işaretleme penceresi açılır.
+  **Kırp** (alan seç), **Kutu**, **Ok**, **Yazı** (kırmızı, beyaz kenarlı), Geri al (Ctrl+Z), Kaydet (Enter).
+  Önizlemedeki herhangi bir görsele tıklayınca da aynı pencere açılır (Ctrl+Alt+S ile çekilenler dahil).
+  İlk düzenlemede orijinal görsel `gorseller/.orijinal/` altında saklanır. Flameshot yerine kendi
+  düzenleyicimiz: GNOME Wayland'de flameshot her çekimde izin sorar.
+- **Bitiş ekranı:** "MD'yi kopyala" düğmesi (panoya) ve Rovo alanı: Rovo'nun çıktısı yapıştırılınca
+  (Ctrl+V) .md güncellenir (öncekisi `.md.yedek`), kod bloğu işaretleri atılır, Word kendiliğinden yenilenir.
+- Önizlemede madde işaretleri; test sırasında pencere artık görünmez.
+- `adimadim cek --tam`: ayardan bağımsız tüm ekranı çeker.
+- kur.sh: `fonts-dejavu-core` (görsele yazılan yazı). requirements.txt: `pillow` (lock'ta zaten vardı).
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+Beklenen son satır: `SONUÇ: testler geçti`. **Ana makinede doğrula:** "Bölge çek" tüm ekranı çekip
+düzenleyiciyi açıyor; Rovo çıktısı yapıştırınca önizleme ve Word güncelleniyor.
+
 ## v0.6.0 — pencere yeniden tasarlandı, Faz 2 (2026-09-28)
 
 Ana makinedeki ilk denemeden gelen geri bildirimle:
