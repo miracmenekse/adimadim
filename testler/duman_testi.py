@@ -296,6 +296,30 @@ def kisayollar(env: dict, kok: Path) -> None:
     kontrol(str(ARAC) in komut and komut.rstrip("'").endswith(" cek"), "Ctrl+Alt+S bu repodaki aracı çağırıyor")
 
 
+def arayuz(env: dict) -> None:
+    print("Düğmeli pencere")
+    betik = """
+import os, sys, tkinter as tk
+sys.path.insert(0, sys.argv[1])
+import arayuz as u
+assert "başla" in u.ipucu(None, False, None)
+assert "Ctrl+Alt+S" in u.ipucu({"adimlar": [{}]}, True, None)
+if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
+    kok = tk.Tk(); p = u.Pencere(kok); kok.update()
+    assert p.durum["text"].startswith("Pencere testi: 0 adım"), p.durum["text"]
+    assert not p.ust.winfo_ismapped() and p.orta.winfo_ismapped(), "açık dokümanda başla satırı gizli"
+    p.calistir("geri"); p.surec.wait(); p.guncelle(); kok.destroy()
+    print("pencere tamam")
+else:
+    print("ekran yok, pencere atlandı")
+"""
+    calistir(env, "basla", "Pencere testi")
+    r = subprocess.run([PY, "-c", betik, str(REPO)], env=env, capture_output=True, text=True, timeout=60)
+    kontrol(r.returncode == 0, "arayüz: ipucu ve pencere durumu" + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-300:]})"))
+    print("    " + r.stdout.strip())
+    calistir(env, "bitir")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="adimadim-test-") as gecici:
         kok = Path(gecici)
@@ -307,6 +331,7 @@ def main() -> int:
             ipucu_ve_duzeltme(env, kok)
             goreli_klasor(env, kok)
             kisayollar(env, kok)
+            arayuz(env)
         finally:
             kayitcilari_temizle(kok)
     if BASARISIZ:

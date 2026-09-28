@@ -21,7 +21,8 @@ if [ -r /etc/os-release ]; then . /etc/os-release; fi
 [ "${VERSION_ID:-}" = "22.04" ] || uyari "Ubuntu 22.04 bekleniyordu, bulunan: ${PRETTY_NAME:-bilinmiyor}. Devam ediliyor."
 # Aracın çağırdığı her dış komutun paketi burada; ana makinenin kurulumu eksik olabilir, hiçbiri varsayılmaz.
 # xdg-utils: xdg-open · xdg-user-dirs: xdg-user-dir · libglib2.0-bin: gsettings (kısayollar)
-PAKETLER=(python3-venv git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
+# python3-tk: düğmeli pencere (arayuz.py)
+PAKETLER=(python3-venv python3-tk git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
           xdg-utils xdg-user-dirs libglib2.0-bin)
 EKSIK=()
 for p in "${PAKETLER[@]}"; do
@@ -96,7 +97,22 @@ chmod +x "$BIN/adimadim"
 echo "Tamam: adimadim → $REPO/adimadim.py"
 case ":$PATH:" in *":$BIN:"*) ;; *) uyari "$BIN PATH'te değil; oturumu kapatıp açınca eklenir." ;; esac
 
-# ------------------------------------------------------------------ 6. kısayollar
+# ------------------------------------------------------------------ 6. uygulama menüsü
+MASAUSTU="${XDG_DATA_HOME:-$HOME/.local/share}/applications/adimadim.desktop"
+mkdir -p "$(dirname "$MASAUSTU")"
+cat > "$MASAUSTU" <<GIRDI
+[Desktop Entry]
+Type=Application
+Name=adımadım
+Comment=Ekran görüntüsü ve anlatımdan kullanım senaryosu
+Exec=$BIN/adimadim arayuz
+Icon=camera-photo
+Terminal=false
+Categories=Office;
+GIRDI
+echo "Uygulama menüsünde: adımadım ($MASAUSTU)"
+
+# ------------------------------------------------------------------ 7. kısayollar
 baslik "Klavye kısayolları"
 if [ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ] && command -v gsettings >/dev/null 2>&1; then
   "$BIN/adimadim" kisayol || uyari "Kısayollar tanımlanamadı; sonra 'adimadim kisayol' ile dene."

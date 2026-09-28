@@ -64,8 +64,10 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
 
 ## Mimari
 
-- `adimadim.py`: tek giriş noktası. Komutlar: basla, cek, not, geri, durum, bitir, word, yeniden, cevir, kisayol.
+- `adimadim.py`: tek giriş noktası. Komutlar: basla, cek, not, geri, durum, bitir, word, yeniden, cevir, kisayol, arayuz.
   Gerekirse modüllere bölünebilir; komut satırı arayüzü korunmalı.
+- `arayuz.py`: tkinter pencere; düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır, durumu
+  oturum.json'u yoklayarak gösterir. Uygulama menüsü girdisini kur.sh yazar.
 - Oturum klasörü: `oturum.json` (kaynak), `gorseller/`, `ses/`, `<Başlık>.md`, `<Başlık>.docx`.
   Oturum açıkken .md her kayıtta oturum.json'dan yeniden üretilir; bitince .md elle düzenlenebilir,
   `word` komutu .docx'i ondan üretir.

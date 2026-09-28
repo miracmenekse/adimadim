@@ -7,7 +7,7 @@ PY="${ADIMADIM_VENV:-$HOME/.local/share/adimadim/venv}/bin/python"
 HATA=0
 
 echo "== 1/3 Sözdizimi"
-if "$PY" -m py_compile "$REPO/adimadim.py" "$REPO"/araclar/*.py "$REPO"/testler/*.py; then
+if "$PY" -m py_compile "$REPO/adimadim.py" "$REPO/arayuz.py" "$REPO"/araclar/*.py "$REPO"/testler/*.py; then
   echo "✓ tamam"
 else
   echo "✗ sözdizimi hatası"; HATA=1

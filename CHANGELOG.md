@@ -2,6 +2,24 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.5.0 — düğmeli pencere, Faz 1 (2026-09-28)
+
+- `arayuz.py`: hep üstte duran küçük pencere. Başla (sesli/yazılı), Ekranı çek, Not, Geri, Bitir,
+  Word'ü yenile, Sesi yeniden çevir, Klasör düğmeleri; adım sayısı, kayıt göstergesi ve duruma göre ipucu.
+  Düğmeler mevcut komutları ayrı süreçte çalıştırır; komut satırı aynen çalışır.
+- kur.sh: `python3-tk` paketi ve uygulama menüsünde "adımadım" girdisi (terminal gerekmez).
+- Anlık (adım bitince) çeviri ölçüldü ve alınmadı: gerçek oturumda WER %93 (tek tek) / %101 (önceki+bu)
+  / **%7,6 (toplu, mevcut)**; adım başına 19-28 sn bekleme (VM CPU).
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+- kur.sh `python3-tk`'yı kurar (sudo şifresi sorar). Sonra uygulama menüsünden **adımadım**'ı aç
+  (görünmezse oturumu kapatıp aç). Beklenen son satır: `SONUÇ: testler geçti`.
+- **Ana makinede doğrula:** "📷 Ekranı çek" düğmesi arayüzü değil, önceki pencereyi çekiyor.
+  Çekmiyorsa Ctrl+Alt+S kullan ve hangi pencerenin çekildiğini bildir.
+
 ## v0.4.1 — Rovo çıktısından Word (2026-09-28)
 
 - `adimadim word`: Rovo'nun işlenmiş çıktısı kopyalanınca kaybolan görsel bağlantılarını ve `### Adım N`

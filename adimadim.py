@@ -16,6 +16,7 @@ Komutlar
   adimadim yeniden [klasör]          bir dokümanın ses kayıtlarını baştan metne çevir
   adimadim cevir dosya.wav ...       ses dosyalarını metne çevirip ekrana yaz
   adimadim kisayol                   GNOME klavye kısayollarını tanımla
+  adimadim arayuz                    düğmeli pencere (uygulama menüsünde: adımadım)
 
 Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.ornek.json'da)
   klasor          dokümanların kaydedileceği yer; boşsa Belgeler/adimadim
@@ -801,10 +802,12 @@ def main(argv: list[str] | None = None) -> int:
     p = alt.add_parser("cevir", help="ses dosyalarını metne çevirip ekrana yaz")
     p.add_argument("dosyalar", nargs="+", help="16 kHz mono WAV dosyaları")
     alt.add_parser("kisayol", help="GNOME klavye kısayollarını tanımla")
+    alt.add_parser("arayuz", help="düğmeli pencereyi aç")
     args = ap.parse_args(argv)
     komutlar = {"basla": cmd_basla, "cek": cmd_cek, "not": cmd_not, "geri": cmd_geri,
                 "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden,
-                "cevir": cmd_cevir, "kisayol": cmd_kisayol}
+                "cevir": cmd_cevir, "kisayol": cmd_kisayol,
+                "arayuz": lambda args, ayar: __import__("arayuz").main()}
     return komutlar[args.komut](args, ayarlari_oku())
 
 
