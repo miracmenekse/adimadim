@@ -673,7 +673,8 @@ def cmd_bitir(args, ayar) -> int:
         except Exception as hata:  # model indirilemedi vb. — doküman yine de üretilsin
             bildir(f"Ses metne çevrilemedi: {hata}")
     word_uret(oturum)
-    klasoru_ac(oturum)
+    if not os.environ.get("ADIMADIM_ARAYUZ"):  # pencere kendi bitiş ekranını gösterir
+        klasoru_ac(oturum)
     return 0
 
 

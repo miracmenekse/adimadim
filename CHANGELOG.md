@@ -2,6 +2,28 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.6.0 — pencere yeniden tasarlandı, Faz 2 (2026-09-28)
+
+Ana makinedeki ilk denemeden gelen geri bildirimle:
+- **Bekleme göstergesi:** bir işlem sürerken hareketli çubuk, ne beklendiği, geçen süre ve komutun son
+  satırı görünür (ör. "Lütfen bekle: Doküman hazırlanıyor… (42 sn)").
+- **Düzeltme:** komut çıktısı boruya yazılıyordu; Bitir uzun çıktı üretince tampon dolup takılabiliyordu.
+  Artık `~/.config/adimadim/arayuz.log`'a yazılır (sorun olursa son satırı buradadır).
+- **Başla ekranı:** "Yeni dokümanın adı", sesli/yazılı seçimi ve tek Başla düğmesi (Enter da başlatır).
+- **Kayıt ekranı:** "Adım N" ve kırmızı "● KAYIT" göstergesi; çekilen ekranların küçük önizlemeleri
+  adım adım yan yana. Düğmelerin altında ne yaptıkları yazar (Son adıma not yaz, Son adımı sil…).
+- **Bitiş ekranı:** Bitir'den sonra dokümanın görselli önizlemesi; Word'ü aç, Klasörü aç, Word'ü yenile,
+  Sesi baştan çevir, Yeni doküman. Pencereden bitirince dosya yöneticisi ayrıca açılmaz.
+- Görünmeyen emoji simgeleri kaldırıldı. Komut satırı aynen çalışır.
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./test.sh
+
+Yeni paket yok. Pencereyi uygulama menüsünden (ya da `adimadim arayuz`) aç ve kısa bir sesli akış dene.
+**Ana makinede doğrula:** Bitir'e basınca bekleme çubuğu görünüyor ve bitince önizleme açılıyor;
+"Ekranı çek" düğmesi arayüzü değil önceki pencereyi çekiyor.
+
 ## v0.5.0 — düğmeli pencere, Faz 1 (2026-09-28)
 
 - `arayuz.py`: hep üstte duran küçük pencere. Başla (sesli/yazılı), Ekranı çek, Not, Geri, Bitir,

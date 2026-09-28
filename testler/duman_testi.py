@@ -302,22 +302,29 @@ def arayuz(env: dict) -> None:
 import os, sys, tkinter as tk
 sys.path.insert(0, sys.argv[1])
 import arayuz as u
-assert "başla" in u.ipucu(None, False, None)
-assert "Ctrl+Alt+S" in u.ipucu({"adimlar": [{}]}, True, None)
-if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
-    kok = tk.Tk(); p = u.Pencere(kok); kok.update()
-    assert p.durum["text"].startswith("Pencere testi: 0 adım"), p.durum["text"]
-    assert not p.ust.winfo_ismapped() and p.orta.winfo_ismapped(), "açık dokümanda başla satırı gizli"
-    p.calistir("geri"); p.surec.wait(); p.guncelle(); kok.destroy()
-    print("pencere tamam")
-else:
-    print("ekran yok, pencere atlandı")
+assert "Ctrl+Alt+S" in u.ipucu({"adimlar": []}, False)
+if not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+    print("ekran yok, pencere atlandı"); sys.exit(0)
+kok = tk.Tk(); p = u.Pencere(kok)
+def bekle(*komut):
+    p.calistir(*komut); p.surec.wait(); p.guncelle(tekrar=False); kok.update()
+assert p.ekran == "basla", p.ekran
+p.baslik.set("Pencere testi"); p.mod.set("yazi"); p.basla(); p.surec.wait(); p.guncelle(tekrar=False)
+assert p.ekran == "kayit" and "Adım 0" in p.kayit_baslik["text"], p.kayit_baslik["text"]
+bekle("cek")
+assert "Adım 1" in p.kayit_baslik["text"] and len(p.resimler) == 1 and p.resimler[0], "çekilen ekran önizlemede"
+bekle("bitir")
+assert p.ekran == "bitis" and u.a.aktif_oturum() is None, "Bitir → bitiş ekranı"
+assert "Adım 1" in p.onizleme.get("1.0", "end") and p.onizleme.image_names(), "doküman önizlemesi görselli"
+assert "Hazır" in u.son_satir(), u.son_satir()
+p.yeni(); assert p.ekran == "basla"
+kok.destroy(); print("pencere tamam")
 """
-    calistir(env, "basla", "Pencere testi")
-    r = subprocess.run([PY, "-c", betik, str(REPO)], env=env, capture_output=True, text=True, timeout=60)
-    kontrol(r.returncode == 0, "arayüz: ipucu ve pencere durumu" + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-300:]})"))
+    r = subprocess.run([PY, "-c", betik, str(REPO)], env={**env, "ZENITY_METIN": "Pencereden not."},
+                       capture_output=True, text=True, timeout=120)
+    kontrol(r.returncode == 0, "arayüz: başla → önizlemeli kayıt → bitir → bitiş önizlemesi"
+            + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-400:]})"))
     print("    " + r.stdout.strip())
-    calistir(env, "bitir")
 
 
 def main() -> int:
