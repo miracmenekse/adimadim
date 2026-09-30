@@ -9,3 +9,6 @@ ayar.json
 sablon.docx
 oturum.json
 *.yedek
+
+# graphify çıktısı (yerel bilgi grafı)
+graphify-out/
