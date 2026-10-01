@@ -2,40 +2,113 @@
 
 **English** · [Türkçe](README.tr.md)
 
-**Click through the screens, talk as you go, and walk away with a finished use-case document.**
+![Version](https://img.shields.io/badge/version-0.7.0-green.svg)
+![Platform](https://img.shields.io/badge/platform-Ubuntu%2022.04-orange.svg)
+![Python](https://img.shields.io/badge/python-3.10-blue.svg)
+![Privacy](https://img.shields.io/badge/runs-100%25%20offline-lightgrey.svg)
 
-adımadım ("step by step" in Turkish) is a local desktop tool for business analysts who write
-use-case scenarios. You move through an application screen by screen; at each step you take a
-screenshot and describe it by typing or speaking. When you finish, the screenshots and narration
-become an ordered **Markdown** document and a **Word (.docx)** file.
+> **adımadım: click through the screens, narrate, get a finished use-case document.**
 
-Everything runs on your machine. Screenshots, notes and voice recordings never leave it; the
-internet is used only during installation to download packages and the speech model.
+---
 
-## Why it exists
+## 📌 About the Project
 
-Writing a use-case scenario by hand means taking screenshots, pasting them into a document and
-describing every step, then cleaning it all up. adımadım turns that into a single pass: you
-demonstrate the flow once and narrate it. The hard part is speech recognition: the narration is in
-Turkish but full of English telecom/BSS terms ("Device Upgrade", "Order Summary", "SIM swap"),
-which general speech models get wrong. Much of the project is about measuring and fixing that.
+Business analysts document how an application is used by writing use-case scenarios: take a
+screenshot of every screen, paste it into a document, describe what happens, then clean it all up.
+It is slow, repetitive work, and the screens often contain customer data that must not be sent to a
+cloud service. Speech-to-text could speed it up, but the narration here is Turkish mixed with English
+telecom/BSS terms ("Device Upgrade", "Order Summary", "SIM swap"), which general speech models get wrong.
 
-## What you get
+adımadım ("step by step" in Turkish) turns the job into a single pass. You demonstrate the flow once,
+capture each screen with a shortcut and describe it by voice or keyboard; when you finish, an ordered
+Markdown and Word document is ready. Speech recognition runs entirely on the local machine and is
+tuned for domain terms with hints, correction rules and whole-session transcription, each step
+chosen by measurement rather than guesswork.
 
-A session folder with the screenshots, the recordings and the document:
+## ✨ Key Features
+
+* **One-shortcut capture:** `Ctrl+Alt+S` captures the active window (or full screen) from any application and asks for the step's note; `Ctrl+Alt+N` edits the last note.
+* **Voice narration, transcribed locally:** Whisper medium via OpenVINO on Intel CPU/GPU/NPU, with automatic fallback to faster-whisper. Nothing leaves the machine.
+* **Domain-term accuracy:** term hints, a suffix-preserving "wrong → right" correction dictionary and Silero VAD lift the term hit rate from 67% to 90%. Company-specific terms stay in `.local` files outside the repo.
+* **Whole-session transcription:** all step recordings are transcribed together and each sentence is assigned back to its step, cutting WER on a real session from 93% to 7.6%.
+* **Built-in image editor:** crop, box, arrow and text annotations on any screenshot; the original is kept.
+* **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; paste back an Atlassian Rovo-polished version and both files update.
+
+## 🛠 Tech Stack
+
+* **Language:** Python 3.10 (single CLI entry point `adimadim.py`), Bash (`kur.sh`, `test.sh`)
+* **UI:** tkinter (always-on-top window), Pillow (image editor), zenity and libnotify (dialogs, notifications), GNOME custom shortcuts
+* **Speech / AI:** OpenAI Whisper medium converted with optimum-intel 2.2 and run by OpenVINO GenAI 2026.4; faster-whisper fallback; Silero VAD; Atlassian Rovo for formal wording (optional, outside the tool)
+* **Data:** files only: `oturum.json` per session, PNG screenshots, WAV recordings, Markdown and DOCX
+* **System:** gnome-screenshot, arecord (ALSA), pandoc
+
+## 🏗 Architecture and Data Flow
+
+```mermaid
+flowchart LR
+    A[Screenshot<br>Ctrl+Alt+S] --> O[(oturum.json)]
+    B[Typed note or<br>voice recording] --> O
+    O -->|finish| C[Step audio joined]
+    C --> D[Whisper + VAD<br>term hints]
+    D --> E[Correction rules]
+    E --> F[Sentences assigned<br>back to steps]
+    F --> G[Title.md]
+    G --> H[Title.docx<br>pandoc + template]
+    G -.->|optional| R[Rovo polish] -.-> G
+```
+
+1. **Capture:** each shortcut press or button click saves a screenshot and, in voice mode, closes the previous step's recording and starts a new one. `oturum.json` is the single source of truth; the Markdown is regenerated from it on every change.
+2. **Transcribe:** on finish, all step recordings are concatenated. Silero VAD removes silence (timestamps are mapped back to the original audio), Whisper transcribes with a prompt built from the term lists, and the correction dictionary is applied.
+3. **Assign:** every timestamped sentence goes to the step in which it started.
+4. **Render:** Markdown in a use-case template, then Word via pandoc with the company template.
+5. **Polish (optional):** the Markdown is copied to Rovo; the formal version pasted back replaces the .md (previous one kept as `.md.yedek`), with screenshots and step headings restored, and Word is rebuilt.
+
+The window (`arayuz.py`) only runs the same CLI commands in a subprocess and polls `oturum.json`, so
+the command line and the UI always behave the same.
+
+## 🚀 Quick Start
+
+**Prerequisites:** Ubuntu 22.04 (GNOME), Python 3.10, git, sudo for `apt-get`. An Intel GPU/NPU is optional.
+
+```bash
+git clone https://github.com/miracmenekse/adimadim.git
+cd adimadim
+./kur.sh     # apt packages, Python venv, Whisper → OpenVINO conversion, command, shortcuts, menu entry
+./test.sh    # end-to-end check; last line: SONUÇ: testler geçti
+```
+
+No environment variables are needed. Settings live in `~/.config/adimadim/ayar.json`, created by
+`kur.sh` with the device detected automatically (all keys: [README.tr.md](README.tr.md#ayarlar)).
+`kur.sh` is idempotent and never overwrites existing values. To update: `git pull && ./kur.sh && ./test.sh`.
+
+## 💡 Usage & Examples
+
+Open **adımadım** from the application menu: **Start** (title, voice or typed) → **Recording**
+(capture, note, undo, region capture, thumbnails) → **Finish** (progress bar, document preview,
+copy Markdown, Rovo paste-back, open Word). Or use the CLI:
+
+```bash
+adimadim basla "Sipariş iptal akışı" --ses   # start a voice-narrated session
+# press Ctrl+Alt+S on each screen and describe it
+adimadim geri                                 # drop the last capture
+adimadim bitir                                # transcribe, build .md + .docx, open the folder
+adimadim word                                 # rebuild Word after editing the .md
+adimadim yeniden                              # re-transcribe with the current model
+adimadim cevir kayit.wav                      # transcribe a single audio file
+```
+
+**Output:** a session folder
 
 ```
 Belgeler/adimadim/Sipariş iptal akışı/
-├── oturum.json                 # session source of truth
-├── gorseller/adim-01.png …     # screenshots (originals kept in .orijinal/ after editing)
-├── ses/                        # voice recordings, one per step
+├── oturum.json
+├── gorseller/adim-01.png …
+├── ses/
 ├── Sipariş iptal akışı.md
 └── Sipariş iptal akışı.docx
 ```
 
-The document follows a use-case template: title, date, placeholders for goal, actor, pre- and
-post-conditions, then a **main flow** with one section per step (screenshot plus the typed note
-and/or transcribed narration):
+with a document like this:
 
 ```markdown
 # Sipariş iptal akışı
@@ -53,107 +126,37 @@ and/or transcribed narration):
 Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek siparişi seçiyoruz.
 ```
 
-The Markdown works well in Obsidian (it updates live while the session is open). Word output uses
-your company template (`sablon.docx`) if one is present.
-
-## The interface
-
-A small, always-on-top window with three screens; no terminal needed.
-
-1. **Start:** enter a title and choose spoken or typed narration.
-2. **Recording:** capture the screen, add or fix a note, undo the last capture, capture a region.
-   Thumbnails of captured steps, the step count and a recording indicator are shown. Clicking any
-   thumbnail opens the **image editor**: crop, box, arrow and text annotations, undo (Ctrl+Z),
-   save (Enter).
-3. **Finish:** a progress bar while the audio is transcribed, then a preview of the document.
-   From here you can copy the Markdown to the clipboard, paste back an AI-polished version
-   (Atlassian Rovo) to update both .md and .docx, refresh Word, re-transcribe, or open the folder.
-
-Global shortcuts work from any application: `Ctrl+Alt+S` captures the current window (or full
-screen) and asks for its note, `Ctrl+Alt+N` edits the last step's note.
-
-## How it works
-
-```mermaid
-flowchart LR
-    A[Screenshot<br>Ctrl+Alt+S] --> O[(oturum.json)]
-    B[Typed note or<br>voice recording] --> O
-    O -->|finish| C[Step audio joined]
-    C --> D[Whisper + VAD<br>term hints]
-    D --> E[Correction rules]
-    E --> F[Sentences assigned<br>back to steps]
-    F --> G[Title.md]
-    G --> H[Title.docx<br>pandoc + template]
-    G -.->|optional| R[Rovo polish] -.-> G
-```
-
-- **Speech recognition:** Whisper medium through OpenVINO, running on Intel CPU, GPU or NPU.
-  If OpenVINO is unavailable it falls back to faster-whisper. Silero VAD returns nothing for
-  silence or keyboard noise instead of letting the model hallucinate text.
-- **Domain terms:** a term list is passed to the model as a prompt hint; a "wrong → right"
-  correction dictionary is applied afterwards while preserving Turkish suffixes. Company-specific
-  terms and corrections live in `.local` files outside the repo.
-- **Whole-session transcription:** all step recordings are joined and transcribed at once, and each
-  sentence is assigned to the step in which it started. Transcribing step by step lost words at the
-  boundaries.
-- **Formal wording** is left to Atlassian Rovo; the agent instructions and glossary are in `rovo/`.
-
-## Accuracy
-
-Speech-recognition choices were made by measurement (`testler/stt_olc.py`, `testler/karsilastir.py`):
+**Measured accuracy** (`testler/stt_olc.py`, `testler/karsilastir.py`; details in `CHANGELOG.md` and `testler/sonuclar/`):
 
 | Change | Result |
 |---|---|
-| Model choice (29 real recordings) | whisper-medium term hit rate 66.3% vs. 28.4% and 14.7% for two Turkish fine-tuned models, which wrote English terms phonetically |
-| Term hint + corrections + VAD | term hit rate 67.4% → 90.5%, WER 29.0% → 16.4%; general Turkish (FLEURS) not degraded (12.5% → 12.0%) |
+| Model choice (29 real recordings) | whisper-medium term hit rate 66.3% vs. 28.4% and 14.7% for two Turkish fine-tuned models |
+| Term hint + corrections + VAD | term hit rate 67.4% → 90.5%, WER 29.0% → 16.4%; general Turkish (FLEURS) not degraded |
 | Whole-session transcription (real 12-step session) | WER 93.0% → 7.6%, terms 11/11 |
 
-Details are in `CHANGELOG.md` (Turkish) and `testler/sonuclar/`.
+## 🗺 Roadmap
 
-## Installation
+- [x] Screenshot + typed/voice narration → Markdown + Word
+- [x] Local Turkish speech recognition with domain-term accuracy layers
+- [x] Button window, image editor, Rovo paste-back
+- [ ] Keyboard shortcut for finishing a session
+- [ ] Visible recording-duration indicator in voice mode
+- [ ] Windows support (under evaluation; screenshots, shortcuts and audio are Linux-specific today)
 
-Targets Ubuntu 22.04 with Python 3.10. After cloning:
+Full plan and decisions: `YOL_HARITASI.md`, `KARARLAR.md` (Turkish).
 
-    ./kur.sh     # system packages, Python env, model conversion, command, shortcuts
-    ./test.sh    # verifies everything; last line: SONUÇ: testler geçti
+## 📄 License & Contributing
 
-`kur.sh` is idempotent and never overwrites existing settings.
-
-## Command line
-
-Open **adımadım** from the application menu, or use the CLI:
-
-    adimadim basla "Sipariş iptal akışı"   # start; add --ses for spoken narration
-    adimadim geri                           # delete the last capture
-    adimadim bitir                          # build .md + .docx, open the folder
-    adimadim word                           # rebuild Word after editing the .md
-    adimadim yeniden                        # re-transcribe with the current model
-    adimadim cevir kayit.wav                # transcribe a single audio file
-    adimadim cek --tam                      # capture the full screen regardless of settings
-    adimadim arayuz                         # open the window
-
-Settings are in `~/.config/adimadim/ayar.json` (defaults in `ayar.ornek.json`, documented in
-[README.tr.md](README.tr.md#ayarlar)).
-
-## Project layout
-
-| Path | Contents |
-|---|---|
-| `adimadim.py` | single entry point: commands, speech recognition, .md/.docx generation |
-| `arayuz.py` | tkinter window and image editor |
-| `kur.sh`, `test.sh` | installation and end-to-end tests |
-| `terimler.txt`, `duzeltmeler.txt` | general term list and correction dictionary |
-| `rovo/` | Rovo agent instructions and Confluence glossary |
-| `testler/` | smoke test, WER measurement, model comparison, test recordings |
-| `beceriler/vm-ana-makine/` | Claude Code skill for the develop-in-VM, run-on-host workflow |
+No license has been chosen yet; all rights reserved until one is added.
 
 The project is developed with Claude Code in a VM and reaches the machine where it is used only
-through tagged git releases (`git pull && ./kur.sh && ./test.sh`). Rules, decisions and the
-roadmap are in `CLAUDE.md`, `KARARLAR.md` and `YOL_HARITASI.md` (Turkish).
+through tagged releases. Contribution rules: every change passes `./test.sh`; every new feature adds a
+check to `testler/duman_testi.py`; accuracy-related changes are measured before and after; no real
+company data in the repo. See `CLAUDE.md` and `CALISMA_DUZENI.md`.
 
-## Development history
+## 📈 Development History
 
-How the product evolved, one entry per release. From now on each pull request adds a row here.
+How the product evolved, one entry per release. Each pull request adds a row here.
 
 | Version | Date | What changed |
 |---|---|---|

@@ -2,90 +2,83 @@
 
 [English](README.md) · **Türkçe**
 
-**Ekranda gezinirken anlat, sonunda kullanım senaryosu dokümanın hazır olsun.**
+![Sürüm](https://img.shields.io/badge/s%C3%BCr%C3%BCm-0.7.0-green.svg)
+![Platform](https://img.shields.io/badge/platform-Ubuntu%2022.04-orange.svg)
+![Python](https://img.shields.io/badge/python-3.10-blue.svg)
+![Gizlilik](https://img.shields.io/badge/%C3%A7al%C4%B1%C5%9Fma-tamamen%20yerel-lightgrey.svg)
 
-adımadım, iş analistlerinin kullanım senaryosu yazma işini kısaltan yerel bir masaüstü aracıdır.
-Uygulamada ekrandan ekrana ilerlerken her adımda ekran görüntüsü alırsın ve o adımı yazarak ya da
-sesle anlatırsın. Oturumu bitirdiğinde görseller ve anlatımlar sıralı bir **Markdown** ve **Word (.docx)**
-dokümanına dönüşür.
+> **adımadım: ekranlarda gezin, anlat, kullanım senaryosu dokümanın hazır olsun.**
 
-Her şey makinede çalışır: görüntüler, notlar ve ses kayıtları hiçbir sunucuya gitmez. İnternet
-yalnızca kurulumda (paket ve model indirmek için) kullanılır.
+---
 
-## Özellikler
+## 📌 Proje Hakkında
 
-- **Düğmeli pencere:** Başla → Kayıt → Bitiş ekranları; terminal gerekmez. Kayıt ekranında
-  çekilen adımların önizlemesi, adım sayısı ve kayıt göstergesi görünür.
-- **Kısayolla çekim:** `Ctrl+Alt+S` o anki ekranı (ya da aktif pencereyi) çeker ve notunu sorar,
-  `Ctrl+Alt+N` son adımın notunu düzeltir.
-- **Sesle anlatım:** Her adımın sesi kaydedilir; oturum bitince hepsi birlikte metne çevrilir ve
-  cümleler başladıkları adıma dağıtılır.
-- **Türkçe konuşma tanıma, yerelde:** Whisper (medium) OpenVINO ile Intel CPU/GPU/NPU'da çalışır;
-  OpenVINO kullanılamazsa kendiliğinden faster-whisper'a düşer. Silero VAD sessiz kayıtları eler.
-- **Alan terimlerine uyum:** Terim listesi modele ipucu olarak verilir; "yanlış → doğru" düzeltme
-  sözlüğü Türkçe ekleri koruyarak çıktıya uygulanır. Şirkete özel terimler repoya girmeyen
-  `.local` dosyalarında durur.
-- **Görsel düzenleyici:** Önizlemedeki görsele tıkla; kırp, kutu, ok ya da yazı ekle.
-  Orijinal görsel ayrıca saklanır.
-- **Bölge çekimi:** Tüm ekranı çeker, ardından istediğin alanı kırparsın.
-- **Word çıktısı:** Şirket şablonu (`sablon.docx`) varsa onunla üretilir. .md'yi elle düzeltirsen
-  `adimadim word` Word'ü ondan yeniler.
-- **Rovo ile toparlama:** Bitiş ekranında .md panoya kopyalanır; Atlassian Rovo'nun resmileştirdiği
-  metin geri yapıştırılınca .md ve Word güncellenir (önceki sürüm `.md.yedek`'te). Rovo ajanı
-  talimatı ve terim sözlüğü `rovo/` klasöründe.
+İş analistleri bir uygulamanın nasıl kullanıldığını kullanım senaryolarıyla anlatır: her ekranın
+görüntüsünü alır, dokümana yapıştırır, ne olduğunu yazar, sonra hepsini toparlar. Bu yavaş ve tekrarlı
+bir iştir; ekranlarda çoğu zaman bulut hizmetine gönderilemeyecek müşteri verisi vardır. Konuşma tanıma
+işi hızlandırabilir, ama anlatım İngilizce telekom/BSS terimleriyle ("Device Upgrade", "Order Summary",
+"SIM swap") karışık Türkçedir ve genel modeller bu terimleri yanlış yazar.
 
-## Nasıl çalışır
+adımadım bu işi tek geçişe indirir. Akışı bir kez gösterirsin, her ekranı kısayolla çekip sesle ya da
+yazarak anlatırsın; bitirdiğinde sıralı bir Markdown ve Word dokümanı hazırdır. Konuşma tanıma tamamen
+makinede çalışır ve alan terimlerine ipucu, düzeltme kuralları ve toplu çeviriyle uyarlanmıştır; her
+adım tahminle değil ölçümle seçilmiştir.
+
+## ✨ Temel Özellikler
+
+* **Tek kısayolla çekim:** `Ctrl+Alt+S` her uygulamadan aktif pencereyi (ya da tüm ekranı) çeker ve adımın notunu sorar; `Ctrl+Alt+N` son notu düzeltir.
+* **Yerelde çevrilen sesli anlatım:** Whisper medium, OpenVINO ile Intel CPU/GPU/NPU'da; çalışmazsa kendiliğinden faster-whisper. Hiçbir veri makineden çıkmaz.
+* **Alan terimlerinde doğruluk:** terim ipucu, Türkçe eki koruyan "yanlış → doğru" sözlüğü ve Silero VAD terim isabetini %67'den %90'a çıkarır. Şirkete özel terimler repo dışındaki `.local` dosyalarında durur.
+* **Toplu çeviri:** tüm adım sesleri birlikte çevrilir, her cümle kendi adımına dağıtılır; gerçek bir oturumda WER %93'ten %7,6'ya indi.
+* **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
+* **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; Rovo'nun resmileştirdiği metin geri yapıştırılınca iki dosya da güncellenir.
+
+## 🛠 Teknolojik Altyapı
+
+* **Dil:** Python 3.10 (tek giriş noktası `adimadim.py`), Bash (`kur.sh`, `test.sh`)
+* **Arayüz:** tkinter (hep üstte pencere), Pillow (görsel düzenleyici), zenity ve libnotify (pencereler, bildirimler), GNOME kısayolları
+* **Konuşma / YZ:** OpenAI Whisper medium; optimum-intel 2.2 ile dönüştürülüp OpenVINO GenAI 2026.4 ile çalıştırılır; yedek faster-whisper; Silero VAD; resmi dil için Atlassian Rovo (isteğe bağlı, aracın dışında)
+* **Veri:** yalnızca dosyalar: oturum başına `oturum.json`, PNG görseller, WAV kayıtlar, Markdown ve DOCX
+* **Sistem:** gnome-screenshot, arecord (ALSA), pandoc
+
+## 🏗 Sistem Mimarisi ve Çalışma Mantığı
 
 ```mermaid
 flowchart LR
     A[Ekran görüntüsü<br>Ctrl+Alt+S] --> O[(oturum.json)]
     B[Yazılı not ya da<br>ses kaydı] --> O
-    O -->|bitir| C[Sesler birleştirilir]
+    O -->|bitir| C[Adım sesleri birleştirilir]
     C --> D[Whisper + VAD<br>terim ipucu]
     D --> E[Düzeltme sözlüğü]
     E --> F[Cümleler adımlara<br>dağıtılır]
     F --> G[Başlık.md]
-    G --> H[Başlık.docx]
+    G --> H[Başlık.docx<br>pandoc + şablon]
     G -.->|isteğe bağlı| R[Rovo] -.-> G
 ```
 
-Oturum klasöründe `oturum.json` (kaynak), `gorseller/`, `ses/`, `<Başlık>.md` ve `<Başlık>.docx`
-bulunur. Oturum açıkken .md her kayıtta yeniden üretilir; bittikten sonra elle düzenlenebilir.
+1. **Çekim:** her kısayol ya da düğme bir görsel kaydeder; sesli modda önceki adımın kaydını kapatıp yenisini başlatır. Tek kaynak `oturum.json`'dur; .md her değişiklikte ondan yeniden üretilir.
+2. **Çeviri:** bitirince adım sesleri birleştirilir. Silero VAD sessizlikleri atar (zaman damgaları asıl sese geri taşınır), Whisper terim listelerinden kurulan ipucuyla çevirir, düzeltme sözlüğü uygulanır.
+3. **Dağıtım:** zaman damgalı her cümle başladığı adıma yazılır.
+4. **Üretim:** kullanım senaryosu şablonunda Markdown, ardından pandoc ve şirket şablonuyla Word.
+5. **Toparlama (isteğe bağlı):** .md Rovo'ya kopyalanır; geri yapıştırılan resmi metin .md'nin yerine geçer (öncekisi `.md.yedek`), görseller ve adım başlıkları geri konur, Word yenilenir.
 
-## Doğruluk
+Pencere (`arayuz.py`) aynı komutları alt süreçte çalıştırır ve `oturum.json`'u yoklar; komut satırı ve
+pencere her zaman aynı davranır.
 
-Konuşma tanıma kararları ölçümle alındı (`testler/stt_olc.py`, `testler/karsilastir.py`):
+## 🚀 Hızlı Başlangıç ve Kurulum
 
-- Adımları tek tek değil **toplu çevirmek**, gerçek bir 12 adımlık oturumda kelime hata oranını
-  (WER) **%93'ten %7,6'ya** indirdi: adım adım çeviri sınırlarda kelime kaybettiriyordu.
-- İki Türkçe ince ayarlı Whisper modeli denendi ve elendi: İngilizce terimleri Türkçe okunuşla
-  yazıyorlardı. 29 gerçek kayıtta terim isabeti whisper-medium'da %66,3, adaylarda %28,4 ve %14,7.
+**Gereksinimler:** Ubuntu 22.04 (GNOME), Python 3.10, git, `apt-get` için sudo. Intel GPU/NPU isteğe bağlı.
 
-Ayrıntılı sonuçlar `CHANGELOG.md` ve `testler/sonuclar/` klasöründe.
+```bash
+git clone https://github.com/miracmenekse/adimadim.git
+cd adimadim
+./kur.sh     # apt paketleri, Python ortamı, Whisper → OpenVINO dönüşümü, komut, kısayollar, menü girdisi
+./test.sh    # uçtan uca kontrol; son satır: SONUÇ: testler geçti
+```
 
-## Kurulum
-
-Ubuntu 22.04 ve Python 3.10 hedeflenir. Repoyu klonladıktan sonra:
-
-    ./kur.sh     # sistem paketleri, Python ortamı, model dönüştürme, komut, kısayollar
-    ./test.sh    # her şeyin çalıştığını doğrular; son satır: SONUÇ: testler geçti
-
-`kur.sh` tekrar tekrar çalıştırılabilir ve mevcut ayarları ezmez.
-
-## Kullanım
-
-Uygulama menüsünden **adımadım**'ı aç; bütün adımlar düğmelerle yapılır. Komut satırı da aynen çalışır:
-
-    adimadim basla "Sipariş iptal akışı"   # sesle anlatmak için sonuna --ses
-    Ctrl+Alt+S                              # her ekranda: görüntü al, notunu yaz / anlat
-    Ctrl+Alt+N                              # son adımın notunu düzelt
-    adimadim geri                           # yanlış çekimi sil
-    adimadim bitir                          # .md + .docx üret, klasörü aç
-    adimadim word                           # .md'yi elle düzelttikten sonra Word'ü yenile
-    adimadim yeniden                        # ses kayıtlarını güncel modelle baştan çevir
-    adimadim cevir kayit.wav                # tek bir ses dosyasını metne çevir
-    adimadim cek --tam                      # ayardan bağımsız tüm ekranı çek
-    adimadim arayuz                         # düğmeli pencere
+Ortam değişkeni gerekmez; ayarlar aşağıda. `kur.sh` tekrar çalıştırılabilir ve mevcut değerleri ezmez.
+Güncellemek için: `git pull && ./kur.sh && ./test.sh`. İki makineli (VM'de geliştir, ana makinede
+kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 ## Ayarlar
 
@@ -108,25 +101,91 @@ Uygulama menüsünden **adımadım**'ı aç; bütün adımlar düğmelerle yapı
 Şirkete özel terimler: `~/.config/adimadim/terimler.local.txt` (repoya girmez).
 Şirkete özel düzeltmeler ("yanlış → doğru"): `~/.config/adimadim/duzeltmeler.local.txt` (repoya girmez).
 
-## Proje yapısı
+## 💡 Kullanım Senaryoları
 
-| Dosya / klasör        | İçerik                                                        |
-|-----------------------|---------------------------------------------------------------|
-| `adimadim.py`         | tek giriş noktası: komutlar, konuşma tanıma, .md/.docx üretimi |
-| `arayuz.py`           | tkinter pencere ve görsel düzenleyici                         |
-| `kur.sh`, `test.sh`   | kurulum ve uçtan uca test                                     |
-| `terimler.txt`, `duzeltmeler.txt` | genel terim listesi ve düzeltme sözlüğü           |
-| `rovo/`               | Rovo ajanı talimatı ve Confluence terim sözlüğü               |
-| `testler/`            | duman testi, WER ölçümü, model karşılaştırma, test sesleri    |
-| `beceriler/vm-ana-makine/` | VM'de geliştirip ana makinede çalıştırma düzeni (Claude Code becerisi) |
+Uygulama menüsünden **adımadım**'ı aç: **Başla** (ad, sesli/yazılı) → **Kayıt** (çek, not, geri al,
+bölge çek, önizlemeler) → **Bitiş** (bekleme çubuğu, doküman önizlemesi, MD'yi kopyala, Rovo alanı,
+Word'ü aç). Ya da komut satırı:
 
-## Geliştirme
+```bash
+adimadim basla "Sipariş iptal akışı" --ses   # sesli oturum başlat
+# her ekranda Ctrl+Alt+S'ye bas ve anlat
+adimadim geri                                 # son çekimi sil
+adimadim bitir                                # çevir, .md + .docx üret, klasörü aç
+adimadim word                                 # .md'yi elle düzelttikten sonra Word'ü yenile
+adimadim yeniden                              # güncel modelle baştan çevir
+adimadim cevir kayit.wav                      # tek bir ses dosyasını çevir
+adimadim cek --tam                            # ayardan bağımsız tüm ekranı çek
+```
 
-Proje, Claude Code ile bir sanal makinede geliştirilir ve ana makineye yalnızca git üzerinden,
-etiketli sürümler olarak gider:
+**Çıktı:** bir oturum klasörü
 
-    VM:          Claude Code geliştirir → ./test.sh → commit + etiket → push
-    Ana makine:  git pull && ./kur.sh && ./test.sh
+```
+Belgeler/adimadim/Sipariş iptal akışı/
+├── oturum.json
+├── gorseller/adim-01.png …
+├── ses/
+├── Sipariş iptal akışı.md
+└── Sipariş iptal akışı.docx
+```
 
-İlk kurulum, günlük akış ve sorun giderme `CALISMA_DUZENI.md`'de; kurallar `CLAUDE.md`'de,
-kararlar ve gerekçeleri `KARARLAR.md`'de, iş planı `YOL_HARITASI.md`'de, sürüm notları `CHANGELOG.md`'de.
+ve şöyle bir doküman:
+
+```markdown
+# Sipariş iptal akışı
+
+- **Tarih:** 2026-09-28
+- **Amaç:** …
+- **Aktör:** …
+
+## Ana akış
+
+### Adım 1
+
+![Adım 1](gorseller/adim-01.png)
+
+Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek siparişi seçiyoruz.
+```
+
+**Ölçülen doğruluk** (`testler/stt_olc.py`, `testler/karsilastir.py`; ayrıntı `CHANGELOG.md` ve `testler/sonuclar/`):
+
+| Değişiklik | Sonuç |
+|---|---|
+| Model seçimi (29 gerçek kayıt) | terim isabeti whisper-medium %66,3; iki Türkçe ince ayarlı model %28,4 ve %14,7 |
+| Terim ipucu + düzeltme + VAD | terim isabeti %67,4 → %90,5, WER %29,0 → %16,4; genel Türkçede (FLEURS) bozulma yok |
+| Toplu çeviri (12 adımlık gerçek oturum) | WER %93,0 → %7,6, terimler 11/11 |
+
+## 🗺 Yol Haritası
+
+- [x] Ekran görüntüsü + yazılı/sesli anlatım → Markdown + Word
+- [x] Alan terimlerine uyarlanmış yerel Türkçe konuşma tanıma
+- [x] Düğmeli pencere, görsel düzenleyici, Rovo alanı
+- [ ] Oturumu bitirmek için klavye kısayolu
+- [ ] Sesli modda kayıt süresini gösteren gösterge
+- [ ] Windows desteği (değerlendiriliyor; ekran çekme, kısayollar ve ses kaydı bugün Linux'a bağlı)
+
+Ayrıntılı plan ve kararlar: `YOL_HARITASI.md`, `KARARLAR.md`.
+
+## 📄 Lisans ve Katkıda Bulunma
+
+Henüz lisans seçilmedi; eklenene kadar tüm hakları saklıdır.
+
+Proje Claude Code ile bir VM'de geliştirilir ve kullanıldığı makineye yalnızca etiketli sürümlerle
+gider. Katkı kuralları: her değişiklik `./test.sh`'den geçer; her yeni özellik `testler/duman_testi.py`'ye
+kontrol ekler; doğruluğu etkileyen değişiklik önce ve sonra ölçülür; repoya gerçek şirket verisi girmez.
+Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
+
+## 📈 Geliştirme Geçmişi
+
+Ürünün nasıl geliştiği, her sürüm için bir satır. Her PR buraya bir satır ekler.
+
+| Sürüm | Tarih | Ne değişti |
+|---|---|---|
+| v0.1.0 | 2026-09 | İskelet: ekran görüntüsü + yazılı/sesli anlatım → .md + .docx. OpenVINO konuşma tanıma ve faster-whisper yedeği, tekrarlanabilir `kur.sh`/`test.sh`, VM ↔ ana makine düzeni. |
+| v0.3.0 | 2026-09-27 | Model kararı: whisper-medium kaldı (Türkçe modeller elendi). Doğruluk katmanları: VAD, terim ipucu, düzeltme kuralları. Rovo talimatı ve sözlüğü. OpenVINO modelini sessizce bozan locale hatası düzeltildi. |
+| v0.3.1 | 2026-09-27 | Göreli doküman klasörü kısayoldan da doğru çözülüyor. |
+| v0.4.0 | 2026-09-28 | Toplu çeviri, cümleler adımlarına dağıtılıyor: gerçek oturumda WER %93 → %7,6. |
+| v0.4.1 | 2026-09-28 | Rovo çıktısından Word; görseller ve adım başlıkları geri konuyor. |
+| v0.5.0 | 2026-09-28 | Düğmeli pencere: terminalsiz kullanım, uygulama menüsü girdisi. |
+| v0.6.0 | 2026-09-28 | Pencere Başla → Kayıt → Bitiş ekranlarına ayrıldı; bekleme çubuğu ve önizlemeler. |
+| v0.7.0 | 2026-09-28 | Bölge çekme ve görsel düzenleyici (kırp, kutu, ok, yazı); bitiş ekranında MD'yi kopyala ve Rovo alanı. |
