@@ -8,5 +8,7 @@
   "whisper_modeli": "small",
   "dil": "tr",
   "ipucu": "prompt",
-  "duzeltme": true
+  "duzeltme": true,
+  "api_filtre": [],
+  "api_gizle": ["password", "parola", "sifre", "token", "secret"]
 }

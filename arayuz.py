@@ -15,7 +15,7 @@ import math
 import shutil
 import tkinter as tk
 from pathlib import Path
-from tkinter import simpledialog, ttk
+from tkinter import filedialog, simpledialog, ttk
 
 import adimadim as a
 
@@ -28,6 +28,7 @@ BEKLEME = {  # komut → beklerken gösterilecek açıklama
     "bitir": "Doküman hazırlanıyor (sesli modda anlatımlar metne çevriliyor, birkaç dakika sürebilir)",
     "word": "Word dosyası yeniden üretiliyor",
     "yeniden": "Ses kayıtları baştan metne çevriliyor (birkaç dakika sürebilir)",
+    "api": "API çağrıları adımlara ekleniyor",
 }
 
 
@@ -270,6 +271,7 @@ class Pencere:
                      ("Klasörü aç", lambda: self.ac(""), "Görseller, sesler, .md"),
                      ("Word'ü yenile", lambda: self.calistir("word", str(self.bitmis)), ".md'yi elle düzelttiysen"),
                      ("Sesi baştan çevir", lambda: self.calistir("yeniden", str(self.bitmis)), "Metni sesten yeniden yazar"),
+                     ("API ekle (HAR)", self.api_ekle, "Tarayıcının Ağ kaydı"),
                      ("Yeni doküman", self.yeni, "")))
 
         # --- Her ekranda: bekleme çubuğu ve ipucu
@@ -337,6 +339,13 @@ class Pencere:
         md.write_text(metin + "\n", encoding="utf-8")
         self.rovo.delete("1.0", "end")
         self.calistir("word", str(self.bitmis))
+
+    def api_ekle(self) -> None:
+        har = filedialog.askopenfilename(parent=self.kok, title="Ağ sekmesinden kaydedilen HAR dosyası",
+                                         initialdir=a.belgeler_dizini("DOWNLOAD"),
+                                         filetypes=[("HAR", "*.har"), ("Tümü", "*")])
+        if har and self.bitmis:
+            self.calistir("api", har, str(self.bitmis))
 
     def ac(self, uzanti: str) -> None:
         md = a.md_bul(self.bitmis) if self.bitmis else None
@@ -441,11 +450,13 @@ class Pencere:
             self.goster("bitis")
             self.bitis_baslik["text"] = f"Doküman hazır: {self.bitmis.name}"
             self.onizlemeyi_yenile()
-            self.ipucu["text"] = ("Rovo ile resmîleştirmek için: 1) MD'yi kopyala  2) Rovo'ya yapıştır  "
+            self.ipucu["text"] = ("API çağrıları gerekiyorsa önce 'API ekle (HAR)'. "
+                                  "Rovo ile resmîleştirmek için: 1) MD'yi kopyala  2) Rovo'ya yapıştır  "
                                   "3) Rovo'nun çıktısını alttaki alana yapıştır. Sonra Word'ü aç ve kontrol et.")
         else:
             self.goster("basla")
-            self.ipucu["text"] = "Adını yaz, sesli ya da yazılı seç, Başla'ya bas."
+            self.ipucu["text"] = ("Adını yaz, sesli ya da yazılı seç, Başla'ya bas. API çağrıları da gerekiyorsa "
+                                  "önce tarayıcıda F12 → Ağ sekmesini aç (dişli → Kayıtları sürdür).")
         if self.surec:
             gecen = int(time.time() - self.bas_zamani)
             self.bekle_yazi["text"] = f"Lütfen bekle: {BEKLEME.get(self.calisan, self.calisan)}… ({gecen} sn)"

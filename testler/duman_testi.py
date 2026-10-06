@@ -240,6 +240,76 @@ def sesli_akis(env: dict) -> None:
             "word: kopyalanan Rovo çıktısına görseller geri konuyor")
 
 
+def har_girdisi(zaman: str, metot: str, url: str, yanit: str = "{}", tur: str = "application/json",
+                istek: str | None = None, durum: int = 200) -> dict:
+    """Firefox 157'nin HAR 1.2 girdisi biçiminde (başlıkta gizli jeton var: dokümana girmemeli)."""
+    g = {"startedDateTime": zaman,
+         "request": {"method": metot, "url": url, "httpVersion": "HTTP/2", "cookies": [], "queryString": [],
+                     "headers": [{"name": "Authorization", "value": "Bearer GIZLI-JETON"},
+                                 {"name": "Cookie", "value": "oturum=GIZLI-CEREZ"}]},
+         "response": {"status": durum, "statusText": "", "headers": [], "cookies": [],
+                      "content": {"mimeType": tur, "size": len(yanit), "text": yanit}}}
+    if istek is not None:
+        g["request"]["postData"] = {"mimeType": "application/json", "params": [], "text": istek}
+    return g
+
+
+def api_cagrilari(env: dict, kok: Path) -> None:
+    print("API çağrıları (tarayıcının HAR kaydı)")
+    calistir(env, "basla", "API akışı")
+    for _ in range(3):
+        calistir(env, "cek", ZENITY_RC="1")
+    calistir(env, "bitir")
+    oturum = son_oturum(env)
+    veri = json.loads((oturum / "oturum.json").read_text(encoding="utf-8"))
+    kontrol(all("zaman" in a for a in veri["adimlar"]) and "baslangic" in veri and "bitis" in veri,
+            "adımlar çekim zamanını, oturum başla/bitir zamanını tutuyor")
+    # Zamanları sabitle: başla 10:00, adımlar 10:01 / 10:02 / 10:03, bitir 10:04
+    veri.update(baslangic="2026-10-06T10:00:00.000+03:00", bitis="2026-10-06T10:04:00.000+03:00")
+    for no, adim in enumerate(veri["adimlar"], 1):
+        adim["zaman"] = f"2026-10-06T10:0{no}:00.000+03:00"
+    (oturum / "oturum.json").write_text(json.dumps(veri, ensure_ascii=False), encoding="utf-8")
+    girdiler = [
+        har_girdisi("2026-10-06T09:59:00.000+03:00", "GET", "https://x.test/api/eski"),  # başlamadan önce
+        har_girdisi("2026-10-06T10:00:30.000+03:00", "GET", "https://x.test/api/musteri/7?token=GIZLI-SORGU",
+                    yanit='{"ad": "Ali", "password": "GIZLI-PAROLA"}'),
+        har_girdisi("2026-10-06T10:00:31.000+03:00", "GET", "https://x.test/stil.css", tur="text/css"),
+        har_girdisi("2026-10-06T07:01:30.000Z", "POST", "https://x.test/api/siparis", durum=201,  # Chrome: "Z"
+                    istek='{"urun": "Fiber", "secret": "GIZLI-SIR"}', yanit='{"no": 9}'),
+        har_girdisi("2026-10-06T10:01:31.000+03:00", "POST", "https://analytics.test/g/collect", tur="text/plain", yanit=""),
+        har_girdisi("2026-10-06T10:01:32.000+03:00", "GET", "https://x.test/api/siparis/9",
+                    yanit=json.dumps({"kalemler": [{"ad": f"kalem{i}"} for i in range(5)]})),
+        har_girdisi("2026-10-06T10:01:33.000+03:00", "GET", "https://x.test/api/siparis/9"),  # yoklama tekrarı
+        har_girdisi("2026-10-06T10:02:30.000+03:00", "GET", "https://x.test/soap/sorgu", tur="text/xml; charset=utf-8",
+                    yanit="<r><sifreBilgisi>GIZLI-XML</sifreBilgisi><durum>Aktif</durum></r>"),
+        har_girdisi("2026-10-06T10:05:00.000+03:00", "GET", "https://x.test/api/sonra"),  # bitirdikten sonra
+    ]
+    har = kok / "akis.har"
+    har.write_text(json.dumps({"log": {"version": "1.2", "creator": {"name": "Firefox", "version": "157.0"},
+                                       "entries": girdiler}}), encoding="utf-8")
+    kontrol(calistir(env, "api", str(har)).returncode == 0, "api komutu")
+    calistir(env, "api", str(har))  # ikinci kez: satırlar çoğalmamalı
+    md = oturum / "API akışı.md"
+    metin = md.read_text(encoding="utf-8")
+    adim = dict(zip(("1", "2", "3"), metin.split("### Adım ")[1:]))
+    kontrol("| Ekrana gelen | GET | `/api/musteri/7?token=***` | 200 |" in adim.get("1", "")
+            and "| Butonla giden | POST | `/api/siparis` | 201 |" in adim.get("1", ""),
+            "GET sonraki ekrana, POST butona basılan ekrana (Adım 1)")
+    kontrol(adim.get("2", "").count("| Ekrana gelen | GET | `/api/siparis/9` |") == 1, "aynı ekranda tekrarlanan çağrı tek satır")
+    kontrol("… +4 öğe" in adim.get("2", ""), "uzun dizi kısaltıldı")
+    kontrol("<sifreBilgisi>***</sifreBilgisi><durum>Aktif" in adim.get("3", "") and "~~~xml" in adim.get("3", ""),
+            "XML gövdede gizli alan maskelendi")
+    kontrol("GIZLI" not in metin, "jeton, çerez, parola, sır ve sorgudaki token dokümanda yok")
+    kontrol(not any(x in metin for x in ("/api/eski", "/api/sonra", "stil.css", "collect")),
+            "başla öncesi, bitir sonrası, css ve analitik çağrılar atıldı")
+    kontrol("```" not in metin and md.with_name(md.name + ".yedek").exists(),
+            "gövdeler ~~~ bloğunda (Rovo'nun ```markdown bloğunu bozmaz), önceki .md yedeklendi")
+    bos = kok / "analitik.har"  # kullanıcının ilk denemesindeki gibi yalnızca analitik çağrılar
+    bos.write_text(json.dumps({"log": {"entries": [girdiler[4]]}}), encoding="utf-8")
+    r = calistir(env, "api", str(bos), beklenen=1)
+    kontrol(r.returncode == 1 and "API çağrısı yok" in r.stdout, "API çağrısı olmayan HAR açıklamayla reddediliyor")
+
+
 def yedek_motor(env: dict, kok: Path) -> None:
     print("OpenVINO çalışmazsa yedek motor")
     yedek_ayar = kok / "yedek-ayar"
@@ -299,7 +369,7 @@ def kisayollar(env: dict, kok: Path) -> None:
 def arayuz(env: dict) -> None:
     print("Düğmeli pencere")
     betik = """
-import os, sys, tkinter as tk
+import json, os, sys, tkinter as tk
 sys.path.insert(0, sys.argv[1])
 import arayuz as u
 assert "Ctrl+Alt+S" in u.ipucu({"adimlar": []}, False)
@@ -335,12 +405,20 @@ p.rovo_uygula(); p.surec.wait(); p.guncelle(tekrar=False)
 yeni = md.read_text(encoding="utf-8")
 assert "```" not in yeni and "Kullanıcı ekranı açar." in yeni and "![Adım 1](gorseller/adim-01.png)" in yeni, yeni
 assert md.with_name(md.name + ".yedek").exists() and "Kullanıcı ekranı açar." in p.onizleme.get("1.0", "end"), "Rovo alanı .md + Word"
+veri = json.loads((p.bitmis / "oturum.json").read_text(encoding="utf-8"))
+har = p.bitmis / "test.har"
+har.write_text(json.dumps({"log": {"entries": [{"startedDateTime": veri["adimlar"][0]["zaman"],
+    "request": {"method": "GET", "url": "https://x.test/api/ekran", "headers": []},
+    "response": {"status": 200, "content": {"mimeType": "application/json", "text": '{"a": 1}'}}}]}}))
+u.filedialog.askopenfilename = lambda **k: str(har)
+p.api_ekle(); p.surec.wait(); p.guncelle(tekrar=False)
+assert "API çağrıları" in p.onizleme.get("1.0", "end"), "API ekle (HAR) → önizlemede"
 p.yeni(); assert p.ekran == "basla"
 kok.destroy(); print("pencere tamam")
 """
     r = subprocess.run([PY, "-c", betik, str(REPO)], env={**env, "ZENITY_METIN": "Pencereden not."},
                        capture_output=True, text=True, timeout=120)
-    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı"
+    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı → API ekle"
             + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-400:]})"))
     print("    " + r.stdout.strip())
 
@@ -352,6 +430,7 @@ def main() -> int:
         try:
             yazili_akis(env)
             sesli_akis(env)
+            api_cagrilari(env, kok)
             yedek_motor(env, kok)
             ipucu_ve_duzeltme(env, kok)
             goreli_klasor(env, kok)

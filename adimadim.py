@@ -14,6 +14,7 @@ Komutlar
   adimadim bitir                     bitir; .md ve .docx üret, klasörü aç
   adimadim word [klasör]             elle düzenlenen .md'den .docx'i yeniden üret
   adimadim yeniden [klasör]          bir dokümanın ses kayıtlarını baştan metne çevir
+  adimadim api dosya.har [klasör]    tarayıcının Ağ sekmesinden kaydedilen API çağrılarını adımlara ekle
   adimadim cevir dosya.wav ...       ses dosyalarını metne çevirip ekrana yaz
   adimadim kisayol                   GNOME klavye kısayollarını tanımla
   adimadim arayuz                    düğmeli pencere (uygulama menüsünde: adımadım)
@@ -29,6 +30,8 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   dil             anlatım dili (varsayılan "tr")
   ipucu           terimleri Whisper'a ipucu olarak ver: "prompt" (initial_prompt), "hotwords" ya da "" (kapalı)
   duzeltme        duzeltmeler.txt (+ .local) kurallarını çıktıya uygula (true/false)
+  api_filtre      yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. ["/api/"]); boşsa JSON/XML olanlar
+  api_gizle       istek/yanıt gövdesi ve sorguda adında bunlar geçen alanlar *** yazılır
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -36,6 +39,8 @@ from __future__ import annotations
 
 import argparse
 import ast
+import base64
+import bisect
 import contextlib
 import datetime as dt
 import fcntl
@@ -51,6 +56,7 @@ import sys
 import time
 import uuid
 from pathlib import Path
+from urllib.parse import urlsplit
 
 UYGULAMA = "adımadım"
 REPO_DIZINI = Path(__file__).resolve().parent
@@ -82,19 +88,21 @@ def bildir(mesaj: str) -> None:
                            capture_output=True, timeout=5)
 
 
-def belgeler_dizini() -> Path:
+def belgeler_dizini(tur: str = "DOCUMENTS") -> Path:
+    """xdg kullanıcı dizini (DOWNLOAD: İndirilenler); bulunamazsa ~/Documents ya da ev dizini."""
     with contextlib.suppress(OSError, subprocess.SubprocessError):
-        r = subprocess.run(["xdg-user-dir", "DOCUMENTS"], capture_output=True, text=True, timeout=5)
+        r = subprocess.run(["xdg-user-dir", tur], capture_output=True, text=True, timeout=5)
         yol = r.stdout.strip()
         if r.returncode == 0 and yol and Path(yol) != Path.home():
             return Path(yol)
-    return Path.home() / "Documents"
+    return Path.home() / "Documents" if tur == "DOCUMENTS" else Path.home()
 
 
 VARSAYILAN_AYAR = {  # asıl kaynak repodaki ayar.ornek.json; bu yalnızca o dosya yoksa kullanılır
     "klasor": "", "ekran": "pencere", "stt": "openvino", "cihaz": "",
     "ov_kaynak": "openai/whisper-medium", "ov_model": "~/modeller/whisper-medium-ov",
     "whisper_modeli": "small", "dil": "tr", "ipucu": "prompt", "duzeltme": True,
+    "api_filtre": [], "api_gizle": ["password", "parola", "sifre", "token", "secret"],
 }
 
 
@@ -192,6 +200,15 @@ def markdown(veri: dict) -> str:
                 paragraflar = ["_Açıklama eklenmedi._"]
         for paragraf in paragraflar:
             satirlar += [paragraf, ""]
+        if adim.get("api"):
+            satirlar += ["#### API çağrıları", "", "| Yön | Metot | Uç nokta | Durum |", "|---|---|---|---|"]
+            satirlar += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']} |" for c in adim["api"]]
+            satirlar.append("")
+            for c in adim["api"]:
+                for ad, govde_ in (("İstek", c["istek"]), ("Yanıt", c["yanit"])):
+                    if govde_:  # ~~~: Rovo çıktıyı ```markdown bloğunda verir, ``` o bloğu erken kapatırdı
+                        dil = "json" if govde_[0] in "{[" else "xml" if govde_[0] == "<" else ""
+                        satirlar += [f"{ad}: `{c['metot']} {c['uc']}`", "", f"~~~{dil}", govde_, "~~~", ""]
     return "\n".join(satirlar)
 
 
@@ -536,6 +553,98 @@ def openvino_cevirici(ayar: dict, cihaz: str):
     return parcala
 
 
+# --------------------------------------------------------------- API çağrıları (HAR)
+
+YAZAN_METOTLAR = ("POST", "PUT", "PATCH", "DELETE")  # butonla veri gönderir; diğerleri ekrana veri getirir
+
+
+def zaman_damgasi() -> str:
+    return dt.datetime.now().astimezone().isoformat(timespec="milliseconds")
+
+
+def zaman_oku(metin: str) -> dt.datetime:
+    """HAR (Firefox "+03:00", Chrome "Z") ve oturum zamanları. Python 3.10 "Z"yi ve 3/6 dışı kesir hanesini okumaz."""
+    metin = re.sub(r"\.(\d+)", lambda m: "." + m.group(1)[:6].ljust(6, "0"), metin.replace("Z", "+00:00"))
+    return dt.datetime.fromisoformat(metin).astimezone()
+
+
+def gizle_metin(metin: str, kalip: re.Pattern) -> str:
+    """JSON olmayan gövde ve sorgu: <...password...>değer ve password=değer biçimlerinde değer *** olur."""
+    k = kalip.pattern
+    metin = re.sub(rf"(<[\w:.-]*(?:{k})[\w:.-]*[^>]*>)[^<]*", r"\1***", metin, flags=re.I)
+    return re.sub(rf"((?:{k})[\w.-]*=)[^&\s]*", r"\1***", metin, flags=re.I)
+
+
+def kisalt(deger, kalip: re.Pattern):
+    """JSON: gizli alanlar ***, diziler ilk öğeden sonra kesilir, uzun metinler kısalır."""
+    if isinstance(deger, dict):
+        return {k: "***" if kalip.search(k) else kisalt(v, kalip) for k, v in deger.items()}
+    if isinstance(deger, list):
+        return [kisalt(v, kalip) for v in deger[:1]] + ([f"… +{len(deger) - 1} öğe"] if len(deger) > 1 else [])
+    if isinstance(deger, str) and len(deger) > 200:
+        return deger[:200] + "…"
+    return deger
+
+
+def govde(metin: str, kalip: re.Pattern) -> str:
+    """İstek/yanıt gövdesi dokümana: önce gizlenir, JSON düzgün yazılır; en çok 40 satır / 3000 karakter."""
+    if not metin.strip():
+        return ""
+    try:
+        metin = json.dumps(kisalt(json.loads(metin), kalip), ensure_ascii=False, indent=2)
+    except ValueError:
+        metin = gizle_metin(metin.strip(), kalip)
+    metin = metin[:3000] + ("…" if len(metin) > 3000 else "")
+    satirlar_ = metin.splitlines()
+    return "\n".join(satirlar_[:40] + ([f"… (+{len(satirlar_) - 40} satır)"] if len(satirlar_) > 40 else []))
+
+
+def api_turu(mime: str) -> bool:
+    return bool(re.search(r"json|xml", mime, re.I)) and not re.search(r"html|svg", mime, re.I)
+
+
+def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
+    """HAR girdilerini adımlara dağıtır (adim["api"]); eklenen çağrı sayısını döndürür.
+
+    Adım N ile N+1'in çekimi arasındaki GET'in getirdiği veri N+1'in ekranında görünür; POST/PUT/…
+    N'deki butonla gider. basla–bitir dışındaki çağrılar (Ağ sekmesinin eski kaydı) atılır.
+    İstek/yanıt başlıkları (Authorization, Cookie…) dokümana hiç yazılmaz."""
+    adimlar = veri["adimlar"]
+    zamanlar = [zaman_oku(a["zaman"]) for a in adimlar]
+    bas, son = zaman_oku(veri["baslangic"]), zaman_oku(veri["bitis"])
+    filtre = ayar.get("api_filtre") or []
+    kalip = re.compile("|".join(map(re.escape, ayar.get("api_gizle") or [])) or "(?!)", re.I)
+    for adim in adimlar:
+        adim["api"] = []
+    gorulen, sayi = set(), 0
+    for zaman, g in sorted(((zaman_oku(g["startedDateTime"]), g) for g in girdiler), key=lambda x: x[0]):
+        istek, yanit = g["request"], g["response"]
+        gonderilen, icerik = istek.get("postData") or {}, yanit.get("content") or {}
+        if filtre:
+            uygun = any(p in istek["url"] for p in filtre)
+        else:
+            uygun = api_turu(gonderilen.get("mimeType", "")) or api_turu(icerik.get("mimeType", ""))
+        if not uygun or not yanit.get("status") or not bas <= zaman <= son:  # status 0: iptal/engellenmiş
+            continue
+        metot, k = istek["method"].upper(), bisect.bisect_right(zamanlar, zaman)
+        yazan = metot in YAZAN_METOTLAR
+        sira = min(max(k - 1, 0) if yazan else k, len(adimlar) - 1)
+        url = urlsplit(istek["url"])
+        uc = gizle_metin(url.path + (f"?{url.query}" if url.query else ""), kalip).replace("|", "%7C")
+        if (sira, metot, uc) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır
+            continue
+        gorulen.add((sira, metot, uc))
+        yanit_metni = icerik.get("text") or ""
+        if icerik.get("encoding") == "base64":
+            yanit_metni = base64.b64decode(yanit_metni).decode("utf-8", "replace")
+        adimlar[sira]["api"].append({
+            "yon": "Butonla giden" if yazan else "Ekrana gelen", "metot": metot, "uc": uc,
+            "durum": yanit["status"], "istek": govde(gonderilen.get("text") or "", kalip),
+            "yanit": govde(yanit_metni, kalip)})
+        sayi += 1
+    return sayi
+
+
 # --------------------------------------------------------------- komutlar
 
 def cmd_basla(args, ayar) -> int:
@@ -565,7 +674,8 @@ def cmd_basla(args, ayar) -> int:
     if args.ses:
         (oturum / "ses").mkdir(exist_ok=True)
     veri = {"baslik": baslik, "dosya": dosya_adi(baslik), "tarih": f"{simdi:%d.%m.%Y}",
-            "mod": "ses" if args.ses else "yazi", "adimlar": [], "kayit_pid": None}
+            "mod": "ses" if args.ses else "yazi", "adimlar": [], "kayit_pid": None,
+            "baslangic": zaman_damgasi()}
     with kilit():
         kaydet(oturum, veri)
         AKTIF.write_text(str(oturum), encoding="utf-8")
@@ -584,7 +694,7 @@ def cmd_cek(args, ayar) -> int:
         veri = yukle(oturum)
         no = len(veri["adimlar"]) + 1
         adim = {"id": uuid.uuid4().hex[:8], "gorsel": f"gorseller/adim-{no:02d}.png",
-                "ses": None, "ses_metni": None, "not": ""}
+                "ses": None, "ses_metni": None, "not": "", "zaman": zaman_damgasi()}  # zaman: API çağrılarını eşler
         if not ekran_goruntusu(oturum / adim["gorsel"], "tam" if args.tam else ayar.get("ekran", "pencere")):
             bildir("Ekran görüntüsü alınamadı. Kurulu mu: sudo apt install gnome-screenshot")
             return 1
@@ -663,7 +773,7 @@ def cmd_bitir(args, ayar) -> int:
             return 1
         veri = yukle(oturum)
         kayit_durdur(veri.get("kayit_pid"))
-        veri["kayit_pid"] = None
+        veri["kayit_pid"], veri["bitis"] = None, zaman_damgasi()
         kaydet(oturum, veri)
         AKTIF.unlink(missing_ok=True)
         SON.write_text(str(oturum), encoding="utf-8")
@@ -716,6 +826,38 @@ def cmd_yeniden(args, ayar) -> int:
         adim["ses_metni"] = None
     yaziya_dok(oturum, veri, ayar)
     word_uret(oturum)
+    return 0
+
+
+def cmd_api(args, ayar) -> int:
+    """Tarayıcının Ağ sekmesinden kaydedilen HAR'daki API çağrılarını bitmiş dokümanın adımlarına ekler."""
+    oturum = klasor_sec(args.klasor)
+    if not oturum or not (oturum / "oturum.json").exists():
+        bildir(f"Doküman bulunamadı: {oturum}")
+        return 1
+    if aktif_oturum() == oturum:
+        bildir("Bu doküman hâlâ açık; önce: adimadim bitir")
+        return 1
+    veri = yukle(oturum)
+    if not veri["adimlar"] or not veri.get("bitis") or any("zaman" not in a for a in veri["adimlar"]):
+        bildir("Bu dokümanda çekim zamanları yok (v0.8.0'dan önce kaydedilmiş); API çağrıları eklenemez.")
+        return 1
+    try:
+        sayi = api_ekle(veri, json.loads(Path(args.har).expanduser().read_text(encoding="utf-8"))["log"]["entries"], ayar)
+    except (OSError, ValueError, KeyError, TypeError, AttributeError) as hata:
+        bildir(f"HAR okunamadı: {hata}")
+        return 1
+    if not sayi:
+        bildir("HAR'da bu dokümanın başla–bitir aralığında API çağrısı yok. Ağ sekmesi ilk ekrandan önce açık "
+               "olmalı; yalnızca JSON/XML çağrılar alınır (bkz. api_filtre ayarı).")
+        return 1
+    md = md_bul(oturum)
+    if md:  # .md'de elle yapılan düzeltmeler kaybolmasın
+        shutil.copy2(md, md.with_name(md.name + ".yedek"))
+        print(f"Önceki metin yedeklendi: {md.name}.yedek")
+    kaydet(oturum, veri)
+    word_uret(oturum)
+    bildir(f"{sayi} API çağrısı adımlara eklendi.")
     return 0
 
 
@@ -801,13 +943,16 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
     p = alt.add_parser("yeniden", help="bir dokümanın ses kayıtlarını baştan metne çevir")
     p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
+    p = alt.add_parser("api", help="tarayıcının Ağ sekmesinden kaydedilen API çağrılarını (HAR) adımlara ekle")
+    p.add_argument("har", help="Firefox: F12 → Ağ → sağ tık → Tümünü HAR olarak kaydet")
+    p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
     p = alt.add_parser("cevir", help="ses dosyalarını metne çevirip ekrana yaz")
     p.add_argument("dosyalar", nargs="+", help="16 kHz mono WAV dosyaları")
     alt.add_parser("kisayol", help="GNOME klavye kısayollarını tanımla")
     alt.add_parser("arayuz", help="düğmeli pencereyi aç")
     args = ap.parse_args(argv)
     komutlar = {"basla": cmd_basla, "cek": cmd_cek, "not": cmd_not, "geri": cmd_geri,
-                "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden,
+                "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden, "api": cmd_api,
                 "cevir": cmd_cevir, "kisayol": cmd_kisayol,
                 "arayuz": lambda args, ayar: __import__("arayuz").main()}
     return komutlar[args.komut](args, ayarlari_oku())
