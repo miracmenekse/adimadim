@@ -4,6 +4,16 @@ apt flameshot
 apt gnome-screenshot
 apt pandoc
 bin adimadim
+bin codeburn
+bin graphify
+bin graphify-mcp
+bin headroom
+bin headroom-cache-ttl
+bin node
+bin npm
+bin npx
+bin uv
+bin uvx
 komut arecord
 komut git
 komut gnome-screenshot

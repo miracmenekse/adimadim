@@ -12,3 +12,11 @@ snap core24                 # snapd-desktop-integration güncellemesiyle geldi; 
 snap gnome-46-2404          # aynı
 snap mesa-2404              # aynı
 grup kvm                    # VM'de sanallaştırma için; adimadim kullanmaz
+bin headroom                # Claude Code bağlam sıkıştırıcısı; yalnızca VM'de, adimadim kullanmaz
+bin headroom-cache-ttl      # aynı
+bin codeburn                # Claude Code kullanım ölçer; yalnızca VM'de
+bin graphify-mcp            # Claude Code bilgi grafiği becerisi; yalnızca VM'de
+bin uv                      # yukarıdaki araçların kurucusu (uv tool); adimadim venv'i kur.sh ile kurulur
+bin uvx                     # aynı
+bin node                    # Claude Code araçları için; adimadim Node kullanmaz
+bin npx                     # aynı
