@@ -64,7 +64,7 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
 
 ## Mimari
 
-- `adimadim.py`: tek giriş noktası. Komutlar: basla, cek, not, geri, durum, bitir, word, yeniden, cevir, kisayol, arayuz.
+- `adimadim.py`: tek giriş noktası. Komutlar: basla, cek, not, geri, durum, bitir, word, yeniden, api, cevir, kisayol, arayuz.
   Gerekirse modüllere bölünebilir; komut satırı arayüzü korunmalı.
 - `arayuz.py`: tkinter pencere, üç ekran (Başla → Kayıt: ekran önizlemeleri → Bitiş: .md önizlemesi).
   Düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır (çıktı `arayuz.log`'a, `ADIMADIM_ARAYUZ=1`
@@ -72,6 +72,11 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   `Duzenleyici`: Pillow ile kırp/kutu/ok/yazı (orijinal `gorseller/.orijinal/`); bitiş ekranında
   MD'yi kopyala ve Rovo alanı (.md'ye yazar, `word` çalıştırır). Uygulama menüsü girdisini kur.sh yazar.
 - Oturum klasörü: `oturum.json` (kaynak), `gorseller/`, `ses/`, `<Başlık>.md`, `<Başlık>.docx`.
+- API çağrıları: `basla`/`cek`/`bitir` oturuma ve adımlara saat dilimli zaman yazar (`baslangic`, `zaman`,
+  `bitis`). `api` bitmiş oturuma tarayıcının HAR'ını uygular (`api_ekle`): basla–bitir dışı atılır, GET
+  sonraki adıma, POST/PUT/PATCH/DELETE butona basılan adıma; sonuç `adim["api"]`'de (başlıklar hiç yok,
+  `api_gizle` alanları ***, diziler kısaltılmış). Gövdeler `~~~` bloğunda: Rovo ```markdown bloğu döndürür.
+  Ham HAR saklanmaz (çerez/jeton içerir).
   Oturum açıkken .md her kayıtta oturum.json'dan yeniden üretilir; bitince .md elle düzenlenebilir,
   `word` komutu .docx'i ondan üretir.
 - Konuşma tanıma: tümü `cevirici_olustur(ayar)` üzerinden geçer (OpenVINO GenAI WhisperPipeline;

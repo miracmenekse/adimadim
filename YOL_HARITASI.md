@@ -189,6 +189,43 @@ Yerel LLM yerine şirketin resmi LLM'i Rovo kullanılır (kullanıcı kararı). 
 düzeltilmiş .md üretir; resmi senaryo diline çevirme elle Rovo agent'ında yapılır.
 Agent talimatı: `rovo/ajan-talimati.md`; Confluence'taki sözlük sayfası: `rovo/confluence-sozluk.md`.
 
+## Faz 7 — API çağrıları (HAR) ve v0.8.0 (2026-10-06)
+
+Kullanıcı, dokümanda her ekrana gelen ve butonla giden API çağrılarını da görmek istiyor. Kararlar
+(kullanıcı): ana makinede Firefox, F12 açılıyor; çağrılar tarayıcının Ağ sekmesinde görünüyor; API'ler
+REST; dokümanda tablo + kısaltılmış gövde.
+
+Yol: tarayıcının kendi ağ kaydı (HAR). Proxy (sertifika, şirket proxy'si/SSO çakışması), eklenti
+(Firefox imza ister) ve canlı CDP (Firefox CDP'yi bıraktı, websocket bağımlılığı) elendi.
+
+1. ✅ **Zaman.** `basla` → `baslangic`, `cek` → adımda `zaman`, `bitir` → `bitis` (saat dilimli ISO).
+   Zamanı olmayan eski oturumlara API eklenemez, açık mesajla reddedilir.
+2. ✅ **Akış.** Bayrak yok: bitmiş dokümana `adimadim api dosya.har [klasör]` ya da Bitiş ekranında
+   "API ekle (HAR)" (İndirilenler'de açılan dosya seçici). .md `.md.yedek`'e alınıp yeniden üretilir,
+   Word yenilenir; tekrar çalıştırmak çağrıları çoğaltmaz. Ham HAR kopyalanmaz (çerez/jeton içerir).
+   Başla ekranı F12 → Ağ → Kayıtları sürdür'ü hatırlatır.
+3. ✅ **Eşleme.** Adım N ile N+1'in çekimi arasındaki çağrılar: GET → Adım N+1 "Ekrana gelen";
+   POST/PUT/PATCH/DELETE → Adım N "Butonla giden". İlk çekimden önceki GET'ler Adım 1'e, son çekimden
+   sonrakiler son adıma; basla öncesi ve bitir sonrası (Kayıtları sürdür'ün eski kaydı) atılır.
+4. ✅ **Ayıklama.** İstek ya da yanıtı JSON/XML olan (HTML/SVG değil) çağrılar; `api_filtre` doluysa yalnızca
+   URL'si eşleşenler; status 0 (iptal) atılır; aynı adımda aynı metot+URL tek satır.
+5. ✅ **Gizleme.** Başlıklar dokümana hiç yazılmaz. `api_gizle` anahtarları JSON'da (iç içe), XML öğesinde,
+   `anahtar=değer`'de ve sorguda `***` olur.
+6. ✅ **Çıktı.** `#### API çağrıları` tablosu (Yön | Metot | Uç nokta | Durum) + istek/yanıt `~~~json`/`~~~xml`
+   blokları; diziler ilk öğeden sonra `… +N öğe`, en çok 40 satır / 3000 karakter.
+7. ✅ **Python 3.10.** "Z" sonekli ve 3/6 dışı kesirli zamanlar normalize edilir; base64 gövde çözülür.
+8. ✅ **Test.** Duman testi Firefox 157 HAR 1.2 biçiminde (kullanıcının VM'de aldığı gerçek HAR'dan
+   çıkarıldı) girdi üretir: eşleme, tekrar, kısaltma, JSON/XML/sorgu maskeleme, aralık dışı/css/analitik
+   atma, ~~~ blokları, yalnızca analitik içeren HAR'ın reddi; pencerede "API ekle (HAR)".
+   Kullanıcının gerçek HAR'ı (yalnızca analitik) hatasız okundu, iki çağrı da süzüldü.
+
+Bilinen sınırlar: Ağ sekmesi yalnızca açıkken kaydeder; akış yeni sekme/açılır pencere açarsa oradaki
+çağrılar kaçar. Hepsi-POST API'lerde (SOAP/GraphQL) yön bilgisi yanlış olur. Gövdesiz 204 yanıtlı
+çağrılar (ör. DELETE) varsayılan süzgeçte görünmez; `api_filtre` ile alınır.
+
+**Kabul:** test.sh geçiyor; ana makinede Firefox ile gerçek bir akışta API tablosu doğru adımlarda.
+🛑 Push ve v0.8.0 onayı.
+
 ## Her sürümde: ana makine teslimi
 
 Ana makinede Claude Code yok; CHANGELOG'daki "Ana makinede yapılacaklar" bölümü, kullanıcının kopyalayıp
@@ -218,6 +255,7 @@ Faz 6'dan sonra ya da bir faz beklerken ele alınabilir:
 | Faz 4 | Model kararı onayı, push ve v0.2.0 |
 | Faz 5 | Push ve v0.3.0 |
 | Faz 6 | LLM model seçimi, push ve v0.4.0 |
+| Faz 7 | Push ve v0.8.0 |
 
 ## Kapsam dışı
 

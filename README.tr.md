@@ -31,6 +31,7 @@ adım tahminle değil ölçümle seçilmiştir.
 * **Alan terimlerinde doğruluk:** terim ipucu, Türkçe eki koruyan "yanlış → doğru" sözlüğü ve Silero VAD terim isabetini %67'den %90'a çıkarır. Şirkete özel terimler repo dışındaki `.local` dosyalarında durur.
 * **Toplu çeviri:** tüm adım sesleri birlikte çevrilir, her cümle kendi adımına dağıtılır; gerçek bir oturumda WER %93'ten %7,6'ya indi.
 * **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
+* **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir.
 * **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; Rovo'nun resmileştirdiği metin geri yapıştırılınca iki dosya da güncellenir.
 
 ## 🛠 Teknolojik Altyapı
@@ -96,6 +97,8 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `dil`            | anlatım dili, varsayılan `tr`                                   |
 | `ipucu`          | terimleri Whisper'a ipucu olarak ver: `prompt`, `hotwords` ya da boş (kapalı) |
 | `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
+| `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
+| `api_gizle`      | gövde ve sorguda adında bunlardan biri geçen alanlar `***` yazılır (varsayılan: password, parola, sifre, token, secret) |
 
 Şirket Word şablonu: `~/.config/adimadim/sablon.docx`.
 Şirkete özel terimler: `~/.config/adimadim/terimler.local.txt` (repoya girmez).
@@ -105,7 +108,7 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 Uygulama menüsünden **adımadım**'ı aç: **Başla** (ad, sesli/yazılı) → **Kayıt** (çek, not, geri al,
 bölge çek, önizlemeler) → **Bitiş** (bekleme çubuğu, doküman önizlemesi, MD'yi kopyala, Rovo alanı,
-Word'ü aç). Ya da komut satırı:
+Word'ü aç, HAR'dan API ekle). Ya da komut satırı:
 
 ```bash
 adimadim basla "Sipariş iptal akışı" --ses   # sesli oturum başlat
@@ -115,8 +118,14 @@ adimadim bitir                                # çevir, .md + .docx üret, klas�
 adimadim word                                 # .md'yi elle düzelttikten sonra Word'ü yenile
 adimadim yeniden                              # güncel modelle baştan çevir
 adimadim cevir kayit.wav                      # tek bir ses dosyasını çevir
+adimadim api akis.har                         # tarayıcının Ağ kaydındaki API çağrılarını ekle
 adimadim cek --tam                            # ayardan bağımsız tüm ekranı çek
 ```
+
+**API çağrıları (Firefox):** ilk ekrandan önce F12 → **Ağ** sekmesini aç, dişliden **Kayıtları sürdür**'ü işaretle.
+Bitirince Ağ sekmesinde sağ tık → **Tümünü HAR olarak kaydet**, sonra Bitiş ekranında **API ekle (HAR)**
+(Rovo'dan önce: .md yeniden üretilir, öncekisi `.md.yedek`). Başlıklar (Authorization, Cookie) dokümana hiç yazılmaz;
+HAR dosyası oturum klasörüne kopyalanmaz, içinde oturum çerezi olduğu için işin bitince sil.
 
 **Çıktı:** bir oturum klasörü
 
@@ -160,6 +169,7 @@ Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek sipari
 - [x] Ekran görüntüsü + yazılı/sesli anlatım → Markdown + Word
 - [x] Alan terimlerine uyarlanmış yerel Türkçe konuşma tanıma
 - [x] Düğmeli pencere, görsel düzenleyici, Rovo alanı
+- [x] Tarayıcının HAR kaydından adım adım API çağrıları
 - [ ] Oturumu bitirmek için klavye kısayolu
 - [ ] Sesli modda kayıt süresini gösteren gösterge
 - [ ] Windows desteği (değerlendiriliyor; ekran çekme, kısayollar ve ses kaydı bugün Linux'a bağlı)
@@ -189,3 +199,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.5.0 | 2026-09-28 | Düğmeli pencere: terminalsiz kullanım, uygulama menüsü girdisi. |
 | v0.6.0 | 2026-09-28 | Pencere Başla → Kayıt → Bitiş ekranlarına ayrıldı; bekleme çubuğu ve önizlemeler. |
 | v0.7.0 | 2026-09-28 | Bölge çekme ve görsel düzenleyici (kırp, kutu, ok, yazı); bitiş ekranında MD'yi kopyala ve Rovo alanı. |
+| v0.8.0 | 2026-10-06 | Adım adım API çağrıları: tarayıcının Ağ kaydı (HAR) ekran çekimleriyle zamandan eşlenir; tablo ve kısaltılmış, maskeli istek/yanıt gövdeleri. |

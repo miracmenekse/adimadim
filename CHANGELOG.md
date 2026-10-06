@@ -2,6 +2,38 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.8.0 — adım adım API çağrıları (2026-10-06)
+
+- **API ekle (HAR):** tarayıcının Ağ sekmesinden kaydedilen HAR dosyası bitmiş dokümana eklenir (Bitiş
+  ekranında düğme ya da `adimadim api dosya.har [klasör]`). Çağrılar çekim zamanlarına göre adımlara
+  dağıtılır: iki çekim arasındaki GET → verinin göründüğü sonraki ekran ("Ekrana gelen"), POST/PUT/PATCH/
+  DELETE → butona basılan ekran ("Butonla giden"). Başla öncesi ve Bitir sonrası çağrılar atılır.
+- Her adımın altında `#### API çağrıları` tablosu ve kısaltılmış istek/yanıt gövdeleri (`~~~json`;
+  Rovo'nun ```markdown bloğunu bozmasın diye `~~~`). Yalnızca JSON/XML çağrılar; css, görsel ve analitik
+  atılır. Aynı ekranda tekrarlanan çağrı tek satır.
+- **Gizlilik:** istek/yanıt başlıkları (Authorization, Cookie…) dokümana hiç yazılmaz; `api_gizle`
+  ayarındaki alanlar gövdede ve sorguda `***` olur. Ham HAR oturum klasörüne kopyalanmaz.
+- Yeni ayarlar: `api_filtre` (`[]`), `api_gizle` (`["password", "parola", "sifre", "token", "secret"]`);
+  kur.sh eksik anahtar olarak ekler, mevcut değerlere dokunmaz.
+- Adımlar artık çekim zamanını, oturum başla/bitir zamanını tutar. v0.8.0'dan önceki dokümanlara API
+  eklenemez (açık mesaj verir).
+- Rovo talimatı: API bölümleri olduğu gibi korunur (`rovo/ajan-talimati.md`).
+- Yeni bağımlılık yok.
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+Beklenen son satır: `SONUÇ: testler geçti`. Rovo'daki agent'ın talimatını `rovo/ajan-talimati.md`'deki
+"Talimat" bölümüyle yenile (API bölümünü koruma kuralı eklendi).
+
+**Ana makinede doğrula** (şirket verisi gönderme, yalnızca sonucu söyle):
+1. Firefox'ta uygulamayı açmadan önce F12 → Ağ → dişli → **Kayıtları sürdür**.
+2. adımadım'da kısa bir akış kaydet (2-3 ekran, en az bir butonla kayıt), Bitir.
+3. Ağ sekmesinde sağ tık → **Tümünü HAR olarak kaydet**; Bitiş ekranında **API ekle (HAR)** ile seç.
+4. Geri getir: son satır (ör. `5 API çağrısı adımlara eklendi.`) ve "çağrılar doğru adımlarda mı, gereksiz
+   çağrı var mı" (evet/hayır + gereksizlerin yalnızca URL kalıbı, ör. `/monitoring/`). Sonra HAR'ı sil.
+
 ## v0.7.0 — bölge çekme, işaretleme, Rovo alanı (2026-09-28)
 
 Ana makinedeki denemeden gelen istekler:

@@ -51,6 +51,8 @@ Kurallar:
 - `[?]` yalnızca gerçekten emin olmadığın yere konur; sözlükte bulunan bir terime `[?]` koyma.
 - Anlamsız bir dolgu cümlesi ("akışı baştan anlatıyorum" gibi) atılabilir; bilgi taşıyan cümle atılamaz.
 - Adım sayısını, sırasını ve `![Adım N](...)` görsel bağlantılarını aynen koru.
+- `#### API çağrıları` bölümlerini (tablo, `İstek:`/`Yanıt:` satırları ve `~~~` kod blokları) **olduğu gibi**
+  koru: çevirme, düzeltme, kısaltma; `~~~`'yi ``` yapma. Anlatımda geçmeyen bir API'yi metne ekleme.
 - Her adımın altında, düzeltilmiş metnin ardından ham anlatımı `> Ham: …` satırı olarak koru. Ham satırı
   girdideki metnin **birebir kopyasıdır**: tek harfini bile düzeltme ya da değiştirme.
 - Çıktı yalnızca düzeltilmiş Markdown olsun ve **tek bir ```markdown kod bloğunun içinde** verilsin
