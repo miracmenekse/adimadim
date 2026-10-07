@@ -80,7 +80,8 @@ cd adimadim
 
 No environment variables are needed. Settings live in `~/.config/adimadim/ayar.json`, created by
 `kur.sh` with the device detected automatically (all keys: [README.tr.md](README.tr.md#ayarlar)).
-`kur.sh` is idempotent and never overwrites existing values. To update: `git pull && ./kur.sh && ./test.sh`.
+`kur.sh` is idempotent and never overwrites existing values. To update: `git pull && ./kur.sh && ./test.sh`,
+or on the host the **adımadım güncelle** button that `kur.sh` adds to the dock (pull, reinstall if changed, open).
 
 ## 💡 Usage & Examples
 
@@ -184,3 +185,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.7.0 | 2026-09-28 | Region capture and image editor (crop, box, arrow, text); copy Markdown and paste-back Rovo area on the finish screen. |
 | v0.8.0 | 2026-10-06 | API calls per step: the browser's Network log (HAR) is matched to screenshots by time and shown as a table plus shortened, masked request/response bodies. |
 | v0.9.0 | 2026-10-07 | Commands run per workflow call: the command configuration table (DBeaver copy, CSV, TXT, Markdown) is matched to workflow API calls by current/next state and pre/post flags. |
+| v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |

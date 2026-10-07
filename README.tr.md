@@ -78,7 +78,8 @@ cd adimadim
 ```
 
 Ortam değişkeni gerekmez; ayarlar aşağıda. `kur.sh` tekrar çalıştırılabilir ve mevcut değerleri ezmez.
-Güncellemek için: `git pull && ./kur.sh && ./test.sh`. İki makineli (VM'de geliştir, ana makinede
+Güncellemek için: `git pull && ./kur.sh && ./test.sh` ya da ana makinede `kur.sh`'nin dock'a eklediği
+**adımadım güncelle** düğmesi (çeker, değiştiyse kurar, pencereyi açar). İki makineli (VM'de geliştir, ana makinede
 kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 ## Ayarlar
@@ -207,3 +208,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.7.0 | 2026-09-28 | Bölge çekme ve görsel düzenleyici (kırp, kutu, ok, yazı); bitiş ekranında MD'yi kopyala ve Rovo alanı. |
 | v0.8.0 | 2026-10-06 | Adım adım API çağrıları: tarayıcının Ağ kaydı (HAR) ekran çekimleriyle zamandan eşlenir; tablo ve kısaltılmış, maskeli istek/yanıt gövdeleri. |
 | v0.9.0 | 2026-10-07 | İş akışında çalışan komutlar: komut yapılandırma tablosu (DBeaver kopyası, CSV, TXT, Markdown) iş akışı çağrılarıyla mevcut/sonraki durum ve pre/post bayraklarına göre eşlenir. |
+| v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
