@@ -32,7 +32,7 @@ chosen by measurement rather than guesswork.
 * **Domain-term accuracy:** term hints, a suffix-preserving "wrong → right" correction dictionary and Silero VAD lift the term hit rate from 67% to 90%. Company-specific terms stay in `.local` files outside the repo.
 * **Whole-session transcription:** all step recordings are transcribed together and each sentence is assigned back to its step, cutting WER on a real session from 93% to 7.6%.
 * **Built-in image editor:** crop, box, arrow and text annotations on any screenshot; the original is kept.
-* **API calls per step:** export the browser's Network log as HAR and each JSON/XML call lands under the step it belongs to (GET → the screen that shows the data, POST/PUT/DELETE → the screen whose button sent it), with tokens, cookies and configured fields masked.
+* **API calls per step:** export the browser's Network log as HAR and each JSON/XML call lands under the step it belongs to (GET → the screen that shows the data, POST/PUT/DELETE → the screen whose button sent it), with tokens, cookies and configured fields masked. Load the workflow command table (DBeaver copy or CSV/TXT) and each workflow call also lists the commands that ran: the current state's post commands and the next state's pre commands.
 * **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; paste back an Atlassian Rovo-polished version and both files update.
 
 ## 🛠 Tech Stack
@@ -97,12 +97,17 @@ adimadim word                                 # rebuild Word after editing the .
 adimadim yeniden                              # re-transcribe with the current model
 adimadim cevir kayit.wav                      # transcribe a single audio file
 adimadim api akis.har                         # add API calls from the browser's Network log
+adimadim komutlar tablo.csv                   # load the command table: commands run per workflow call
 ```
 
 **API calls (Firefox):** before the first screen, open F12 → **Network** and tick **Persist Logs** in the gear menu.
 When done, right-click in Network → **Save All As HAR**, then **API ekle (HAR)** on the finish screen (before Rovo:
 the .md is regenerated, the previous one kept as `.md.yedek`). Headers (Authorization, Cookie) never reach the
 document; the HAR is not copied into the session folder; delete it afterwards since it holds session cookies.
+
+**Commands run:** in DBeaver select the command-table query result (Ctrl+A, Ctrl+C), then **Komut tablosu** on the
+finish screen (with an empty clipboard it asks for a CSV/TXT/Markdown export). Columns: flow, state, …,
+bean_name, is_pre, is_post, sort_id; only this document's flow.
 
 **Output:** a session folder
 
@@ -147,6 +152,7 @@ Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek sipari
 - [x] Local Turkish speech recognition with domain-term accuracy layers
 - [x] Button window, image editor, Rovo paste-back
 - [x] API calls per step from the browser's HAR export
+- [x] Commands run per workflow call from the command configuration table
 - [ ] Keyboard shortcut for finishing a session
 - [ ] Visible recording-duration indicator in voice mode
 - [ ] Windows support (under evaluation; screenshots, shortcuts and audio are Linux-specific today)
@@ -177,3 +183,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.6.0 | 2026-09-28 | Window redesigned into Start → Recording → Finish screens, with progress bar and thumbnails. |
 | v0.7.0 | 2026-09-28 | Region capture and image editor (crop, box, arrow, text); copy Markdown and paste-back Rovo area on the finish screen. |
 | v0.8.0 | 2026-10-06 | API calls per step: the browser's Network log (HAR) is matched to screenshots by time and shown as a table plus shortened, masked request/response bodies. |
+| v0.9.0 | 2026-10-07 | Commands run per workflow call: the command configuration table (DBeaver copy, CSV, TXT, Markdown) is matched to workflow API calls by current/next state and pre/post flags. |

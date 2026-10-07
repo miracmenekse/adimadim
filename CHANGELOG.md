@@ -2,6 +2,32 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.0 — iş akışında çalışan komutlar (2026-10-07)
+
+- **Komut tablosu:** durumlarda çalışan komutların veritabanı kaydı (akış, durum, …, bean_name, is_pre,
+  is_post, sort_id) bitmiş dokümana yüklenir: Bitiş ekranında **Komut tablosu** (DBeaver'da sonuç
+  tablosunda Ctrl+A, Ctrl+C; pano boşsa CSV/TXT/Markdown dosyası seçilir) ya da
+  `adimadim komutlar tablo.csv [klasör]`. Tablo oturum.json'da saklanır; HAR sonradan yeniden eklense de
+  kalır. Birden çok akış içeren tablo reddedilir.
+- **İş akışı çağrısı:** isteğinde `currentWorkFlowStateShortCode` olan çağrı (yanıtında
+  `nextWorkFlowStateShortCode`) adımın altında `#### Çalışan komutlar` tablosuyla gösterilir:
+  `workFlowStateChange` true ise mevcut durumun is_post=1 komutları, sonra sonraki durumun is_pre=1
+  komutları; false ise mevcut durumun pre/post olmayan (durum içi) komutları; her grup sort_id sırasıyla.
+  Tabloda olmayan durum için "kayıt yok" yazar.
+- Aynı uca aynı ekranda farklı gövdeyle giden çağrılar artık ayrı satır (önceden tek satıra iniyordu).
+- Rovo talimatı: `#### Çalışan komutlar` bölümü de olduğu gibi korunur.
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+Beklenen son satır: `SONUÇ: testler geçti`. Rovo agent'ının talimatını `rovo/ajan-talimati.md`'deki
+"Talimat" bölümüyle yenile.
+
+**Ana makinede doğrula** (şirket verisi gönderme): bir akışı HAR ile ekledikten sonra komut tablosunu
+yükle. Geri getir: son satır (ör. `Komut tablosu yüklendi: 64 komut, 5 iş akışı çağrısı.`) ve komutların
+beklediğin adımlarda ve sırada olup olmadığı (evet/hayır).
+
 ## v0.8.0 — adım adım API çağrıları (2026-10-06)
 
 - **API ekle (HAR):** tarayıcının Ağ sekmesinden kaydedilen HAR dosyası bitmiş dokümana eklenir (Bitiş

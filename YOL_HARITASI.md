@@ -226,6 +226,29 @@ Bilinen sınırlar: Ağ sekmesi yalnızca açıkken kaydeder; akış yeni sekme/
 **Kabul:** test.sh geçiyor; ana makinede Firefox ile gerçek bir akışta API tablosu doğru adımlarda.
 🛑 Push ve v0.8.0 onayı.
 
+## Faz 8 — iş akışında çalışan komutlar ve v0.9.0 (2026-10-07)
+
+Kullanıcı, her iş akışı çağrısında hangi komutların çalıştığını da adımın altında görmek istiyor.
+Kaynak: komut yapılandırma tablosunun veritabanı çıktısı (akış, durum, adım, cmd_def_id, komut kodu,
+bean_name, is_pre, is_post, sort_id). Çağrı: istekte `currentWorkFlowStateShortCode` +
+`workFlowStateChange`, yanıtta `nextWorkFlowStateShortCode`.
+
+1. ✅ **Okuma.** DBeaver Ctrl+C (sekme), CSV, TXT, Markdown; başlık/ayraç satırları atlanır. Sütunlar
+   konuma göre: ilk iki akış ve durum, son dört bean_name, is_pre, is_post, sort_id (aradakiler serbest).
+   is_pre/is_post 0/1 ya da true/false. Birden çok akış reddedilir (durum kodu akışlar arasında çakışabilir).
+2. ✅ **Kural.** Durum değişiyorsa mevcut durumun post'u, sonra sonraki durumun pre'si; değişmiyorsa
+   mevcut durumun durum içi (0/0) komutları; grup içinde sort_id. Kullanıcı onayı bekleniyor (aşağı).
+3. ✅ **Çıktı.** `#### Çalışan komutlar`: her iş akışı çağrısı için `metot uç · mevcut → sonraki` ve
+   Durum | Ne zaman | Sıra | Komut tablosu. Tablo oturum.json'da (`komutlar`); `api` yeniden çalışsa da kalır.
+4. ✅ **Test.** Duman testi: üç biçim, iki kural, sort_id sırası, tabloda olmayan durum, çoklu akış reddi,
+   HAR'ın yeniden eklenmesi; pencerede panodan yükleme.
+
+Açık: is_pre'nin "sonraki duruma girerken aynı çağrıda" mı yoksa "o durumda yapılan ilk çağrıda" mı çalıştığı
+kullanıcıyla doğrulanacak; asenkron durumlar (yalnızca 0/0 komutlu, UI çağrısıyla tetiklenmeyen) gösterilmez.
+
+**Kabul:** test.sh geçiyor; ana makinede gerçek tabloyla komutlar beklenen adımlarda.
+🛑 Push ve v0.9.0 onayı.
+
 ## Her sürümde: ana makine teslimi
 
 Ana makinede Claude Code yok; CHANGELOG'daki "Ana makinede yapılacaklar" bölümü, kullanıcının kopyalayıp
@@ -256,6 +279,7 @@ Faz 6'dan sonra ya da bir faz beklerken ele alınabilir:
 | Faz 5 | Push ve v0.3.0 |
 | Faz 6 | LLM model seçimi, push ve v0.4.0 |
 | Faz 7 | Push ve v0.8.0 |
+| Faz 8 | Kural onayı (pre/post), push ve v0.9.0 |
 
 ## Kapsam dışı
 

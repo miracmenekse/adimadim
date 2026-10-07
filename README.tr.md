@@ -31,7 +31,7 @@ adım tahminle değil ölçümle seçilmiştir.
 * **Alan terimlerinde doğruluk:** terim ipucu, Türkçe eki koruyan "yanlış → doğru" sözlüğü ve Silero VAD terim isabetini %67'den %90'a çıkarır. Şirkete özel terimler repo dışındaki `.local` dosyalarında durur.
 * **Toplu çeviri:** tüm adım sesleri birlikte çevrilir, her cümle kendi adımına dağıtılır; gerçek bir oturumda WER %93'ten %7,6'ya indi.
 * **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
-* **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir.
+* **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir. İş akışı komut tablosu (DBeaver kopyası ya da CSV/TXT) yüklenince her iş akışı çağrısının altında çalışan komutlar da listelenir: mevcut durumun post, sonraki durumun pre komutları.
 * **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; Rovo'nun resmileştirdiği metin geri yapıştırılınca iki dosya da güncellenir.
 
 ## 🛠 Teknolojik Altyapı
@@ -119,6 +119,7 @@ adimadim word                                 # .md'yi elle düzelttikten sonra 
 adimadim yeniden                              # güncel modelle baştan çevir
 adimadim cevir kayit.wav                      # tek bir ses dosyasını çevir
 adimadim api akis.har                         # tarayıcının Ağ kaydındaki API çağrılarını ekle
+adimadim komutlar tablo.csv                   # komut tablosunu yükle: her iş akışı çağrısında çalışanlar
 adimadim cek --tam                            # ayardan bağımsız tüm ekranı çek
 ```
 
@@ -126,6 +127,10 @@ adimadim cek --tam                            # ayardan bağımsız tüm ekranı
 Bitirince Ağ sekmesinde sağ tık → **Tümünü HAR olarak kaydet**, sonra Bitiş ekranında **API ekle (HAR)**
 (Rovo'dan önce: .md yeniden üretilir, öncekisi `.md.yedek`). Başlıklar (Authorization, Cookie) dokümana hiç yazılmaz;
 HAR dosyası oturum klasörüne kopyalanmaz, içinde oturum çerezi olduğu için işin bitince sil.
+
+**Çalışan komutlar:** DBeaver'da komut tablosu sorgusunun sonucunda Ctrl+A, Ctrl+C, sonra Bitiş ekranında
+**Komut tablosu** (pano boşsa CSV/TXT/Markdown dışa aktarımını seçtirir). Sütunlar: akış, durum, …,
+bean_name, is_pre, is_post, sort_id. Yalnızca bu dokümanın akışının satırları olmalı.
 
 **Çıktı:** bir oturum klasörü
 
@@ -170,6 +175,7 @@ Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek sipari
 - [x] Alan terimlerine uyarlanmış yerel Türkçe konuşma tanıma
 - [x] Düğmeli pencere, görsel düzenleyici, Rovo alanı
 - [x] Tarayıcının HAR kaydından adım adım API çağrıları
+- [x] Komut yapılandırma tablosundan her iş akışı çağrısında çalışan komutlar
 - [ ] Oturumu bitirmek için klavye kısayolu
 - [ ] Sesli modda kayıt süresini gösteren gösterge
 - [ ] Windows desteği (değerlendiriliyor; ekran çekme, kısayollar ve ses kaydı bugün Linux'a bağlı)
@@ -200,3 +206,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.6.0 | 2026-09-28 | Pencere Başla → Kayıt → Bitiş ekranlarına ayrıldı; bekleme çubuğu ve önizlemeler. |
 | v0.7.0 | 2026-09-28 | Bölge çekme ve görsel düzenleyici (kırp, kutu, ok, yazı); bitiş ekranında MD'yi kopyala ve Rovo alanı. |
 | v0.8.0 | 2026-10-06 | Adım adım API çağrıları: tarayıcının Ağ kaydı (HAR) ekran çekimleriyle zamandan eşlenir; tablo ve kısaltılmış, maskeli istek/yanıt gövdeleri. |
+| v0.9.0 | 2026-10-07 | İş akışında çalışan komutlar: komut yapılandırma tablosu (DBeaver kopyası, CSV, TXT, Markdown) iş akışı çağrılarıyla mevcut/sonraki durum ve pre/post bayraklarına göre eşlenir. |
