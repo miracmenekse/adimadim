@@ -212,7 +212,7 @@ Yol: tarayıcının kendi ağ kaydı (HAR). Proxy (sertifika, şirket proxy'si/S
 5. ✅ **Gizleme.** Başlıklar dokümana hiç yazılmaz. `api_gizle` anahtarları JSON'da (iç içe), XML öğesinde,
    `anahtar=değer`'de ve sorguda `***` olur.
 6. ✅ **Çıktı.** `#### API çağrıları` tablosu (Yön | Metot | Uç nokta | Durum) + istek/yanıt `~~~json`/`~~~xml`
-   blokları; diziler ilk öğeden sonra `… +N öğe`, en çok 40 satır / 3000 karakter.
+   blokları; gövdeler kısaltılmadan (v0.9.2'de kısaltma kaldırıldı: kullanıcı tam gövde istedi).
 7. ✅ **Python 3.10.** "Z" sonekli ve 3/6 dışı kesirli zamanlar normalize edilir; base64 gövde çözülür.
 8. ✅ **Test.** Duman testi Firefox 157 HAR 1.2 biçiminde (kullanıcının VM'de aldığı gerçek HAR'dan
    çıkarıldı) girdi üretir: eşleme, tekrar, kısaltma, JSON/XML/sorgu maskeleme, aralık dışı/css/analitik

@@ -2,6 +2,20 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.2 — API gövdeleri kısaltılmadan (2026-10-07)
+
+- İstek/yanıt gövdeleri dokümana tam yazılır: `… (+N satır)`, `… +N öğe` ve uzun metin kısaltmaları
+  kaldırıldı (ana makinedeki ilk denemeden gelen istek). Gizleme aynen sürer (`api_gizle`, başlıklar yok).
+- Gövdeler `api` çalışırken oturum.json'a yazıldığı için **önceden eklenmiş dokümanlarda** kısaltma ancak
+  HAR yeniden eklenince kalkar; komut tablosu korunur, yeniden yüklemek gerekmez.
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+Beklenen son satır: `SONUÇ: testler geçti`. Kısaltılmış bir doküman için HAR'ı yeniden ekle
+(Bitiş ekranında **API ekle (HAR)** ya da `adimadim api <dosya.har> "<doküman klasörü>"`).
+
 ## v0.9.1 — tek tıkla güncelleme düğmesi (2026-10-07)
 
 - Ana makinede dock'ta **adımadım güncelle** düğmesi: GitHub'dan son hâli çeker, kod son başarılı

@@ -77,7 +77,7 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
 - API çağrıları: `basla`/`cek`/`bitir` oturuma ve adımlara saat dilimli zaman yazar (`baslangic`, `zaman`,
   `bitis`). `api` bitmiş oturuma tarayıcının HAR'ını uygular (`api_ekle`): basla–bitir dışı atılır, GET
   sonraki adıma, POST/PUT/PATCH/DELETE butona basılan adıma; sonuç `adim["api"]`'de (başlıklar hiç yok,
-  `api_gizle` alanları ***, diziler kısaltılmış). Gövdeler `~~~` bloğunda: Rovo ```markdown bloğu döndürür.
+  `api_gizle` alanları ***, gövdeler kısaltılmadan). Gövdeler `~~~` bloğunda: Rovo ```markdown bloğu döndürür.
   Ham HAR saklanmaz (çerez/jeton içerir). İsteğinde `currentWorkFlowStateShortCode` olan çağrıya
   `c["akis"]` (mevcut, degisim, sonraki) yazılır; `komutlar` komut tablosunu `veri["komutlar"]`'a yükler,
   `calisan_komutlar` geçişte çalışanları seçer (değişimde post + sonrakinin pre'si, değilse durum içi).

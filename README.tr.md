@@ -131,7 +131,8 @@ HAR dosyası oturum klasörüne kopyalanmaz, içinde oturum çerezi olduğu içi
 
 **Çalışan komutlar:** DBeaver'da komut tablosu sorgusunun sonucunda Ctrl+A, Ctrl+C, sonra Bitiş ekranında
 **Komut tablosu** (pano boşsa CSV/TXT/Markdown dışa aktarımını seçtirir). Sütunlar: akış, durum, …,
-bean_name, is_pre, is_post, sort_id. Yalnızca bu dokümanın akışının satırları olmalı.
+bean_name, is_pre, is_post, sort_id. Yalnızca bu dokümanın akışının satırları olmalı. İstek/yanıt gövdeleri
+kısaltılmadan (maskelenerek) yazılır.
 
 **Çıktı:** bir oturum klasörü
 
@@ -209,3 +210,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.8.0 | 2026-10-06 | Adım adım API çağrıları: tarayıcının Ağ kaydı (HAR) ekran çekimleriyle zamandan eşlenir; tablo ve kısaltılmış, maskeli istek/yanıt gövdeleri. |
 | v0.9.0 | 2026-10-07 | İş akışında çalışan komutlar: komut yapılandırma tablosu (DBeaver kopyası, CSV, TXT, Markdown) iş akışı çağrılarıyla mevcut/sonraki durum ve pre/post bayraklarına göre eşlenir. |
 | v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
+| v0.9.2 | 2026-10-07 | API istek/yanıt gövdeleri kısaltılmadan tam yazılır; maskeleme aynı. |

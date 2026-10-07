@@ -108,7 +108,7 @@ document; the HAR is not copied into the session folder; delete it afterwards si
 
 **Commands run:** in DBeaver select the command-table query result (Ctrl+A, Ctrl+C), then **Komut tablosu** on the
 finish screen (with an empty clipboard it asks for a CSV/TXT/Markdown export). Columns: flow, state, …,
-bean_name, is_pre, is_post, sort_id; only this document's flow.
+bean_name, is_pre, is_post, sort_id; only this document's flow. Request/response bodies are written in full (masked).
 
 **Output:** a session folder
 
@@ -186,3 +186,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.8.0 | 2026-10-06 | API calls per step: the browser's Network log (HAR) is matched to screenshots by time and shown as a table plus shortened, masked request/response bodies. |
 | v0.9.0 | 2026-10-07 | Commands run per workflow call: the command configuration table (DBeaver copy, CSV, TXT, Markdown) is matched to workflow API calls by current/next state and pre/post flags. |
 | v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |
+| v0.9.2 | 2026-10-07 | API request/response bodies are written in full instead of being shortened; masking unchanged. |
