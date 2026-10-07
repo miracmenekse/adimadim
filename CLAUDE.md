@@ -53,6 +53,8 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
    yeni kontrol. Doğruluğu etkileyen her değişiklikten önce ve sonra `testler/stt_olc.py` ile ölç.
 7. **CHANGELOG.** Her sürümde: ne değişti, ölçüm sonucu, ve "Ana makinede yapılacaklar"
    (ör. "kur.sh yeni modeli dönüştürür, ~10 dk sürer").
+   Push'tan önce `readme-pr` becerisini uygula: README.md + README.tr.md ve CHANGELOG, push edilen
+   değişiklikle güncel olmalı (yalnızca ortam/test değişikliğiyse gerekmez).
 8. **Git.** Küçük, açıklamalı commit'ler. Push ve sürüm etiketi (v0.x.y) kullanıcı onayıyla
    (`.claude/settings.json` ikisini de onaya bağlar). Ana makinenin izlediği dal `main`.
 9. **Dil.** Kullanıcıyla yazışma ve kullanıcıya dönük her metin (bildirim, hata mesajı, doküman) Türkçe.
