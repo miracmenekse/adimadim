@@ -590,28 +590,23 @@ def gizle_metin(metin: str, kalip: re.Pattern) -> str:
     return re.sub(rf"((?:{k})[\w.-]*=)[^&\s]*", r"\1***", metin, flags=re.I)
 
 
-def kisalt(deger, kalip: re.Pattern):
-    """JSON: gizli alanlar ***, diziler ilk öğeden sonra kesilir, uzun metinler kısalır."""
+def gizle_json(deger, kalip: re.Pattern):
+    """JSON: adında api_gizle'deki parçalardan biri geçen alanlar *** (iç içe)."""
     if isinstance(deger, dict):
-        return {k: "***" if kalip.search(k) else kisalt(v, kalip) for k, v in deger.items()}
+        return {k: "***" if kalip.search(k) else gizle_json(v, kalip) for k, v in deger.items()}
     if isinstance(deger, list):
-        return [kisalt(v, kalip) for v in deger[:1]] + ([f"… +{len(deger) - 1} öğe"] if len(deger) > 1 else [])
-    if isinstance(deger, str) and len(deger) > 200:
-        return deger[:200] + "…"
+        return [gizle_json(v, kalip) for v in deger]
     return deger
 
 
 def govde(metin: str, kalip: re.Pattern) -> str:
-    """İstek/yanıt gövdesi dokümana: önce gizlenir, JSON düzgün yazılır; en çok 40 satır / 3000 karakter."""
+    """İstek/yanıt gövdesi dokümana kısaltılmadan: önce gizlenir, JSON düzgün yazılır."""
     if not metin.strip():
         return ""
     try:
-        metin = json.dumps(kisalt(json.loads(metin), kalip), ensure_ascii=False, indent=2)
+        return json.dumps(gizle_json(json.loads(metin), kalip), ensure_ascii=False, indent=2)
     except ValueError:
-        metin = gizle_metin(metin.strip(), kalip)
-    metin = metin[:3000] + ("…" if len(metin) > 3000 else "")
-    satirlar_ = metin.splitlines()
-    return "\n".join(satirlar_[:40] + ([f"… (+{len(satirlar_) - 40} satır)"] if len(satirlar_) > 40 else []))
+        return gizle_metin(metin.strip(), kalip)
 
 
 def api_turu(mime: str) -> bool:

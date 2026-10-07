@@ -325,7 +325,7 @@ def api_cagrilari(env: dict, kok: Path) -> None:
             and "| Butonla giden | POST | `/api/siparis` | 201 |" in adim.get("1", ""),
             "GET sonraki ekrana, POST butona basılan ekrana (Adım 1)")
     kontrol(adim.get("2", "").count("| Ekrana gelen | GET | `/api/siparis/9` |") == 1, "aynı ekranda tekrarlanan çağrı tek satır")
-    kontrol("… +4 öğe" in adim.get("2", ""), "uzun dizi kısaltıldı")
+    kontrol('"ad": "kalem4"' in adim.get("2", "") and "…" not in metin.split("## Ana akış")[1], "gövdeler kısaltılmadan tam yazılıyor")
     kontrol("<sifreBilgisi>***</sifreBilgisi><durum>Aktif" in adim.get("3", "") and "~~~xml" in adim.get("3", ""),
             "XML gövdede gizli alan maskelendi")
     kontrol("GIZLI" not in metin, "jeton, çerez, parola, sır ve sorgudaki token dokümanda yok")
