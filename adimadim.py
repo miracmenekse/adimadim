@@ -663,7 +663,7 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
 
 # İş akışı çağrısı: istekte mevcut durum ve değişim bayrağı, yanıtta sonraki durum
 AKIS_ALANLARI = ("currentWorkFlowStateShortCode", "workFlowStateChange", "nextWorkFlowStateShortCode")
-ASAMA = {"pre": "girişte (pre)", "ic": "durum içi", "post": "çıkışta (post)"}
+ASAMA = {"pre": "girişte (pre)", "ic": "durum içi (during)", "post": "çıkışta (post)"}
 
 
 def is_akisi(istek: str, yanit: str) -> dict | None:
@@ -693,8 +693,9 @@ def komut_tablosu_oku(metin: str) -> tuple:
 
 
 def calisan_komutlar(tablo: list, akis: dict) -> list:
-    """Durum değişiyorsa mevcut durumun post'u, sonra sonraki durumun pre'si; değişmiyorsa mevcut
-    durumun durum içi (pre/post olmayan) komutları. Her grup kendi içinde sort_id sırasıyla."""
+    """Durum değişiyorsa mevcut durumun post'u, sonra sonraki durumun pre'si (sonraki duruma girerken);
+    değişmiyorsa mevcut durumun during komutları (pre/post olmayan: durum atlamadan yapılan işlemler,
+    ör. ekrandaki güncelleme çağrıları; asenkron durumlar da böyle tetiklenir). Grup içinde sort_id sırası."""
     secim = [(akis["mevcut"], "post"), (akis["sonraki"], "pre")] if akis["degisim"] else [(akis["mevcut"], "ic")]
     return [k for durum, asama in secim
             for k in sorted((k for k in tablo if k["durum"] == durum and k["asama"] == asama), key=lambda k: k["sira"])]

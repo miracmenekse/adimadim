@@ -344,8 +344,8 @@ def api_cagrilari(env: dict, kok: Path) -> None:
     metin = md.read_text(encoding="utf-8")
     adim = dict(zip(("1", "2", "3"), metin.split("### Adım ")[1:]))
     kontrol("sepetOzeti (durum değişmedi)\n\n| Durum | Ne zaman | Sıra | Komut |\n|---|---|---|---|\n"
-            "| sepetOzeti | durum içi | 10 | SepetGuncelleCommand |\n\n" in adim.get("2", ""),
-            "durum değişmeyince: mevcut durumun durum içi komutları")
+            "| sepetOzeti | durum içi (during) | 10 | SepetGuncelleCommand |\n\n" in adim.get("2", ""),
+            "durum değişmeyince: mevcut durumun during komutları")
     kontrol("sepetOzeti → urunAyari\n\n| Durum | Ne zaman | Sıra | Komut |\n|---|---|---|---|\n"
             "| sepetOzeti | çıkışta (post) | 10 | DogrulaCommand |\n"
             "| sepetOzeti | çıkışta (post) | 20 | KaydetCommand |\n"

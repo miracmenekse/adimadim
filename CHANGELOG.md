@@ -12,7 +12,8 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 - **İş akışı çağrısı:** isteğinde `currentWorkFlowStateShortCode` olan çağrı (yanıtında
   `nextWorkFlowStateShortCode`) adımın altında `#### Çalışan komutlar` tablosuyla gösterilir:
   `workFlowStateChange` true ise mevcut durumun is_post=1 komutları, sonra sonraki durumun is_pre=1
-  komutları; false ise mevcut durumun pre/post olmayan (durum içi) komutları; her grup sort_id sırasıyla.
+  komutları (sonraki duruma girerken); false ise mevcut durumun during komutları (pre/post olmayan:
+  durum atlamadan yapılan işlemler, asenkron durumlar dahil); her grup sort_id sırasıyla.
   Tabloda olmayan durum için "kayıt yok" yazar.
 - Aynı uca aynı ekranda farklı gövdeyle giden çağrılar artık ayrı satır (önceden tek satıra iniyordu).
 - Rovo talimatı: `#### Çalışan komutlar` bölümü de olduğu gibi korunur.
