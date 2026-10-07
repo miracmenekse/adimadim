@@ -9,3 +9,6 @@ notify-send
 xdg-open
 xdg-user-dir
 gsettings
+pgrep
+setsid
+systemd-detect-virt

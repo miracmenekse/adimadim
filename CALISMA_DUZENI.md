@@ -274,7 +274,10 @@ cd ~/adimadim && git pull && claude
 CHANGELOG'a "Ana makinede yapılacaklar"ı yazar; push ve sürüm etiketi için sana sorar
 (`.claude/settings.json` push ve etiketi her seferinde onaya bağlar).
 
-**Ana makine:**
+**Ana makine:** dock'taki **adımadım güncelle** düğmesine bas. Bir terminal açılır: GitHub'dan son
+hâli çeker, değişiklik varsa `./kur.sh` çalıştırır (adımadım açıksa önce kapatmanı bekler), sonra
+pencereyi açar. Hata olursa terminal açık kalır; o ekranı VM'deki Claude Code'a ilet (5. bölüm).
+Düğme ilk `./kur.sh`'de oluşur; ayarı `.ortam/guncelle`'de. Testler dahil tam kontrol için:
 
 ```bash
 cd ~/adimadim && git pull && ./kur.sh && ./test.sh && .ortam/ortam.sh kontrol

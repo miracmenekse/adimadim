@@ -12,6 +12,7 @@ if "$PY" -m py_compile "$REPO/adimadim.py" "$REPO/arayuz.py" "$REPO"/araclar/*.p
 else
   echo "✗ sözdizimi hatası"; HATA=1
 fi
+"$REPO/beceriler/vm-ana-makine/ana-makine/guncelle-test.sh" || HATA=1
 
 echo "== 2/3 Uçtan uca akış (sahte ekran, mikrofon ve model)"
 "$PY" "$REPO/testler/duman_testi.py" || HATA=1

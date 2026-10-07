@@ -2,6 +2,20 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.1 — tek tıkla güncelleme düğmesi (2026-10-07)
+
+- Ana makinede dock'ta **adımadım güncelle** düğmesi: GitHub'dan son hâli çeker, kod son başarılı
+  kurulumdan beri değiştiyse `./kur.sh` çalıştırır (adımadım açıksa kapatılmasını bekler), sonra
+  pencereyi açar. Hata olursa terminal açık kalır. Genel araç: `beceriler/vm-ana-makine/ana-makine/guncelle.sh`,
+  projenin ayarı `.ortam/guncelle`; başka projeler (ör. DBeaver-mm) aynı betikle kendi düğmesini alır.
+- `test.sh` 1. adımı düğmeyi sahte bir GitHub reposuyla dener (`guncelle-test.sh`).
+
+**Ana makinede yapılacaklar** (bir kez; sonra yalnızca düğme):
+
+    cd ~/adimadim && git pull && ./kur.sh
+
+Beklenen: `Düğme hazır: dock'ta ve Uygulamalar'da "adımadım güncelle".`
+
 ## v0.9.0 — iş akışında çalışan komutlar (2026-10-07)
 
 - **Komut tablosu:** durumlarda çalışan komutların veritabanı kaydı (akış, durum, …, bean_name, is_pre,

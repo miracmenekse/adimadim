@@ -160,6 +160,11 @@ Ayrıntılar: CALISMA_DUZENI.md.
 - `sablonlar/kur.sh`: idempotent kur betiği iskeleti.
 - `sablonlar/CALISMA_DUZENI.md`: iki makinenin ilk kurulumu ve günlük akış, yer tutuculu.
 - `sablonlar/yoksay.txt`: VM'e özgü öğelerin varsayılan listesi.
+- `ana-makine/guncelle.sh`: ana makinede projeyi tek tıkla güncelleyen düğme (git pull → kod değiştiyse
+  kur betiği → uygulamayı aç). Proje ayarı repodaki `.ortam/guncelle` (AD, KUR, AC, SUREC; açıklaması
+  betiğin başında). Düğmeyi projenin kur betiği `guncelle.sh --kisayol "$REPO"` ile oluşturur; kur betiği
+  yoksa kullanıcıya ana makinede bir kez `guncelle.sh --kisayol <repo> [uzak/dal]` çalıştırt.
+  Denemesi: `ana-makine/guncelle-test.sh`.
 - `ana-makine/vm-kisayol.sh`: ana makinede VM'i açan kısayolu Sık Kullanılanlar'a ekler ve VM'i açar
   (VirtualBox, libvirt/virt-manager, GNOME Boxes, VMware'i kendisi bulur). Kullanıcı VM'i nasıl
   açacağını sorarsa bunu ver.

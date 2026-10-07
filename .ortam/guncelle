@@ -1,0 +1,5 @@
+# Ana makinedeki "adımadım güncelle" düğmesinin ayarı (beceriler/vm-ana-makine/ana-makine/guncelle.sh)
+AD="adımadım"
+KUR="./kur.sh"
+AC="~/.local/bin/adimadim arayuz"
+SUREC="adimadim.py arayuz"

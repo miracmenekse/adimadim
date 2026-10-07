@@ -111,6 +111,8 @@ Terminal=false
 Categories=Office;
 GIRDI
 echo "Uygulama menüsünde: adımadım ($MASAUSTU)"
+# Tek tıkla güncelleme düğmesi (git pull + kur.sh + pencereyi aç); ayarı .ortam/guncelle. VM'de gereksiz.
+systemd-detect-virt -q || "$REPO/beceriler/vm-ana-makine/ana-makine/guncelle.sh" --kisayol "$REPO"
 
 # ------------------------------------------------------------------ 7. kısayollar
 baslik "Klavye kısayolları"
