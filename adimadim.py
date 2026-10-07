@@ -15,6 +15,7 @@ Komutlar
   adimadim word [klasör]             elle düzenlenen .md'den .docx'i yeniden üret
   adimadim yeniden [klasör]          bir dokümanın ses kayıtlarını baştan metne çevir
   adimadim api dosya.har [klasör]    tarayıcının Ağ sekmesinden kaydedilen API çağrılarını adımlara ekle
+  adimadim komutlar tablo.txt [klasör]  durumlarda çalışan komutların tablosunu yükle (iş akışı çağrılarının altına)
   adimadim cevir dosya.wav ...       ses dosyalarını metne çevirip ekrana yaz
   adimadim kisayol                   GNOME klavye kısayollarını tanımla
   adimadim arayuz                    düğmeli pencere (uygulama menüsünde: adımadım)
@@ -209,6 +210,20 @@ def markdown(veri: dict) -> str:
                     if govde_:  # ~~~: Rovo çıktıyı ```markdown bloğunda verir, ``` o bloğu erken kapatırdı
                         dil = "json" if govde_[0] in "{[" else "xml" if govde_[0] == "<" else ""
                         satirlar += [f"{ad}: `{c['metot']} {c['uc']}`", "", f"~~~{dil}", govde_, "~~~", ""]
+        akisli = [c for c in adim.get("api") or [] if c.get("akis")]
+        if akisli and veri.get("komutlar"):
+            satirlar += ["#### Çalışan komutlar", ""]
+            for c in akisli:
+                a = c["akis"]
+                gecis = f"{a['mevcut']} → {a['sonraki'] or '?'}" if a["degisim"] else f"{a['mevcut']} (durum değişmedi)"
+                satirlar += [f"`{c['metot']} {c['uc']}` · {gecis}", ""]
+                komutlar = calisan_komutlar(veri["komutlar"], a)
+                if komutlar:
+                    satirlar += ["| Durum | Ne zaman | Sıra | Komut |", "|---|---|---|---|"]
+                    satirlar += [f"| {k['durum']} | {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in komutlar]
+                else:
+                    satirlar.append("_Komut tablosunda bu çağrı için kayıt yok._")
+                satirlar.append("")
     return "\n".join(satirlar)
 
 
@@ -631,18 +646,58 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
         sira = min(max(k - 1, 0) if yazan else k, len(adimlar) - 1)
         url = urlsplit(istek["url"])
         uc = gizle_metin(url.path + (f"?{url.query}" if url.query else ""), kalip).replace("|", "%7C")
-        if (sira, metot, uc) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır
+        istek_metni = gonderilen.get("text") or ""
+        if (sira, metot, uc, istek_metni) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır
             continue
-        gorulen.add((sira, metot, uc))
+        gorulen.add((sira, metot, uc, istek_metni))
         yanit_metni = icerik.get("text") or ""
         if icerik.get("encoding") == "base64":
             yanit_metni = base64.b64decode(yanit_metni).decode("utf-8", "replace")
         adimlar[sira]["api"].append({
             "yon": "Butonla giden" if yazan else "Ekrana gelen", "metot": metot, "uc": uc,
-            "durum": yanit["status"], "istek": govde(gonderilen.get("text") or "", kalip),
-            "yanit": govde(yanit_metni, kalip)})
+            "durum": yanit["status"], "istek": govde(istek_metni, kalip),
+            "yanit": govde(yanit_metni, kalip), "akis": is_akisi(istek_metni, yanit_metni)})
         sayi += 1
     return sayi
+
+
+# İş akışı çağrısı: istekte mevcut durum ve değişim bayrağı, yanıtta sonraki durum
+AKIS_ALANLARI = ("currentWorkFlowStateShortCode", "workFlowStateChange", "nextWorkFlowStateShortCode")
+ASAMA = {"pre": "girişte (pre)", "ic": "durum içi", "post": "çıkışta (post)"}
+
+
+def is_akisi(istek: str, yanit: str) -> dict | None:
+    try:
+        i, y = json.loads(istek), json.loads(yanit or "{}")
+    except ValueError:
+        return None
+    if not isinstance(i, dict) or AKIS_ALANLARI[0] not in i:
+        return None
+    return {"mevcut": i[AKIS_ALANLARI[0]], "degisim": bool(i.get(AKIS_ALANLARI[1])),
+            "sonraki": y.get(AKIS_ALANLARI[2]) if isinstance(y, dict) else None}
+
+
+def komut_tablosu_oku(metin: str) -> tuple:
+    """Veritabanı aracının çıktısı → (akışlar, satırlar). DBeaver: Ctrl+C (sekme), CSV, TXT ve Markdown (|);
+    başlık ve ayraç satırları atlanır. İlk iki sütun akış ve durum; son dördü bean_name, is_pre, is_post, sort_id."""
+    akislar, tablo = set(), []
+    for satir in metin.splitlines():
+        a = [x for x in re.split(r'[\s|,;"]+', satir) if x]
+        if len(a) < 6 or not a[-1].isdigit():
+            continue
+        pre, post = (x.lower() in ("1", "true") for x in a[-3:-1])
+        akislar.add(a[0])
+        tablo.append({"durum": a[1], "asama": "pre" if pre else "post" if post else "ic",
+                      "sira": int(a[-1]), "komut": a[-4]})
+    return akislar, tablo
+
+
+def calisan_komutlar(tablo: list, akis: dict) -> list:
+    """Durum değişiyorsa mevcut durumun post'u, sonra sonraki durumun pre'si; değişmiyorsa mevcut
+    durumun durum içi (pre/post olmayan) komutları. Her grup kendi içinde sort_id sırasıyla."""
+    secim = [(akis["mevcut"], "post"), (akis["sonraki"], "pre")] if akis["degisim"] else [(akis["mevcut"], "ic")]
+    return [k for durum, asama in secim
+            for k in sorted((k for k in tablo if k["durum"] == durum and k["asama"] == asama), key=lambda k: k["sira"])]
 
 
 # --------------------------------------------------------------- komutlar
@@ -831,14 +886,9 @@ def cmd_yeniden(args, ayar) -> int:
 
 def cmd_api(args, ayar) -> int:
     """Tarayıcının Ağ sekmesinden kaydedilen HAR'daki API çağrılarını bitmiş dokümanın adımlarına ekler."""
-    oturum = klasor_sec(args.klasor)
-    if not oturum or not (oturum / "oturum.json").exists():
-        bildir(f"Doküman bulunamadı: {oturum}")
+    oturum, veri = bitmis_dokuman(args.klasor)
+    if not oturum:
         return 1
-    if aktif_oturum() == oturum:
-        bildir("Bu doküman hâlâ açık; önce: adimadim bitir")
-        return 1
-    veri = yukle(oturum)
     if not veri["adimlar"] or not veri.get("bitis") or any("zaman" not in a for a in veri["adimlar"]):
         bildir("Bu dokümanda çekim zamanları yok (v0.8.0'dan önce kaydedilmiş); API çağrıları eklenemez.")
         return 1
@@ -851,14 +901,56 @@ def cmd_api(args, ayar) -> int:
         bildir("HAR'da bu dokümanın başla–bitir aralığında API çağrısı yok. Ağ sekmesi ilk ekrandan önce açık "
                "olmalı; yalnızca JSON/XML çağrılar alınır (bkz. api_filtre ayarı).")
         return 1
+    yeniden_yaz(oturum, veri)
+    bildir(f"{sayi} API çağrısı adımlara eklendi.")
+    return 0
+
+
+def cmd_komutlar(args, ayar) -> int:
+    """Durumlarda çalışan komutların tablosunu yükler; iş akışı çağrılarının altında gösterilir."""
+    oturum, veri = bitmis_dokuman(args.klasor)
+    if not oturum:
+        return 1
+    try:
+        akislar, tablo = komut_tablosu_oku(Path(args.tablo).expanduser().read_text(encoding="utf-8-sig"))
+    except OSError as hata:
+        bildir(f"Komut tablosu okunamadı: {hata}")
+        return 1
+    if not tablo:
+        bildir("Komut tablosunda satır yok. Sütunlar: akış, durum, …, bean_name, is_pre, is_post, sort_id "
+               "(DBeaver: Ctrl+C ya da CSV/TXT dışa aktarma).")
+        return 1
+    if len(akislar) > 1:
+        bildir(f"Tabloda birden çok akış var ({', '.join(sorted(akislar))}); yalnızca bu dokümanın akışını yükle.")
+        return 1
+    veri["komutlar"] = tablo
+    yeniden_yaz(oturum, veri)
+    cagri = sum(1 for a in veri["adimlar"] for c in a.get("api") or [] if c.get("akis"))
+    bildir(f"Komut tablosu yüklendi: {len(tablo)} komut, {cagri} iş akışı çağrısı."
+           + ("" if cagri else " Komutlar iş akışı çağrılarının altına yazılır: önce 'API ekle (HAR)'."))
+    return 0
+
+
+def bitmis_dokuman(klasor: str | None) -> tuple:
+    """(oturum, veri); doküman yoksa ya da hâlâ açıksa bildirip (None, None)."""
+    oturum = klasor_sec(klasor)
+    if not oturum or not (oturum / "oturum.json").exists():
+        bildir(f"Doküman bulunamadı: {oturum}")
+        return None, None
+    if aktif_oturum() == oturum:
+        bildir("Bu doküman hâlâ açık; önce: adimadim bitir")
+        return None, None
+    return oturum, yukle(oturum)
+
+
+def yeniden_yaz(oturum: Path, veri: dict) -> None:
+    """Bitmiş dokümanın .md'sini oturum.json'dan (öncekini .md.yedek'e alarak) ve Word'ü yeniden üretir."""
     md = md_bul(oturum)
     if md:  # .md'de elle yapılan düzeltmeler kaybolmasın
         shutil.copy2(md, md.with_name(md.name + ".yedek"))
         print(f"Önceki metin yedeklendi: {md.name}.yedek")
     kaydet(oturum, veri)
     word_uret(oturum)
-    bildir(f"{sayi} API çağrısı adımlara eklendi.")
-    return 0
 
 
 def cmd_cevir(args, ayar) -> int:
@@ -946,13 +1038,16 @@ def main(argv: list[str] | None = None) -> int:
     p = alt.add_parser("api", help="tarayıcının Ağ sekmesinden kaydedilen API çağrılarını (HAR) adımlara ekle")
     p.add_argument("har", help="Firefox: F12 → Ağ → sağ tık → Tümünü HAR olarak kaydet")
     p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
+    p = alt.add_parser("komutlar", help="durumlarda çalışan komutların tablosunu yükle (iş akışı çağrılarının altına)")
+    p.add_argument("tablo", help="DBeaver çıktısı: CSV, TXT, Markdown ya da kopyalanan (sekme ayraçlı) metin")
+    p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
     p = alt.add_parser("cevir", help="ses dosyalarını metne çevirip ekrana yaz")
     p.add_argument("dosyalar", nargs="+", help="16 kHz mono WAV dosyaları")
     alt.add_parser("kisayol", help="GNOME klavye kısayollarını tanımla")
     alt.add_parser("arayuz", help="düğmeli pencereyi aç")
     args = ap.parse_args(argv)
     komutlar = {"basla": cmd_basla, "cek": cmd_cek, "not": cmd_not, "geri": cmd_geri,
-                "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden, "api": cmd_api,
+                "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden, "api": cmd_api, "komutlar": cmd_komutlar,
                 "cevir": cmd_cevir, "kisayol": cmd_kisayol,
                 "arayuz": lambda args, ayar: __import__("arayuz").main()}
     return komutlar[args.komut](args, ayarlari_oku())

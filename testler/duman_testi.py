@@ -254,6 +254,32 @@ def har_girdisi(zaman: str, metot: str, url: str, yanit: str = "{}", tur: str = 
     return g
 
 
+def akis_girdisi(zaman: str, mevcut: str, degisim: bool, sonraki: str) -> dict:
+    """İş akışı çağrısı: istekte mevcut durum + değişim bayrağı, yanıtta sonraki durum (uydurma kodlar)."""
+    return har_girdisi(zaman, "POST", "https://x.test/api/is-akisi",
+                       istek=json.dumps({"siparisNo": "1", "currentWorkFlowStateShortCode": mevcut,
+                                         "workFlowStateChange": degisim}),
+                       yanit=json.dumps({"messages": [], "nextWorkFlowStateShortCode": sonraki}))
+
+
+# DBeaver çıktı biçimleri (aynı tablo): sırası karışık, başlıklı
+KOMUT_SATIRLARI = [("sepetOzeti", "KaydetCommand", 0, 1, 20), ("sepetOzeti", "DogrulaCommand", 0, 1, 10),
+                   ("sepetOzeti", "SepetGuncelleCommand", 0, 0, 10), ("urunAyari", "UrunYukleCommand", 1, 0, 10),
+                   ("urunAyari", "UrunHesaplaCommand", 0, 0, 10)]
+KOMUT_BASLIK = ["shrt_code", "state", "step", "cmd_def_id", "shrt_code", "bean_name", "is_pre", "is_post", "sort_id"]
+
+
+def komut_tablosu(bicim: str, akis: str = "TEST_AKIS") -> str:
+    satirlar = [[akis, d, "10", str(900 + i), k, k, str(pre), str(post), str(sira)]
+                for i, (d, k, pre, post, sira) in enumerate(KOMUT_SATIRLARI)]
+    if bicim == "csv":
+        return "\n".join(",".join(f'"{x}"' for x in r) for r in [KOMUT_BASLIK] + satirlar) + "\n"
+    if bicim == "txt":
+        return "\n".join("|" + "|".join(x.ljust(22) for x in r) + "|"
+                         for r in [KOMUT_BASLIK, ["-" * 22] * 9] + satirlar) + "\n"
+    return "\n".join("\t".join(r) for r in satirlar)  # pano (Ctrl+C): başlıksız, sekme ayraçlı
+
+
 def api_cagrilari(env: dict, kok: Path) -> None:
     print("API çağrıları (tarayıcının HAR kaydı)")
     calistir(env, "basla", "API akışı")
@@ -282,6 +308,9 @@ def api_cagrilari(env: dict, kok: Path) -> None:
         har_girdisi("2026-10-06T10:01:33.000+03:00", "GET", "https://x.test/api/siparis/9"),  # yoklama tekrarı
         har_girdisi("2026-10-06T10:02:30.000+03:00", "GET", "https://x.test/soap/sorgu", tur="text/xml; charset=utf-8",
                     yanit="<r><sifreBilgisi>GIZLI-XML</sifreBilgisi><durum>Aktif</durum></r>"),
+        akis_girdisi("2026-10-06T10:02:10.000+03:00", "sepetOzeti", False, "sepetOzeti"),
+        akis_girdisi("2026-10-06T10:02:20.000+03:00", "sepetOzeti", True, "urunAyari"),
+        akis_girdisi("2026-10-06T10:03:10.000+03:00", "bilinmeyenDurum", True, "sonDurum"),
         har_girdisi("2026-10-06T10:05:00.000+03:00", "GET", "https://x.test/api/sonra"),  # bitirdikten sonra
     ]
     har = kok / "akis.har"
@@ -304,6 +333,34 @@ def api_cagrilari(env: dict, kok: Path) -> None:
             "başla öncesi, bitir sonrası, css ve analitik çağrılar atıldı")
     kontrol("```" not in metin and md.with_name(md.name + ".yedek").exists(),
             "gövdeler ~~~ bloğunda (Rovo'nun ```markdown bloğunu bozmaz), önceki .md yedeklendi")
+    kontrol(adim.get("2", "").count("| Butonla giden | POST | `/api/is-akisi` |") == 2,
+            "aynı uca farklı gövdeyle giden iki çağrı ayrı satır")
+
+    print("Çalışan komutlar (komut tablosu)")
+    for bicim in ("csv", "txt", "pano"):
+        tablo = kok / f"komutlar.{bicim}"
+        tablo.write_text(komut_tablosu(bicim), encoding="utf-8")
+        kontrol(calistir(env, "komutlar", str(tablo)).returncode == 0, f"komutlar: DBeaver {bicim} biçimi okunuyor")
+    metin = md.read_text(encoding="utf-8")
+    adim = dict(zip(("1", "2", "3"), metin.split("### Adım ")[1:]))
+    kontrol("sepetOzeti (durum değişmedi)\n\n| Durum | Ne zaman | Sıra | Komut |\n|---|---|---|---|\n"
+            "| sepetOzeti | durum içi | 10 | SepetGuncelleCommand |\n\n" in adim.get("2", ""),
+            "durum değişmeyince: mevcut durumun durum içi komutları")
+    kontrol("sepetOzeti → urunAyari\n\n| Durum | Ne zaman | Sıra | Komut |\n|---|---|---|---|\n"
+            "| sepetOzeti | çıkışta (post) | 10 | DogrulaCommand |\n"
+            "| sepetOzeti | çıkışta (post) | 20 | KaydetCommand |\n"
+            "| urunAyari | girişte (pre) | 10 | UrunYukleCommand |\n\n" in adim.get("2", ""),
+            "durum değişince: mevcut durumun post'u sort_id sırasıyla, sonra sonrakinin pre'si")
+    kontrol("UrunHesaplaCommand" not in metin, "çağrılmayan durumun komutları yazılmıyor")
+    kontrol("bilinmeyenDurum → sonDurum" in adim.get("3", "") and "kayıt yok" in adim.get("3", ""),
+            "tabloda olmayan durum açıkça belirtiliyor")
+    calistir(env, "api", str(har))
+    kontrol("Çalışan komutlar" in md.read_text(encoding="utf-8"), "HAR yeniden eklenince komut tablosu korunuyor")
+    karisik = kok / "iki-akis.csv"
+    karisik.write_text(komut_tablosu("csv") + komut_tablosu("csv", "BASKA_AKIS").split("\n", 1)[1], encoding="utf-8")
+    r = calistir(env, "komutlar", str(karisik), beklenen=1)
+    kontrol(r.returncode == 1 and "birden çok akış" in r.stdout, "birden çok akış içeren tablo reddediliyor")
+
     bos = kok / "analitik.har"  # kullanıcının ilk denemesindeki gibi yalnızca analitik çağrılar
     bos.write_text(json.dumps({"log": {"entries": [girdiler[4]]}}), encoding="utf-8")
     r = calistir(env, "api", str(bos), beklenen=1)
@@ -408,17 +465,21 @@ assert md.with_name(md.name + ".yedek").exists() and "Kullanıcı ekranı açar.
 veri = json.loads((p.bitmis / "oturum.json").read_text(encoding="utf-8"))
 har = p.bitmis / "test.har"
 har.write_text(json.dumps({"log": {"entries": [{"startedDateTime": veri["adimlar"][0]["zaman"],
-    "request": {"method": "GET", "url": "https://x.test/api/ekran", "headers": []},
-    "response": {"status": 200, "content": {"mimeType": "application/json", "text": '{"a": 1}'}}}]}}))
+    "request": {"method": "POST", "url": "https://x.test/api/is-akisi", "headers": [], "postData": {"mimeType": "application/json",
+                "text": '{"currentWorkFlowStateShortCode": "sepetOzeti", "workFlowStateChange": true}'}},
+    "response": {"status": 200, "content": {"mimeType": "application/json", "text": '{"nextWorkFlowStateShortCode": "urunAyari"}'}}}]}}))
 u.filedialog.askopenfilename = lambda **k: str(har)
 p.api_ekle(); p.surec.wait(); p.guncelle(tekrar=False)
 assert "API çağrıları" in p.onizleme.get("1.0", "end"), "API ekle (HAR) → önizlemede"
+kok.clipboard_clear(); kok.clipboard_append("TEST_AKIS\\tsepetOzeti\\t10\\t1\\tKaydetCommand\\tKaydetCommand\\t0\\t1\\t10\\n")
+p.komutlar_yukle(); p.surec.wait(); p.guncelle(tekrar=False)
+assert "KaydetCommand" in p.onizleme.get("1.0", "end"), "Komut tablosu (panodan) → önizlemede"
 p.yeni(); assert p.ekran == "basla"
 kok.destroy(); print("pencere tamam")
 """
     r = subprocess.run([PY, "-c", betik, str(REPO)], env={**env, "ZENITY_METIN": "Pencereden not."},
                        capture_output=True, text=True, timeout=120)
-    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı → API ekle"
+    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı → API ekle → komut tablosu"
             + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-400:]})"))
     print("    " + r.stdout.strip())
 

@@ -29,6 +29,7 @@ BEKLEME = {  # komut → beklerken gösterilecek açıklama
     "word": "Word dosyası yeniden üretiliyor",
     "yeniden": "Ses kayıtları baştan metne çevriliyor (birkaç dakika sürebilir)",
     "api": "API çağrıları adımlara ekleniyor",
+    "komutlar": "Komut tablosu yükleniyor",
 }
 
 
@@ -272,6 +273,7 @@ class Pencere:
                      ("Word'ü yenile", lambda: self.calistir("word", str(self.bitmis)), ".md'yi elle düzelttiysen"),
                      ("Sesi baştan çevir", lambda: self.calistir("yeniden", str(self.bitmis)), "Metni sesten yeniden yazar"),
                      ("API ekle (HAR)", self.api_ekle, "Tarayıcının Ağ kaydı"),
+                     ("Komut tablosu", self.komutlar_yukle, "Panodan ya da CSV/TXT"),
                      ("Yeni doküman", self.yeni, "")))
 
         # --- Her ekranda: bekleme çubuğu ve ipucu
@@ -346,6 +348,24 @@ class Pencere:
                                          filetypes=[("HAR", "*.har"), ("Tümü", "*")])
         if har and self.bitmis:
             self.calistir("api", har, str(self.bitmis))
+
+    def komutlar_yukle(self) -> None:
+        """Komut tablosu: panoda tablo varsa (DBeaver'da Ctrl+A, Ctrl+C) o, yoksa dışa aktarılmış dosya."""
+        if not self.bitmis or self.surec:
+            return
+        try:
+            metin = self.kok.clipboard_get()
+        except tk.TclError:  # pano boş
+            metin = ""
+        if a.komut_tablosu_oku(metin)[1]:
+            dosya = self.bitmis / "komut_tablosu.txt"
+            dosya.write_text(metin, encoding="utf-8")
+        else:
+            dosya = filedialog.askopenfilename(parent=self.kok, title="Komut tablosu (DBeaver çıktısı)",
+                                               filetypes=[("CSV, TXT, Markdown", "*.csv *.txt *.md"), ("Tümü", "*")])
+            if not dosya:
+                return
+        self.calistir("komutlar", str(dosya), str(self.bitmis))
 
     def ac(self, uzanti: str) -> None:
         md = a.md_bul(self.bitmis) if self.bitmis else None
@@ -450,7 +470,7 @@ class Pencere:
             self.goster("bitis")
             self.bitis_baslik["text"] = f"Doküman hazır: {self.bitmis.name}"
             self.onizlemeyi_yenile()
-            self.ipucu["text"] = ("API çağrıları gerekiyorsa önce 'API ekle (HAR)'. "
+            self.ipucu["text"] = ("API çağrıları gerekiyorsa önce 'API ekle (HAR)', sonra komut tablosunu kopyalayıp 'Komut tablosu'. "
                                   "Rovo ile resmîleştirmek için: 1) MD'yi kopyala  2) Rovo'ya yapıştır  "
                                   "3) Rovo'nun çıktısını alttaki alana yapıştır. Sonra Word'ü aç ve kontrol et.")
         else:
