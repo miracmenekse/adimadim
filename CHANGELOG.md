@@ -10,7 +10,7 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 - **Kulaklık profili:** `mikrofon_profil` (ör. `headset-head-unit-msbc`) doluysa sesli oturum başladığında
   kulaklık bu profile geçer; `bitir`de eski profile (`a2dp-sink`) döner. Oturum sırasında Bluetooth
   düşüp A2DP'ye dönerse her adımda yeniden mikrofon profiline geçilir. Oturum kaydı (`oturum.json`)
-  eski profili tutar. Sistem varsayılan girişine dokunulmaz (Teams etkilenmez).
+  eski profili tutar. Sistem varsayılan girişine dokunulmaz; sesli oturum dışında Teams etkilenmez, oturum sırasında kulaklık görüşme profilindedir.
 - Kaynak ya da profil hazırlanamazsa `basla` oturum açmadan çıkar; oturum sırasında kaynak kaybolursa
   adım uyarıyla kaydedilir, sesi alınmaz.
 - İki ayar da boşken davranış aynıdır: pactl çağrılmaz, arecord kullanılır.
@@ -19,7 +19,7 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 
 **Ölçüm** (ana makinede kayıt; tek 12 kelimelik cümle, whisper-medium; örneklem küçük):
 
-| Kaynak | Hata | Seviye |
+| Kaynak | Hata (12 kelime) | Konuşma-gürültü farkı |
 |---|---|---|
 | Digital Microphone (dahili) | 3 | ~21 dB |
 | FreeBuds mikrofonu, mSBC (görüşme profili) | 2 | ~51 dB |

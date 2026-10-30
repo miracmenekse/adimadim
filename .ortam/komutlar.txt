@@ -12,3 +12,5 @@ gsettings
 pgrep
 setsid
 systemd-detect-virt
+pactl
+parecord
