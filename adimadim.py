@@ -373,10 +373,11 @@ def anlatim_ayikla(md_metni: str) -> dict[int, str]:
 def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
     """Rovo yanıtını böler: (gövdesi dolu adımlar, dolu üst alanlar, görülen Adım numaraları).
 
-    Baş/son ``` çiti atılır; yalnız tam satır "Adım N" (başında # olabilir) başlıktır; görsel
-    satırı (![](... ya da tam olarak "Görsel: <tek sözcük>") ve "#### " bölümü (sonraki Adım
-    başlığına kadar) yok sayılır; ilk Adım başlığından öncekiler üst alanlardır (Amaç, Aktör,
-    Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
+    Baş/son ``` çiti atılır; yalnız tam satır "Adım N" (başında # olabilir) başlıktır; Adım
+    olmayan her başlık (grup başlığı, arka plan bölümü, "#### API çağrıları" gibi) gövdeyi
+    bitirir ve kendisi yazılmaz; görsel satırı (![](... ya da tam olarak "Görsel: <tek
+    sözcük>") ve "Çalışan komut:" şeridi yok sayılır; ilk Adım başlığından öncekiler üst
+    alanlardır (Amaç, Aktör, Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
     satirlar = metin.splitlines()
     while satirlar and not satirlar[0].strip():
         satirlar.pop(0)
@@ -394,16 +395,16 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
             no = int(m.group(1))
             ham.setdefault(no, [])
             continue
-        if k.startswith("#### "):
-            no = None  # "#### " bölümü sonraki Adım başlığına kadar yok sayılır
+        if k.startswith("#"):
+            no = None  # Adım olmayan her başlık gövdeyi bitirir; sonraki Adım başlığına kadar yazılmaz
             continue
         if no is None:  # ilk Adım başlığından öncekiler üst alanlardır
             alan = re.fullmatch(r"- \*\*(Amaç|Aktör|Ön koşullar|Son koşullar):\*\*\s*(.*)", k)
             if alan and alan.group(2).strip() not in ("", "…"):
                 ust[alan.group(1)] = alan.group(2).strip()
             continue
-        if k.startswith("![") or re.fullmatch(r"Görsel: \S+", k):
-            continue  # görsel satırı: bağlantı ya da kopyadaki dosya adı şeridi
+        if k.startswith("![") or re.fullmatch(r"Görsel: \S+", k) or k.startswith("Çalışan komut:"):
+            continue  # görsel satırı ve kopyadaki komut şeridi anlatıma yazılmaz
         ham[no].append(k)
     govde = {}
     for n, liste in ham.items():
@@ -416,8 +417,9 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
 def anlatim_uygula(oturum: Path, metin: str) -> tuple[list[int], list[int]]:
     """Rovo'nun yalnız anlatım yanıtını .md'ye işler; (güncellenen adımlar, yanıtta olup dokümanda olmayanlar).
 
-    Yalnız eşleşen adımın anlatımı `.md`'de değişir (görsel satırı ve API bölümleri aynen kalır);
-    gövdesi boş adım değişmez; üst alanlar yanıtta doluysa güncellenir. Önce `.md.yedek` alınır.
+    Yalnız eşleşen adımın anlatımı `.md`'de değişir (görsel satırı, API bölümleri, durum grupları
+    ve arka plan bölümü aynen kalır); gövdesi boş adım değişmez; üst alanlar yanıtta doluysa
+    güncellenir. Önce `.md.yedek` alınır.
     Yanıtta hiç "Adım N" başlığı yoksa ValueError: dosyaya hiç yazılmaz."""
     md = md_bul(oturum)
     if md is None:
@@ -476,10 +478,48 @@ def gorsel_adlari(md_metni: str) -> dict[int, str]:
     return adlar
 
 
-def anlatim_kopyasi(md_metni: str) -> str:
-    """Rovo'ya verilecek yalnız anlatım: üst alan satırları + her adımın başlığı, görsel adı ve metni."""
-    ust = []
+def calisan_komut_satirlari(md_metni: str) -> dict[int, list[str]]:
+    """`#### Çalışan komutlar` bölgesindeki tablo satırları: {adım: [komut şeridi, ...]}.
+
+    Şerit: `Çalışan komut: <geçiş satırı> · <durum> · <ne zaman> · <sıra> · <komut>`; geçiş satırı
+    çağrı satırının `·` sonrası metnidir. "kayıt yok" çağrısı şerit üretmez; ~~~ gövdeleri sayılmaz."""
+    komutlar, kod, no, gecis, bolumde = {}, False, None, "", False
     for satir in md_metni.splitlines():
+        if satir.startswith("~~~"):
+            kod = not kod
+            continue
+        if kod:
+            continue
+        k = satir.strip()
+        if k.startswith("#"):
+            gecis = ""
+            if m := re.fullmatch(r"### Adım (\d+)", k):
+                no, bolumde = int(m.group(1)), False
+            elif k == "#### Çalışan komutlar":
+                bolumde = True  # adım sürer; tablo satırları bu bölgede toplanır
+            elif not k.startswith("####"):
+                no, bolumde = None, False  # ## ya da # başlığı adım bölgesini bitirir
+            else:
+                bolumde = False  # "#### API çağrıları" gibi: adım sürer, bölge kapalı
+            continue
+        if no is None or not bolumde:
+            continue
+        if g := re.fullmatch(r"`[^`]+` · (.+)", k):
+            gecis = g.group(1).strip()
+        elif gecis and k.startswith("|") and not k.startswith("|---"):
+            hucre = [h.strip() for h in k.strip("|").split("|")]
+            if len(hucre) == 4 and hucre[0] != "Durum":  # tablo başlık satırı atlanır
+                komutlar.setdefault(no, []).append(f"Çalışan komut: {gecis} · " + " · ".join(hucre))
+    return komutlar
+
+
+def anlatim_kopyasi(md_metni: str) -> str:
+    """Rovo'ya verilecek yalnız anlatım: üst alan satırları + durum başlıkları adım sırasında aynen
+    + her adımın başlığı, görsel adı, metni ve çalışan komut şeritleri + arka planda çalışan
+    durumlar bölümü aynen. API çağrıları ve gövdeler kopyaya girmez; akışsız doküman düz kalır."""
+    satirlar = md_metni.splitlines()
+    ust = []
+    for satir in satirlar:
         if satir.strip().startswith("## ") or re.fullmatch(r"### Adım (\d+)", satir.strip()):
             break  # "Ana akış" başlığı ve adımlar ayrı yazılır
         if not ust and not satir.strip():  # ilk başlıktan önceki boş satırları at
@@ -487,12 +527,32 @@ def anlatim_kopyasi(md_metni: str) -> str:
         ust.append(satir)
     metin = "\n".join(ust).rstrip()
     gorseller = gorsel_adlari(md_metni)
-    for no, anlatim in anlatim_ayikla(md_metni).items():
-        metin += f"\n\n### Adım {no}"
-        if ad := gorseller.get(no):  # Rovo görseli göremese bile dosya adıyla yanlış görsele gitmesin
-            metin += f"\nGörsel: {ad}"
-        if anlatim:
-            metin += f"\n\n{anlatim}"
+    anlatimlar = anlatim_ayikla(md_metni)
+    komutlar = calisan_komut_satirlari(md_metni)
+    kod, arka = False, ""  # ~~~ gövdeleri atlanır; arka plan bölümü sonda aynen eklenir
+    for i, satir in enumerate(satirlar):
+        if satir.startswith("~~~"):
+            kod = not kod
+            continue
+        if kod:
+            continue
+        k = satir.strip()
+        if k == "## Arka planda çalışan durumlar":
+            arka = "\n".join(satirlar[i:]).rstrip()  # bölüm .md'deki haliyle
+            break
+        if k == "## Başlamadan önce" or k.startswith("## Durum: "):
+            metin += f"\n\n{k}"  # grup başlığı adım sırasında aynen yazılır
+        elif m := re.fullmatch(r"### Adım (\d+)", k):
+            no = int(m.group(1))
+            metin += f"\n\n### Adım {no}"
+            if ad := gorseller.get(no):  # Rovo görseli göremese bile dosya adıyla yanlış görsele gitmesin
+                metin += f"\nGörsel: {ad}"
+            if anlatim := anlatimlar.get(no):
+                metin += f"\n\n{anlatim}"
+            if seritler := komutlar.get(no):  # kılavuz agent'ı komutu kopyadan alır
+                metin += "\n\n" + "\n".join(seritler)
+    if arka:
+        metin += f"\n\n{arka}"
     return metin + "\n"
 
 
