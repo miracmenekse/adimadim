@@ -2,6 +2,37 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.5 — dokümana dönüş ve yalnız anlatımla Rovo (2026-10-30)
+
+Bu sürüm v0.9.4 ile birlikte gönderildi (aynı push).
+
+- **Sorun:** Rovo'ya tüm .md gidiyordu. 1 MB'ı aşan dokümanlar verilemiyordu; Rovo'nun yanıtı API bölümlerini
+  ezebiliyordu. Rovo'dan dönen metin HAR ya da komut tablosu eklenince kayboluyordu; önceki hâli yalnız `.md.yedek`'te kalıyordu.
+- **Çözüm:**
+  - Bitiş ekranında "MD'yi kopyala" yerine **Anlatımı kopyala**: yalnız üst alanlar ve `### Adım N` + anlatım gider.
+  - Rovo alanına yapıştırılan yanıt yalnız eşleşen adımların anlatımını değiştirir. Görseller ve API bölümleri
+    aynen kalır. Yanıtta `Adım N` başlığı yoksa .md değişmez, alan silinmez, uyarı çıkar.
+  - Rovo metni oturumda (`adim["metin"]`) tutulur: API ekle, komut tablosu ve .md'nin yeniden üretimi onu silmez.
+    Elle yapılan düzeltmeler de aynı yerde kalır.
+  - "Sesi baştan çevir" bu düzeltmeleri bırakır: metin yeniden yazılır, önceki .md `.md.yedek`'e alınır.
+  - Rovo talimatı (`rovo/ajan-talimati.md`) yeni akışa göre yazıldı: girdi yalnız anlatım, çıktı aynı biçimde tek
+    ```markdown bloğunda. Anlatımdaki "Amaç:", "Aktör:", "Ön koşul:", "Son koşul:" üst alana taşınır.
+- **Başla ekranı:** son dokümanlar listesi (başlık, adım sayısı, tarih). Çift tıkla ya da **Aç** ile dokümana dönülür.
+  **Başka klasör…** ile elle seçilen klasör açılır; oturum.json'u yoksa ya da bozuksa uyarı çıkar.
+- **Ölçüm:** yok. Konuşma tanıma ve ses kaydı değişmedi.
+- Test: `duman_testi.py` arayüz kontrolü yeni davranışa çevrildi: kopya `anlatim_kopyasi` ile eşit, görsel ve API
+  yok; Rovo yanıtı .md'de; API ve komut tablosu sonrası da metin duruyor; listeden açma. `xvfb-run -a` altında geçti.
+  Kapılar: `kapi/rovo.py` (ayikla, uygula, senkron), `kapi/arayuz_rovo.py`, `kapi/arayuz_ac.py`.
+
+**Ana makinede yapılacaklar:**
+- Dock'taki **adımadım güncelle** düğmesi.
+- Rovo agent'ı: `rovo/ajan-talimati.md`nin **Talimat** bölümünü agent'ın Instructions alanına bir kez yapıştır.
+  Agent yoksa Kurulum bölümündeki gibi oluştur (ad, terim sözlüğü Knowledge, talimat).
+- v0.9.5 öncesi bir dokümanın Word'ü için: pencereden dokümanı aç, **Word'ü yenile** (`adimadim word "<doküman klasörü>"` de olur).
+- Ana makinede doğrula, gerçek bir dokümanda gidiş-dönüş: uygulamayı kapat, aç, dokümana listeden dön,
+  **Anlatımı kopyala**, Rovo'ya yapıştır, çıktıyı Rovo alanına yapıştır. Görseller ve API bölümleri birebir kalmalı,
+  anlatım değişmeli, Word açılmalı. Sonra bir HAR ekleyip komut tablosu yükle; Rovo metni kaybolmamalı.
+
 ## v0.9.4 — büyük API gövdeli Word dosyaları açılıyor (2026-10-30)
 
 - **Sorun:** API gövdeli dokümanlarda pandoc her kod bloğunu tek paragraf yapıyordu. Gerçek bir dosyada tek
