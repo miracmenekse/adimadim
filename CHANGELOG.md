@@ -6,6 +6,7 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 
 - **Anlatımı kopyala**, her `### Adım N` altına `Görsel: <dosya adı>` yazar; Rovo gövdeyi hangi görsele yazdığını adından bilir.
 - Rovo yanıtındaki `Görsel:` satırları anlatıma yazılmaz; yalnız bu satırı olan adım değişmez. Görsel bağlantıları .md'de aynen kalır.
+- `rovo/kilavuz-ajani.md`: kopyadan görsel adlarına bağlı kullanıcı kılavuzu yazan yeni Rovo agent'ının kurulumu ve talimatı.
 
 **Ana makinede yapılacaklar:** dock'taki **adımadım güncelle**; `rovo/ajan-talimati.md` Talimat bölümünü Rovo ajanına yeniden yapıştır.
 
