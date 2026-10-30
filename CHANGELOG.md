@@ -14,7 +14,7 @@ Bu sürüm v0.9.4 ile birlikte gönderildi (aynı push).
     aynen kalır. Yanıtta `Adım N` başlığı yoksa .md değişmez, alan silinmez, uyarı çıkar.
   - Rovo metni oturumda (`adim["metin"]`) tutulur: API ekle, komut tablosu ve .md'nin yeniden üretimi onu silmez.
     Elle yapılan düzeltmeler de aynı yerde kalır.
-  - "Sesi baştan çevir" bu düzeltmeleri bırakır: metin yeniden yazılır, önceki .md `.md.yedek`'e alınır.
+  - "Sesi baştan çevir" elle ve Rovo düzeltmelerini siler: metin sesten yeniden yazılır, önceki .md `.md.yedek`'te kalır.
   - Rovo talimatı (`rovo/ajan-talimati.md`) yeni akışa göre yazıldı: girdi yalnız anlatım, çıktı aynı biçimde tek
     ```markdown bloğunda. Anlatımdaki "Amaç:", "Aktör:", "Ön koşul:", "Son koşul:" üst alana taşınır.
 - **Başla ekranı:** son dokümanlar listesi (başlık, adım sayısı, tarih). Çift tıkla ya da **Aç** ile dokümana dönülür.

@@ -33,7 +33,7 @@ chosen by measurement rather than guesswork.
 * **Whole-session transcription:** all step recordings are transcribed together and each sentence is assigned back to its step, cutting WER on a real session from 93% to 7.6%.
 * **Built-in image editor:** crop, box, arrow and text annotations on any screenshot; the original is kept.
 * **API calls per step:** export the browser's Network log as HAR and each JSON/XML call lands under the step it belongs to (GET → the screen that shows the data, POST/PUT/DELETE → the screen whose button sent it), with tokens, cookies and configured fields masked. Load the workflow command table (DBeaver copy or CSV/TXT) and each workflow call also lists the commands that ran: the current state's post commands and the next state's pre commands.
-* **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; paste back an Atlassian Rovo-polished version and both files update.
+* **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; **Anlatımı kopyala** sends Rovo only the narration, and its polished reply updates just that text, so screenshots and API sections stay; both files update.
 
 ## 🛠 Tech Stack
 
@@ -62,7 +62,7 @@ flowchart LR
 2. **Transcribe:** on finish, all step recordings are concatenated. Silero VAD removes silence (timestamps are mapped back to the original audio), Whisper transcribes with a prompt built from the term lists, and the correction dictionary is applied.
 3. **Assign:** every timestamped sentence goes to the step in which it started.
 4. **Render:** Markdown in a use-case template, then Word via pandoc with the company template.
-5. **Polish (optional):** **Copy narration** gives Rovo only the step narration (plus the Amaç/Aktör/condition fields); the reply pasted back replaces just the matching steps' text (previous .md kept as `.md.yedek`). Screenshots, API sections and command tables stay, and Word is rebuilt.
+5. **Polish (optional):** **Anlatımı kopyala** (copy narration) gives Rovo only the step narration (plus the Amaç/Aktör/condition fields); the reply pasted back replaces just the matching steps' text (previous .md kept as `.md.yedek`). Screenshots, API sections and command tables stay, and Word is rebuilt.
 
 The window (`arayuz.py`) only runs the same CLI commands in a subprocess and polls `oturum.json`, so
 the command line and the UI always behave the same.
@@ -189,5 +189,5 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |
 | v0.9.2 | 2026-10-07 | API request/response bodies are written in full instead of being shortened; masking unchanged. |
 | v0.9.3 | 2026-10-30 | Microphone selection: during voice sessions a Bluetooth headset switches to its microphone profile and back at the end; the system default input is untouched. |
-| v0.9.5 | 2026-10-30 | Back to the document: the finish screen copies the narration only, Rovo's paste-back survives API calls and command tables, and the start screen lists recent documents. |
 | v0.9.4 | 2026-10-30 | Large API-body Word files open: each code line becomes its own paragraph (pandoc Lua filter), so LibreOffice opens a 1300-page document in 11 s instead of failing after 400 s. |
+| v0.9.5 | 2026-10-30 | Back to the document: the finish screen copies the narration only, Rovo's paste-back survives API calls and command tables, and the start screen lists recent documents. |

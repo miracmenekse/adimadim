@@ -74,7 +74,7 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   Düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır (çıktı `arayuz.log`'a, `ADIMADIM_ARAYUZ=1`
   ile `bitir` klasör açmaz); durum oturum.json'u yoklayarak gösterilir, işlem sürerken bekleme çubuğu.
   `Duzenleyici`: Pillow ile kırp/kutu/ok/yazı (orijinal `gorseller/.orijinal/`); bitiş ekranında
-  Anlatımı kopyala (`anlatim_kopyasi`: üst alanlar + `### Adım N` + anlatım) ve Rovo alanı (`anlatim_uygula`: yalnız eşleşen adımların anlatımını .md'ye yazar, görsel ve API bölümlerine dokunmaz, `### Adım` yoksa ValueError ve .md değişmez; `word` çalıştırır). Rovo/elle anlatım bir sonraki `yeniden_yaz`da (api, komutlar, yeniden) `adim["metin"]`e, dolu üst alanlar `veri["ust"]`e alınır. Uygulama menüsü girdisini kur.sh yazar.
+  Anlatımı kopyala (`anlatim_kopyasi`: üst alanlar + `### Adım N` + anlatım) ve Rovo alanı (`anlatim_uygula`: yalnız eşleşen adımların anlatımını .md'ye yazar, görsel ve API bölümlerine dokunmaz, `Adım N` başlığı yoksa ValueError ve .md değişmez; `word` çalıştırır). Rovo/elle anlatım `cmd_api` ve `cmd_komutlar`ın `yeniden_yaz`ında `adim["metin"]`e, dolu üst alanlar `veri["ust"]`e alınır; `yeniden` (`cmd_yeniden`) bu metinleri siler ve önceki .md'yi `.md.yedek`'e alır. Uygulama menüsü girdisini kur.sh yazar.
 - Oturum klasörü: `oturum.json` (kaynak; adımda `metin` = Rovo/elle anlatım, üst kökte `ust` = Amaç/Aktör/koşul alanları), `gorseller/`, `ses/`, `<Başlık>.md` (öncekisi `.md.yedek`), `<Başlık>.docx`.
 - API çağrıları: `basla`/`cek`/`bitir` oturuma ve adımlara saat dilimli zaman yazar (`baslangic`, `zaman`,
   `bitis`). `api` bitmiş oturuma tarayıcının HAR'ını uygular (`api_ekle`): basla–bitir dışı atılır, GET

@@ -32,7 +32,7 @@ adım tahminle değil ölçümle seçilmiştir.
 * **Toplu çeviri:** tüm adım sesleri birlikte çevrilir, her cümle kendi adımına dağıtılır; gerçek bir oturumda WER %93'ten %7,6'ya indi.
 * **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
 * **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir. İş akışı komut tablosu (DBeaver kopyası ya da CSV/TXT) yüklenince her iş akışı çağrısının altında çalışan komutlar da listelenir: mevcut durumun post, sonraki durumun pre komutları.
-* **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; Rovo'nun resmileştirdiği metin geri yapıştırılınca iki dosya da güncellenir.
+* **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; **Anlatımı kopyala** ile Rovo'ya yalnız anlatım gider, resmileştirilen yanıt yalnız anlatımı değiştirir, görseller ve API bölümleri kalır; iki dosya da güncellenir.
 
 ## 🛠 Teknolojik Altyapı
 
@@ -214,5 +214,5 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
 | v0.9.2 | 2026-10-07 | API istek/yanıt gövdeleri kısaltılmadan tam yazılır; maskeleme aynı. |
 | v0.9.3 | 2026-10-30 | Mikrofon seçimi: sesli oturumda Bluetooth kulaklık mikrofon profiline geçer, bitince eski profil döner; sistem varsayılan girişi değişmez. |
-| v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
 | v0.9.4 | 2026-10-30 | Büyük API gövdeli Word dosyaları açılıyor: her kod satırı ayrı paragraf olur (pandoc Lua filtresi); yaklaşık 1300 sayfalık dosya LibreOffice'te 400 sn'de açılamıyordu, şimdi 11 sn. |
+| v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
