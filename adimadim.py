@@ -374,8 +374,9 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
     """Rovo yanıtını böler: (gövdesi dolu adımlar, dolu üst alanlar, görülen Adım numaraları).
 
     Baş/son ``` çiti atılır; yalnız tam satır "Adım N" (başında # olabilir) başlıktır; görsel
-    satırı ve "#### " bölümü (sonraki Adım başlığına kadar) yok sayılır; ilk Adım başlığından
-    öncekiler üst alanlardır (Amaç, Aktör, Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
+    satırı (![](... ya da tam olarak "Görsel: <tek sözcük>") ve "#### " bölümü (sonraki Adım
+    başlığına kadar) yok sayılır; ilk Adım başlığından öncekiler üst alanlardır (Amaç, Aktör,
+    Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
     satirlar = metin.splitlines()
     while satirlar and not satirlar[0].strip():
         satirlar.pop(0)
@@ -401,8 +402,8 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
             if alan and alan.group(2).strip() not in ("", "…"):
                 ust[alan.group(1)] = alan.group(2).strip()
             continue
-        if k.startswith("!["):
-            continue  # görsel satırı
+        if k.startswith("![") or re.fullmatch(r"Görsel: \S+", k):
+            continue  # görsel satırı: bağlantı ya da kopyadaki dosya adı şeridi
         ham[no].append(k)
     govde = {}
     for n, liste in ham.items():
@@ -462,8 +463,21 @@ def anlatim_uygula(oturum: Path, metin: str) -> tuple[list[int], list[int]]:
     return sorted(n for n in govde if n in mevcut), sorted(n for n in basliklar if n not in mevcut)
 
 
+def gorsel_adlari(md_metni: str) -> dict[int, str]:
+    """`### Adım N` başlığının bir altındaki görsel bağlantısından dosya adı: {adım: ad} (yolsuz)."""
+    adlar, no = {}, None
+    for satir in md_metni.splitlines():
+        if m := re.fullmatch(r"### Adım (\d+)", satir.strip()):
+            no = int(m.group(1))
+        elif no is not None and satir.strip():
+            if g := re.fullmatch(r"!\[[^\]]*\]\(([^)]+)\)", satir.strip()):
+                adlar[no] = g.group(1).split("/")[-1]
+            no = None  # görsel satırı başlığın hemen altındadır; başka satır aramayı durdurur
+    return adlar
+
+
 def anlatim_kopyasi(md_metni: str) -> str:
-    """Rovo'ya verilecek yalnız anlatım: üst alan satırları + her adımın başlığı ve metni."""
+    """Rovo'ya verilecek yalnız anlatım: üst alan satırları + her adımın başlığı, görsel adı ve metni."""
     ust = []
     for satir in md_metni.splitlines():
         if satir.strip().startswith("## ") or re.fullmatch(r"### Adım (\d+)", satir.strip()):
@@ -472,8 +486,13 @@ def anlatim_kopyasi(md_metni: str) -> str:
             continue
         ust.append(satir)
     metin = "\n".join(ust).rstrip()
+    gorseller = gorsel_adlari(md_metni)
     for no, anlatim in anlatim_ayikla(md_metni).items():
-        metin += f"\n\n### Adım {no}" + (f"\n\n{anlatim}" if anlatim else "")
+        metin += f"\n\n### Adım {no}"
+        if ad := gorseller.get(no):  # Rovo görseli göremese bile dosya adıyla yanlış görsele gitmesin
+            metin += f"\nGörsel: {ad}"
+        if anlatim:
+            metin += f"\n\n{anlatim}"
     return metin + "\n"
 
 
