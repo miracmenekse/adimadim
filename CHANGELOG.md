@@ -2,6 +2,22 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.4 — büyük API gövdeli Word dosyaları açılıyor (2026-10-30)
+
+- **Sorun:** API gövdeli dokümanlarda pandoc her kod bloğunu tek paragraf yapıyordu. Gerçek bir dosyada tek
+  paragrafta 1,17 milyon karakter ve 29 bin satır sonu oluştu; LibreOffice 7.3 dosyayı 400 sn'de açamadı.
+  Renksiz (`--no-highlight`) tek paragraf da açılmadı.
+- **Çözüm:** `kod_satirlari.lua` filtresi her kod satırını ayrı kod paragrafı yapar; `word` komutu
+  filtreyi pandoc'a verir. Gövdeler kısaltılmaz (v0.9.2 kararı).
+- **Ölçüm:** aynı dosya LibreOffice'te 400 sn'de açılmadı → 11 sn'de açıldı (pandoc 2.9.2.1). Yaklaşık 1300 sayfa, kısaltma yok.
+  Word'ün kendisinde denenmedi.
+- Test: `duman_testi.py` uydurma bir `~~~json` bloğundan üretilen docx'te kod satırlarının ayrı `SourceCode`
+  paragrafları olduğunu, boş satırın kaybolmadığını, sıranın korunduğunu ve `<w:br>` bulunmadığını kontrol eder.
+
+**Ana makinede yapılacaklar:**
+- Dock'taki **adımadım güncelle** düğmesi.
+- Var olan doküman için: `adimadim word "<doküman klasörü>"`.
+
 ## v0.9.3 — mikrofon seçimi (2026-10-30)
 
 - **Kaynak seçimi:** `mikrofon` ayarı (ör. `bluez_input`) doluysa ses `parecord --device=<kaynak>` ile alınır.

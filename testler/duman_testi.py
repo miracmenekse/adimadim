@@ -240,8 +240,36 @@ def yazili_akis(env: dict) -> None:
     kontrol("- **Amaç:** …" in metin, "kullanım senaryosu iskeleti")
     if subprocess.run(["which", "pandoc"], capture_output=True).returncode == 0:
         kontrol(md.with_suffix(".docx").exists(), "Word çıktısı")
+        word_kod_kontrolu(env)
     else:
         print("  - pandoc yok, Word kontrolü atlandı")
+
+
+def word_kod_kontrolu(env: dict) -> None:
+    """Kod satırları ayrı SourceCode paragrafları: boş satır kalır, sıra korunur, <w:br> yok."""
+    import xml.etree.ElementTree as ET
+    import zipfile
+    w = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    kod = ['{', '  "a": 1,', '', '  "b": 2', '}']
+    beklenen = ["Başlık", "Giriş.", *kod, "Son."]
+    with tempfile.TemporaryDirectory(prefix="adimadim-word-") as gecici:
+        klasor = Path(gecici)
+        (klasor / "uydurma.md").write_text(
+            "# Başlık\n\nGiriş.\n\n~~~json\n" + "\n".join(kod) + "\n~~~\n\nSon.\n", encoding="utf-8")
+        calistir(env, "word", str(klasor))
+        docx = klasor / "uydurma.docx"
+        if not docx.exists():
+            kontrol(False, "word uydurma .md'den docx üretiyor")
+            return
+        with zipfile.ZipFile(docx) as z:
+            govde = ET.fromstring(z.read("word/document.xml")).find(w + "body")
+        paragraflar = govde.findall(w + "p")
+        metinler = ["".join(t.text or "" for t in p.iter(w + "t")) for p in paragraflar]
+        kod_pars = [p for p in paragraflar
+                    if (s := p.find(f"{w}pPr/{w}pStyle")) is not None and s.get(w + "val") == "SourceCode"]
+        kontrol(metinler == beklenen, "kod satırları sırayla ve boş satır dahil korunuyor")
+        kontrol(len(kod_pars) == len(kod), "her kod satırı ayrı SourceCode paragrafı")
+        kontrol(not any(True for p in kod_pars for _ in p.iter(w + "br")), "kod paragraflarında satır sonu (<w:br>) yok")
 
 
 def sesli_akis(env: dict) -> None:

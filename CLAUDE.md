@@ -68,6 +68,7 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
 
 - `adimadim.py`: tek giriş noktası. Komutlar: basla, cek, not, geri, durum, bitir, word, yeniden, api, komutlar, cevir, kisayol, arayuz.
   Gerekirse modüllere bölünebilir; komut satırı arayüzü korunmalı.
+- Word çıktısı: `word_uret` pandoc'u `kod_satirlari.lua` filtresiyle çalıştırır; her kod satırı ayrı paragraf olur (tek paragraf büyük API gövdelerinde Word/LibreOffice'te açılmıyordu).
 - Ses kaydı: mikrofon ayarı doluysa `kayit_baslat` `parecord --device=<kaynak>` kullanır (arecord'a düşmez); `mikrofon_profil` doluysa `mikrofon_hazirla`/`mikrofon_birak` kulaklığı yalnız sesli oturum boyunca mikrofon profiline geçirip `pactl` ile eski profile döndürür.
 - `arayuz.py`: tkinter pencere, üç ekran (Başla → Kayıt: ekran önizlemeleri → Bitiş: .md önizlemesi).
   Düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır (çıktı `arayuz.log`'a, `ADIMADIM_ARAYUZ=1`

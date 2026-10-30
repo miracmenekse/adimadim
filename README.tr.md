@@ -214,3 +214,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
 | v0.9.2 | 2026-10-07 | API istek/yanıt gövdeleri kısaltılmadan tam yazılır; maskeleme aynı. |
 | v0.9.3 | 2026-10-30 | Mikrofon seçimi: sesli oturumda Bluetooth kulaklık mikrofon profiline geçer, bitince eski profil döner; sistem varsayılan girişi değişmez. |
+| v0.9.4 | 2026-10-30 | Büyük API gövdeli Word dosyaları açılıyor: her kod satırı ayrı paragraf olur (pandoc Lua filtresi); yaklaşık 1300 sayfalık dosya LibreOffice'te 400 sn'de açılamıyordu, şimdi 11 sn. |

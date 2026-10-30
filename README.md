@@ -190,3 +190,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |
 | v0.9.2 | 2026-10-07 | API request/response bodies are written in full instead of being shortened; masking unchanged. |
 | v0.9.3 | 2026-10-30 | Microphone selection: during voice sessions a Bluetooth headset switches to its microphone profile and back at the end; the system default input is untouched. |
+| v0.9.4 | 2026-10-30 | Large API-body Word files open: each code line becomes its own paragraph (pandoc Lua filter), so LibreOffice opens a 1300-page document in 11 s instead of failing after 400 s. |

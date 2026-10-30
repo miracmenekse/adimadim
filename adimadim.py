@@ -270,8 +270,9 @@ def word_uret(oturum: Path) -> bool:
     gorselleri_geri_koy(md)
     docx = md.with_suffix(".docx")
     # hard_line_breaks: notlardaki satır sonları Word'de de korunsun (Obsidian'daki gibi)
+    # kod_satirlari.lua: kod satırı başına ayrı paragraf; yoksa büyük API gövdesi tek paragraf olup Word/LibreOffice açamıyor
     komut = ["pandoc", f"./{md.name}", "-f", "markdown-implicit_figures+hard_line_breaks",
-             "-o", f"./{docx.name}"]
+             f"--lua-filter={REPO_DIZINI / 'kod_satirlari.lua'}", "-o", f"./{docx.name}"]
     if SABLON.exists():
         komut.append(f"--reference-doc={SABLON}")
     r = subprocess.run(komut, cwd=oturum, capture_output=True, text=True)
