@@ -62,7 +62,7 @@ flowchart LR
 2. **Transcribe:** on finish, all step recordings are concatenated. Silero VAD removes silence (timestamps are mapped back to the original audio), Whisper transcribes with a prompt built from the term lists, and the correction dictionary is applied.
 3. **Assign:** every timestamped sentence goes to the step in which it started.
 4. **Render:** Markdown in a use-case template, then Word via pandoc with the company template.
-5. **Polish (optional):** the Markdown is copied to Rovo; the formal version pasted back replaces the .md (previous one kept as `.md.yedek`), with screenshots and step headings restored, and Word is rebuilt.
+5. **Polish (optional):** **Copy narration** gives Rovo only the step narration (plus the Amaç/Aktör/condition fields); the reply pasted back replaces just the matching steps' text (previous .md kept as `.md.yedek`). Screenshots, API sections and command tables stay, and Word is rebuilt.
 
 The window (`arayuz.py`) only runs the same CLI commands in a subprocess and polls `oturum.json`, so
 the command line and the UI always behave the same.
@@ -87,9 +87,9 @@ Bluetooth headset microphone: set `mikrofon` (part of the source name, e.g. `blu
 
 ## 💡 Usage & Examples
 
-Open **adımadım** from the application menu: **Start** (title, voice or typed) → **Recording**
+Open **adımadım** from the application menu: **Start** (title, voice or typed, recent documents) → **Recording**
 (capture, note, undo, region capture, thumbnails) → **Finish** (progress bar, document preview,
-copy Markdown, Rovo paste-back, open Word, add API calls from a HAR file). Or use the CLI:
+copy narration, Rovo paste-back, open Word, add API calls from a HAR file). Or use the CLI:
 
 ```bash
 adimadim basla "Sipariş iptal akışı" --ses   # start a voice-narrated session
@@ -104,8 +104,7 @@ adimadim komutlar tablo.csv                   # load the command table: commands
 ```
 
 **API calls (Firefox):** before the first screen, open F12 → **Network** and tick **Persist Logs** in the gear menu.
-When done, right-click in Network → **Save All As HAR**, then **API ekle (HAR)** on the finish screen (before Rovo:
-the .md is regenerated, the previous one kept as `.md.yedek`). Headers (Authorization, Cookie) never reach the
+When done, right-click in Network → **Save All As HAR**, then **API ekle (HAR)** on the finish screen (the .md is regenerated, the previous one kept as `.md.yedek`; Rovo text survives). Headers (Authorization, Cookie) never reach the
 document; the HAR is not copied into the session folder; delete it afterwards since it holds session cookies.
 
 **Commands run:** in DBeaver select the command-table query result (Ctrl+A, Ctrl+C), then **Komut tablosu** on the
@@ -190,4 +189,5 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |
 | v0.9.2 | 2026-10-07 | API request/response bodies are written in full instead of being shortened; masking unchanged. |
 | v0.9.3 | 2026-10-30 | Microphone selection: during voice sessions a Bluetooth headset switches to its microphone profile and back at the end; the system default input is untouched. |
+| v0.9.5 | 2026-10-30 | Back to the document: the finish screen copies the narration only, Rovo's paste-back survives API calls and command tables, and the start screen lists recent documents. |
 | v0.9.4 | 2026-10-30 | Large API-body Word files open: each code line becomes its own paragraph (pandoc Lua filter), so LibreOffice opens a 1300-page document in 11 s instead of failing after 400 s. |

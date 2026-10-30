@@ -61,7 +61,7 @@ flowchart LR
 2. **Çeviri:** bitirince adım sesleri birleştirilir. Silero VAD sessizlikleri atar (zaman damgaları asıl sese geri taşınır), Whisper terim listelerinden kurulan ipucuyla çevirir, düzeltme sözlüğü uygulanır.
 3. **Dağıtım:** zaman damgalı her cümle başladığı adıma yazılır.
 4. **Üretim:** kullanım senaryosu şablonunda Markdown, ardından pandoc ve şirket şablonuyla Word.
-5. **Toparlama (isteğe bağlı):** .md Rovo'ya kopyalanır; geri yapıştırılan resmi metin .md'nin yerine geçer (öncekisi `.md.yedek`), görseller ve adım başlıkları geri konur, Word yenilenir.
+5. **Toparlama (isteğe bağlı):** **Anlatımı kopyala** yalnız anlatımı Rovo'ya verir; geri yapıştırılan resmi metin yalnız eşleşen adımların anlatımını değiştirir (öncekisi `.md.yedek`). Görseller, API bölümleri ve komut tabloları aynen kalır; Word yenilenir.
 
 Pencere (`arayuz.py`) aynı komutları alt süreçte çalıştırır ve `oturum.json`'u yoklar; komut satırı ve
 pencere her zaman aynı davranır.
@@ -109,8 +109,8 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 ## 💡 Kullanım Senaryoları
 
-Uygulama menüsünden **adımadım**'ı aç: **Başla** (ad, sesli/yazılı) → **Kayıt** (çek, not, geri al,
-bölge çek, önizlemeler) → **Bitiş** (bekleme çubuğu, doküman önizlemesi, MD'yi kopyala, Rovo alanı,
+Uygulama menüsünden **adımadım**'ı aç: **Başla** (ad, sesli/yazılı, son dokümanlar) → **Kayıt** (çek, not, geri al,
+bölge çek, önizlemeler) → **Bitiş** (bekleme çubuğu, doküman önizlemesi, Anlatımı kopyala, Rovo alanı,
 Word'ü aç, HAR'dan API ekle). Ya da komut satırı:
 
 ```bash
@@ -128,7 +128,7 @@ adimadim cek --tam                            # ayardan bağımsız tüm ekranı
 
 **API çağrıları (Firefox):** ilk ekrandan önce F12 → **Ağ** sekmesini aç, dişliden **Kayıtları sürdür**'ü işaretle.
 Bitirince Ağ sekmesinde sağ tık → **Tümünü HAR olarak kaydet**, sonra Bitiş ekranında **API ekle (HAR)**
-(Rovo'dan önce: .md yeniden üretilir, öncekisi `.md.yedek`). Başlıklar (Authorization, Cookie) dokümana hiç yazılmaz;
+(.md yeniden üretilir, öncekisi `.md.yedek`; Rovo metni korunur). Başlıklar (Authorization, Cookie) dokümana hiç yazılmaz;
 HAR dosyası oturum klasörüne kopyalanmaz, içinde oturum çerezi olduğu için işin bitince sil.
 
 **Çalışan komutlar:** DBeaver'da komut tablosu sorgusunun sonucunda Ctrl+A, Ctrl+C, sonra Bitiş ekranında
@@ -214,4 +214,5 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
 | v0.9.2 | 2026-10-07 | API istek/yanıt gövdeleri kısaltılmadan tam yazılır; maskeleme aynı. |
 | v0.9.3 | 2026-10-30 | Mikrofon seçimi: sesli oturumda Bluetooth kulaklık mikrofon profiline geçer, bitince eski profil döner; sistem varsayılan girişi değişmez. |
+| v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
 | v0.9.4 | 2026-10-30 | Büyük API gövdeli Word dosyaları açılıyor: her kod satırı ayrı paragraf olur (pandoc Lua filtresi); yaklaşık 1300 sayfalık dosya LibreOffice'te 400 sn'de açılamıyordu, şimdi 11 sn. |
