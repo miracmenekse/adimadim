@@ -14,7 +14,7 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
 - Kaynak ya da profil hazırlanamazsa `basla` oturum açmadan çıkar; oturum sırasında kaynak kaybolursa
   adım uyarıyla kaydedilir, sesi alınmaz.
 - İki ayar da boşken davranış aynıdır: pactl çağrılmaz, arecord kullanılır.
-- Test: `duman_testi.py` sahte `pactl` ve `parecord` ile 8 yeni kontrol (profil geçişi ve geri alma,
+- Test: `duman_testi.py` sahte `pactl` ve `parecord` ile 9 yeni kontrol (profil geçişi ve geri alma,
   monitör seçilmemesi, eski profilin ezilmemesi, kaynak ve kart yokken hata, Bluetooth düşmesi).
 
 **Ölçüm** (ana makinede kayıt; tek 12 kelimelik cümle, whisper-medium; örneklem küçük):

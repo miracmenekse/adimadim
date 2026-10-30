@@ -83,6 +83,8 @@ No environment variables are needed. Settings live in `~/.config/adimadim/ayar.j
 `kur.sh` is idempotent and never overwrites existing values. To update: `git pull && ./kur.sh && ./test.sh`,
 or on the host the **adımadım güncelle** button that `kur.sh` adds to the dock (pull, reinstall if changed, open).
 
+Bluetooth headset microphone: set `mikrofon` (part of the source name, e.g. `bluez_input`) and `mikrofon_profil` (e.g. `headset-head-unit-msbc`). During a voice session the headset switches to that microphone profile and back to its previous profile at the end; the system default input is never changed. Both empty keeps the old behaviour.
+
 ## 💡 Usage & Examples
 
 Open **adımadım** from the application menu: **Start** (title, voice or typed) → **Recording**

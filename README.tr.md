@@ -100,7 +100,7 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
 | `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
 | `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`); boşsa sistem varsayılanı (arecord) |
-| `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; `mikrofon` doluyken etkili, boşsa profile dokunulmaz |
+| `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; boşsa profile dokunulmaz |
 | `api_gizle`      | gövde ve sorguda adında bunlardan biri geçen alanlar `***` yazılır (varsayılan: password, parola, sifre, token, secret) |
 
 Şirket Word şablonu: `~/.config/adimadim/sablon.docx`.

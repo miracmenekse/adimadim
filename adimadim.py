@@ -35,7 +35,7 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   api_gizle       istek/yanıt gövdesi ve sorguda adında bunlar geçen alanlar *** yazılır
   mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"); boşsa sistem varsayılanı (arecord)
   mikrofon_profil kulaklığın mikrofon profili (ör. "headset-head-unit-msbc"); yalnız sesli oturum boyunca
-                  geçilir, bitince eski profile döner; boşsa profile dokunulmaz (mikrofon doluyken etkili)
+                  geçilir, bitince eski profile döner; boşsa profile dokunulmaz
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -371,18 +371,21 @@ def mikrofon_hazirla(veri: dict, ayar: dict) -> bool:
     if kart is None:
         return False
     ad, aktif = kart
-    if aktif != profil:
+    gecis = aktif != profil
+    if gecis:
         veri.setdefault("kulaklik", {"kart": ad, "profil": aktif})
         if pactl("set-card-profile", ad, profil) is None:
             return False
-        time.sleep(1)  # profil geçişi sürerken kaynak henüz görünmeyebilir
-    if not ayar.get("mikrofon"):
-        return True
-    for _ in range(30):  # en fazla ~3 sn
-        if kaynak_bul(ayar["mikrofon"]):
-            return True
-        time.sleep(0.1)
-    return False
+    if ayar.get("mikrofon"):
+        for _ in range(30):  # en fazla ~3 sn
+            if kaynak_bul(ayar["mikrofon"]):
+                break
+            time.sleep(0.1)
+        else:
+            return False
+    if gecis:
+        time.sleep(1)  # kaynak göründükten sonra kısa bekleme: sinyal oturmadan kayıt başlamasın
+    return True
 
 
 def mikrofon_birak(veri: dict) -> None:
@@ -829,7 +832,7 @@ def cmd_cek(args, ayar) -> int:
         if veri["mod"] == "ses":
             kayit_durdur(veri.get("kayit_pid"))  # önceki adımın anlatımı burada biter
             adim["ses"] = f"ses/adim-{no:02d}.wav"
-            hazir = not ayar.get("mikrofon") or mikrofon_hazirla(veri, ayar)  # Bluetooth düşüp geri geldiyse yeniden alır
+            hazir = mikrofon_hazirla(veri, ayar)  # Bluetooth düşüp geri geldiyse yeniden alır
             veri["kayit_pid"] = kayit_baslat(oturum / adim["ses"], ayar) if hazir else None
             if veri["kayit_pid"] is None:
                 adim["ses"], sessiz = None, True
