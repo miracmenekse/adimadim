@@ -33,6 +33,7 @@ chosen by measurement rather than guesswork.
 * **Whole-session transcription:** all step recordings are transcribed together and each sentence is assigned back to its step, cutting WER on a real session from 93% to 7.6%.
 * **Built-in image editor:** crop, box, arrow and text annotations on any screenshot; the original is kept.
 * **API calls per step:** export the browser's Network log as HAR and each JSON/XML call lands under the step it belongs to (GET → the screen that shows the data, POST/PUT/DELETE → the screen whose button sent it), with tokens, cookies and configured fields masked. Load the workflow command table (DBeaver copy or CSV/TXT) and each workflow call also lists the commands that ran: the current state's post commands and the next state's pre commands.
+* **Workflow states:** with the workflow call's state in the HAR (or the fixed `initialize`/`submit` transitions in `sabit_gecisler`), steps are grouped under `## Durum: <state>` headings, and each call lists the commands that run; commands after the last on-screen state (`son_ekran_durumu`) go to an "Arka planda çalışan durumlar" (background) section. Screenshots include the mouse pointer (`gnome-screenshot -p`).
 * **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; **Anlatımı kopyala** sends Rovo only the narration, and its polished reply updates just that text, so screenshots and API sections stay; both files update.
 
 ## 🛠 Tech Stack
@@ -191,3 +192,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.3 | 2026-10-30 | Microphone selection: during voice sessions a Bluetooth headset switches to its microphone profile and back at the end; the system default input is untouched. |
 | v0.9.4 | 2026-10-30 | Large API-body Word files open: each code line becomes its own paragraph (pandoc Lua filter), so LibreOffice opens a 1300-page document in 11 s instead of failing after 400 s. |
 | v0.9.5 | 2026-10-30 | Back to the document: the finish screen copies the narration only, Rovo's paste-back survives API calls and command tables, and the start screen lists recent documents. |
+| v0.9.6 | 2026-10-30 | Workflow states: steps grouped under state headings; fixed `initialize`/`submit` transitions and each call's commands shown; post-screen commands in a background section; pointer in screenshots; Rovo `> **Karar noktası:**` blocks. A 41-step document: ~2 MB Markdown → ~4 KB narration copy. |

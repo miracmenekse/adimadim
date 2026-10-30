@@ -32,6 +32,7 @@ adım tahminle değil ölçümle seçilmiştir.
 * **Toplu çeviri:** tüm adım sesleri birlikte çevrilir, her cümle kendi adımına dağıtılır; gerçek bir oturumda WER %93'ten %7,6'ya indi.
 * **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
 * **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir. İş akışı komut tablosu (DBeaver kopyası ya da CSV/TXT) yüklenince her iş akışı çağrısının altında çalışan komutlar da listelenir: mevcut durumun post, sonraki durumun pre komutları.
+* **İş akışı durumları:** HAR'daki iş akışı durumu (ya da `sabit_gecisler`'deki sabit `initialize`/`submit` geçişleri) ile adımlar `## Durum: <kod>` başlıklarında gruplanır ve her çağrının çalışan komutları yazılır; son ekran durumundan (`son_ekran_durumu`) sonraki komutlar "Arka planda çalışan durumlar" bölümüne gider. Ekran görüntülerinde fare imleci görünür (`gnome-screenshot -p`).
 * **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; **Anlatımı kopyala** ile Rovo'ya yalnız anlatım gider, resmileştirilen yanıt yalnız anlatımı değiştirir, görseller ve API bölümleri kalır; iki dosya da güncellenir.
 
 ## 🛠 Teknolojik Altyapı
@@ -102,6 +103,8 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`); boşsa sistem varsayılanı (arecord) |
 | `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; boşsa profile dokunulmaz |
 | `api_gizle`      | gövde ve sorguda adında bunlardan biri geçen alanlar `***` yazılır (varsayılan: password, parola, sifre, token, secret) |
+| `son_ekran_durumu` | iş akışının son ekran durumu (ör. `orderSubmit`); bu duruma geçilince ekran biter, sonrası arka plandadır; boşsa sınır yok |
+| `sabit_gecisler` | HAR'sız bilinen sabit geçişler: uç adının bir parçası → `[mevcut, sonraki]` (ör. `"customerOrder/initialize": ["orderInitialize", "cartSummary"]`) |
 
 Şirket Word şablonu: `~/.config/adimadim/sablon.docx`.
 Şirkete özel terimler: `~/.config/adimadim/terimler.local.txt` (repoya girmez).
@@ -216,3 +219,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.3 | 2026-10-30 | Mikrofon seçimi: sesli oturumda Bluetooth kulaklık mikrofon profiline geçer, bitince eski profil döner; sistem varsayılan girişi değişmez. |
 | v0.9.4 | 2026-10-30 | Büyük API gövdeli Word dosyaları açılıyor: her kod satırı ayrı paragraf olur (pandoc Lua filtresi); yaklaşık 1300 sayfalık dosya LibreOffice'te 400 sn'de açılamıyordu, şimdi 11 sn. |
 | v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
+| v0.9.6 | 2026-10-30 | İş akışı durumları: adımlar durum başlıklarında gruplanır; sabit `initialize`/`submit` geçişleri ve her çağrının komutları görünür; ekran sınırından sonrakiler ayrı bölümde; ekran görüntüsünde fare imleci; Rovo'da karar noktası blokları. 41 adımlık dokümanda ~2 MB Markdown → ~4 KB anlatım kopyası. |
