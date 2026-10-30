@@ -238,8 +238,9 @@ def markdown(veri: dict) -> str:
                 f"- **Aktör:** {ust.get('Aktör') or '…'}",
                 f"- **Ön koşullar:** {ust.get('Ön koşullar') or '…'}",
                 f"- **Son koşullar:** {ust.get('Son koşullar') or '…'}", ""]
+    ayar = ayarlari_oku()
     adimlar = veri["adimlar"]
-    durums = adim_durumlari(adimlar, ayarlari_oku()) if any(a.get("api") for a in adimlar) else []
+    durums = adim_durumlari(adimlar, ayar) if any(a.get("api") for a in adimlar) else []
     if any(durums):  # API'li dokümanda akış state'e göre gruplanır; adım sırası (kronoloji) korunur
         onceki = ""  # bir önceki ekran durumunun kodu; ilk durumda önceki yok
         i = 0
@@ -260,6 +261,29 @@ def markdown(veri: dict) -> str:
         satirlar += ["## Ana akış", ""]
         for no, adim in enumerate(adimlar, 1):
             satirlar += adim_blok(no, adim)
+    # Ekran sınırının (son_ekran_durumu) tablodaki son satırından sonra ilk görülen durumlar:
+    # son ekrandan sonra arka planda çalışmaya başlayan işler (CSV satır sırası = akış sırası)
+    tablo = veri.get("komutlar") or []
+    onlu = ["pre", "ic", "post"]  # ASAMA etiketlerinin görünme sırası: pre, during, post
+    sinir = ayar.get("son_ekran_durumu") or ""
+    sinir_son = -1
+    for i, k in enumerate(tablo):
+        if k["durum"] == sinir:
+            sinir_son = i
+    arka = []
+    if sinir and sinir_son >= 0:  # sınır boş ya da tabloda yoksa bölüm yok
+        for i, k in enumerate(tablo):
+            d = k["durum"]
+            if i > sinir_son and d not in arka and not any(c["durum"] == d for c in tablo[:sinir_son + 1]):
+                arka.append(d)
+    if arka:
+        satirlar += ["## Arka planda çalışan durumlar", ""]
+        for d in arka:
+            satirlar += [f"### {d}", "", "| Ne zaman | Sıra | Komut |", "|---|---|---|"]
+            secili = sorted((k for k in tablo if k["durum"] == d),
+                            key=lambda k: (onlu.index(k["asama"]), k["sira"]))
+            satirlar += [f"| {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in secili]
+            satirlar.append("")
     return "\n".join(satirlar)
 
 
