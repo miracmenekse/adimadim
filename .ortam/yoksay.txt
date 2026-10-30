@@ -20,3 +20,11 @@ bin uv                      # yukarıdaki araçların kurucusu (uv tool); adimad
 bin uvx                     # aynı
 bin node                    # Claude Code araçları için; adimadim Node kullanmaz
 bin npx                     # aynı
+apt imagemagick             # VM'de kurulu; adimadim kodu ve kur.sh kullanmaz
+apt openbox                 # VM'de kurulu; adimadim kodu ve kur.sh kullanmaz
+apt postgresql              # VM'de kurulu; adimadim kodu ve kur.sh kullanmaz
+apt xdotool                 # VM'de kurulu; adimadim kodu ve kur.sh kullanmaz
+apt xvfb                    # VM'de kurulu; adimadim kodu ve kur.sh kullanmaz
+bin cursor-agent            # Cursor CLI yalnızca VM'de
+bin opencode                # OpenCode yalnızca VM'de (geliştirme akışı)
+bin vscode-cli              # VS Code CLI yalnızca VM'de
