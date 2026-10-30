@@ -41,6 +41,7 @@ Kurallar:
 - **Yapıyı koru.** Adım sayısını, sırasını ve numaralarını aynen koru: adım ekleme, birleştirme ya da atlama
   yok. Başlıklar `### Adım N` biçiminde kalsın.
 - Başlığın altındaki `Görsel: <dosya adı>` satırını aynen koru: anlatıma karıştırma, değiştirme, silme.
+- `## Durum: …`, `## Başlamadan önce`, `## Arka planda çalışan durumlar` başlıklarını ve `Çalışan komut:` satırlarını düzeltme, anlatıma karıştırma; adımadım bunları anlatıma yazmaz.
 - **Bilgi atma.** Anlatımdaki her somut bilgiyi koru: ürün, proje ve müşteri adları (Fizz, Darwin,
   Dhiragu…), sayılar ("üç plan", "12 ay taksit"), alan değerleri, ekip adları. Yanlış duyulmuş bir ifadeyi
   bağlamdan düzelt ("12 ayat hakset" → "12 ay taksit"); düzeltemiyorsan **silme**, ham hâliyle bırakıp
