@@ -110,4 +110,4 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
 - **Sabit geçiş:** `initialize` ve `submit` çağrıları iş akışı alanı (`currentWorkFlowStateShortCode`) taşımaz; bu yüzden
   geçiş `sabit_gecisler` ile bilinir. Geçiş kayda yazılmaz, eski dokümanlar HAR'sız çalışır.
 - **Geri dönüş:** aynı duruma dönüş ayrı grup olur; adım sırası (kronoloji) korunur.
-- **Karar noktası:** sesli kalıp `Karar noktası: <koşul> → <sonuç>` seçildi. Rovo bunu `> **Karar noktası:** <koşul> → <sonuç>` bloğuna çevirir; her dal ayrı satır.
+- **Karar noktası:** sesli kalıp "Karar noktası: …" diye söylenerek başlar. Rovo bunu `> **Karar noktası:** <koşul> → <sonuç>` bloğuna çevirir; ok yalnız bu çıktıda yazılır, her dal ayrı satır.
