@@ -3,6 +3,7 @@
 Üç ekran: Başla → Kayıt (çekilen ekranların önizlemesi) → Bitiş (dokümanın önizlemesi).
 Her düğme `adimadim.py <komut>`u ayrı süreçte çalıştırır (kilit, not penceresi, çeviri aynı kalır);
 pencere oturum.json'a bakıp durumu gösterir. Süren işlem varsa bekleme çubuğu görünür.
+Başla ekranında son dokümanlar listelenir; listeden (ya da Başka klasör'den) bitmiş bir dokümana dönüş sağlanır.
 """
 from __future__ import annotations
 
@@ -13,6 +14,7 @@ import sys
 import time
 import math
 import shutil
+import datetime as dt
 import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, simpledialog, ttk
@@ -203,6 +205,8 @@ class Pencere:
         self.kok, self.surec, self.calisan, self.bas_zamani = kok, None, None, 0.0
         self.bitmis: Path | None = None  # bitiş ekranında gösterilen doküman
         self.mesaj = ""  # son işlemin sonucu ("Kopyalandı", "N adım güncellendi…"); doluyken ipucu yerine görünür
+        self.ayar = a.ayarlari_oku()  # başla ekranındaki son dokümanlar bundan okunur
+        self.son_doklar: list[Path] = []  # son_liste satırlarının karşılığı
         self.resimler, self.onizlenen, self.md_imza, self.ekran, self.sonra = [], None, None, None, None
         kok.title(a.UYGULAMA)
         c = ttk.Frame(kok, padding=10)
@@ -221,6 +225,15 @@ class Pencere:
         ttk.Radiobutton(f, text="Sesli anlatım (konuşarak)", variable=self.mod, value="ses").grid(row=2, column=0, sticky="w")
         ttk.Radiobutton(f, text="Yazılı not (her ekranda yazarak)", variable=self.mod, value="yazi").grid(row=2, column=1, sticky="w")
         ttk.Button(f, text="Başla", command=self.basla).grid(row=2, column=2, sticky="e", padx=(10, 0))
+        ttk.Label(f, text="Son dokümanlar", font=("", 10, "bold")).grid(row=3, column=0, columnspan=3, sticky="w", pady=(12, 0))
+        self.son_liste = tk.Listbox(f, height=6, activestyle="none", exportselection=False, highlightthickness=0)
+        self.son_liste.grid(row=4, column=0, columnspan=3, sticky="we", pady=(2, 0))
+        self.son_liste.bind("<Double-Button-1>", lambda _: self.secileni_ac())
+        d = ttk.Frame(f)
+        d.grid(row=5, column=0, columnspan=3, sticky="w", pady=(4, 0))
+        ttk.Button(d, text="Aç", command=self.secileni_ac).pack(side="left", padx=(0, 2))
+        ttk.Button(d, text="Başka klasör…", command=self.baska_klasor).pack(side="left", padx=(8, 0))
+        ttk.Label(d, text="Listede çift tıkla ya da seçip Aç'a bas", foreground="#666", font=("", 8)).pack(side="left", padx=10)
 
         # --- Kayıt ekranı: başlık, çekilen ekranların şeridi, düğmeler
         self.kayit_f = f = ttk.Frame(c)
@@ -390,6 +403,54 @@ class Pencere:
         self.baslik.set("")
         self.guncelle(tekrar=False)
 
+    def son_listeyi_yenile(self) -> None:
+        """Başla ekranındaki son dokümanlar listesi; başla ekranına her dönüşte yenilenir."""
+        self.son_doklar = a.son_dokumanlar(self.ayar)
+        l = self.son_liste
+        l.delete(0, "end")
+        for oturum in self.son_doklar:
+            baslik, adim = oturum.name, 0
+            try:
+                veri = a.yukle(oturum)
+                baslik = veri.get("baslik") or oturum.name
+                adim = len(veri.get("adimlar") or [])
+            except (OSError, ValueError):
+                pass  # okunamadıysa klasör adıyla ve 0 adım gösterilir
+            saat = dt.datetime.fromtimestamp(mtime(oturum / "oturum.json")).strftime("%d.%m.%Y %H:%M")
+            l.insert("end", f"{saat} · {baslik} · {adim} adım")
+
+    def secileni_ac(self) -> None:
+        """Listeden seçilen bitmiş dokümanı açar (bitiş ekranına götürür)."""
+        secim = self.son_liste.curselection()
+        if not secim:
+            self.mesaj = "Listeden bir doküman seç (çift tık) ya da önceki dokümanı Başka klasör… ile aç."
+            self.guncelle(tekrar=False)
+            return
+        oturum = self.son_doklar[secim[0]]
+        try:
+            a.yukle(oturum)
+        except (OSError, ValueError):  # arada bozuldu: listeyi yenile, hiçbir şey açma
+            self.son_listeyi_yenile()
+            self.mesaj = f"Bu klasörün oturum.json'u okunamadı: {oturum.name}"
+            self.guncelle(tekrar=False)
+            return
+        self.bitmis = oturum
+        self.guncelle(tekrar=False)
+
+    def baska_klasor(self) -> None:
+        """'Başka klasör…' ile elle seçilen klasörü açar; vazgeçilirse bir şey olmaz."""
+        klasor = filedialog.askdirectory(parent=self.kok, title="Doküman klasörü seç")
+        if not klasor:
+            return
+        oturum = Path(klasor)
+        try:
+            a.yukle(oturum)
+        except (OSError, ValueError):
+            self.mesaj = f"Bu klasörde geçerli bir oturum.json yok: {oturum.name}"
+            return
+        self.bitmis = oturum
+        self.guncelle(tekrar=False)
+
     def islem_bitti(self) -> None:
         komut = self.calisan
         self.surec = self.calisan = None
@@ -413,6 +474,8 @@ class Pencere:
         {"basla": self.basla_f, "kayit": self.kayit_f, "bitis": self.bitis_f}[ad].grid(row=1, column=0, sticky="nsew")
         self.kok.attributes("-topmost", ad == "kayit")  # kayıtta hep üstte, diğerlerinde normal pencere
         self.ekran = ad
+        if ad == "basla":
+            self.son_listeyi_yenile()  # başla ekranına her dönüşte liste tazelenir (seçim de sıfırlanır)
 
     def seridi_yenile(self, oturum: Path, veri: dict) -> None:
         imza = (oturum, tuple((x["gorsel"], bool(x.get("not")), mtime(oturum / x["gorsel"])) for x in veri["adimlar"]))

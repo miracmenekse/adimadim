@@ -235,6 +235,25 @@ def markdown(veri: dict) -> str:
     return "\n".join(satirlar)
 
 
+def son_dokumanlar(ayar: dict, adet: int = 10) -> list[Path]:
+    """Belgeler klasöründeki son dokümanlar: oturum.json'u olan, açık olmayan klasörler; yeni önce; bozuk json atlanır."""
+    acik = aktif_oturum()
+    doklar = []
+    for dosya in Path(ayar.get("klasor") or "").expanduser().glob("*/oturum.json"):
+        oturum = dosya.parent
+        if oturum == acik or not dosya.is_file():
+            continue
+        try:
+            veri = json.loads(dosya.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue  # bozuk json: listede gösterilmez
+        if not isinstance(veri, dict):
+            continue
+        doklar.append(oturum)
+    yeni_once = sorted(doklar, key=lambda d: d.joinpath("oturum.json").stat().st_mtime, reverse=True)
+    return yeni_once[:max(0, adet)]
+
+
 def md_bul(oturum: Path) -> Path | None:
     with contextlib.suppress(OSError, ValueError, KeyError):
         md = oturum / f"{yukle(oturum)['dosya']}.md"
