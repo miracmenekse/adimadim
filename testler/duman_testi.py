@@ -501,7 +501,7 @@ def api_cagrilari(env: dict, kok: Path) -> None:
             and "| Butonla giden | POST | `/api/siparis` | 201 |" in adim.get("1", ""),
             "GET sonraki ekrana, POST butona basılan ekrana (Adım 1)")
     kontrol(adim.get("2", "").count("| Ekrana gelen | GET | `/api/siparis/9` |") == 1, "aynı ekranda tekrarlanan çağrı tek satır")
-    kontrol('"ad": "kalem4"' in adim.get("2", "") and "…" not in metin.split("## Ana akış")[1], "gövdeler kısaltılmadan tam yazılıyor")
+    kontrol('"ad": "kalem4"' in adim.get("2", "") and "…" not in metin.split("### Adım 1", 1)[1], "gövdeler kısaltılmadan tam yazılıyor")
     kontrol("<sifreBilgisi>***</sifreBilgisi><durum>Aktif" in adim.get("3", "") and "~~~xml" in adim.get("3", ""),
             "XML gövdede gizli alan maskelendi")
     kontrol("GIZLI" not in metin, "jeton, çerez, parola, sır ve sorgudaki token dokümanda yok")
@@ -541,6 +541,74 @@ def api_cagrilari(env: dict, kok: Path) -> None:
     bos.write_text(json.dumps({"log": {"entries": [girdiler[4]]}}), encoding="utf-8")
     r = calistir(env, "api", str(bos), beklenen=1)
     kontrol(r.returncode == 1 and "API çağrısı yok" in r.stdout, "API çağrısı olmayan HAR açıklamayla reddediliyor")
+
+
+GRUP_SATIRLARI = [("TEST_ILK", "TestIlkPost", 0, 1, 1), ("TEST_S1", "TestS1Pre", 1, 0, 1),
+                  ("TEST_S1", "TestS1Ic", 0, 0, 1), ("TEST_SON", "TestSonPost", 0, 1, 1),
+                  ("TEST_ARKA", "TestArkaIc", 0, 0, 1), ("TEST_ARKA", "TestArkaPre", 1, 0, 1)]
+
+
+def akis_gruplari(env: dict, kok: Path) -> None:
+    print("İş akışı grupları (sabit geçiş, ekran sınırı, arka plan)")
+    ayar_yolu = kok / "home" / ".config" / "adimadim" / "ayar.json"
+    ozgun = ayar_yolu.read_text(encoding="utf-8")
+    ayar = json.loads(ozgun)  # sınır ve sabit geçişler sahte adlarla: gerçek adlar ayar.ornek.json'da
+    ayar.update(son_ekran_durumu="TEST_SON",
+                sabit_gecisler={"TEST/initialize": ["TEST_ILK", "TEST_S1"], "TEST/submit": ["TEST_SON", "TEST_ARKA"]})
+    ayar_yolu.write_text(json.dumps(ayar, ensure_ascii=False), encoding="utf-8")
+    try:
+        calistir(env, "basla", "Gruplu akış")
+        for _ in range(4):
+            calistir(env, "cek", ZENITY_RC="1")
+        calistir(env, "bitir")
+        oturum = son_oturum(env)
+        veri = json.loads((oturum / "oturum.json").read_text(encoding="utf-8"))
+        veri.update(baslangic="2026-10-06T10:00:00.000+03:00", bitis="2026-10-06T10:05:00.000+03:00")
+        for no, adim in enumerate(veri["adimlar"], 1):  # adım 1..4 sırayla 10:01..10:04
+            adim["zaman"] = f"2026-10-06T10:0{no}:00.000+03:00"
+        (oturum / "oturum.json").write_text(json.dumps(veri, ensure_ascii=False), encoding="utf-8")
+        tablo = kok / "gruplu-komutlar.csv"
+        tablo.write_text("\n".join(",".join(f'"{x}"' for x in r) for r in [KOMUT_BASLIK] + [
+            ["TEST_AKIS", d, "10", str(900 + i), k, k, str(pre), str(post), str(sira)]
+            for i, (d, k, pre, post, sira) in enumerate(GRUP_SATIRLARI)]) + "\n", encoding="utf-8")
+        girdiler = [
+            har_girdisi("2026-10-06T10:01:30.000+03:00", "POST", "https://x.test/api/TEST/initialize",
+                        istek='{"no": 1}', yanit='{"ok": true}'),  # sabit geçiş: adım 1 başlamadan önce
+            akis_girdisi("2026-10-06T10:02:10.000+03:00", "TEST_S1", False, "TEST_S1"),  # durum içi
+            har_girdisi("2026-10-06T10:03:20.000+03:00", "POST", "https://x.test/api/TEST/submit",
+                        istek='{"no": 2}', yanit='{"ok": true}'),  # ekran sınırı: TEST_SON, arka plan TEST_ARKA
+        ]
+        har = kok / "gruplu.har"
+        har.write_text(json.dumps({"log": {"version": "1.2", "creator": {"name": "Firefox", "version": "157.0"},
+                                           "entries": girdiler}}), encoding="utf-8")
+        calistir(env, "komutlar", str(tablo))
+        kontrol(calistir(env, "api", str(har)).returncode == 0, "gruplu akış: api komutu")
+        md = oturum / "Gruplu akış.md"
+        metin = md.read_text(encoding="utf-8")
+        adim = dict(zip(("1", "2", "3", "4"), metin.split("### Adım ")[1:]))
+        sira = [metin.find(x) for x in ("## Başlamadan önce", "### Adım 1", "## Durum: TEST_S1\n\n### Adım 2",
+                                        "## Durum: TEST_SON (TEST_S1 → TEST_SON)\n\n### Adım 4",
+                                        "## Arka planda çalışan durumlar")]
+        kontrol(all(x >= 0 for x in sira) and sira == sorted(sira), "başlamadan önce, durum grupları ve arka plan sırayla")
+        kontrol("TEST_ILK → TEST_S1" in adim.get("1", "") and "| TEST_ILK | çıkışta (post) | 1 | TestIlkPost |" in adim.get("1", "")
+                and "| TEST_S1 | girişte (pre) | 1 | TestS1Pre |" in adim.get("1", ""),
+                "sabit geçişli çağrının komutları (mevcut post, sonraki pre) tetikleyen adımda")
+        kontrol("| TEST_S1 | durum içi (during) | 1 | TestS1Ic |" in adim.get("2", ""), "durum değişmeyen çağrının during komutları")
+        kontrol("| TEST_SON | çıkışta (post) | 1 | TestSonPost |" in adim.get("3", "")
+                and "| TEST_ARKA | girişte (pre) | 1 | TestArkaPre |" in adim.get("3", ""),
+                "ekran sınırındaki sabit geçiş: sınır durumunun post'u, arkanın pre'si")
+        arka = metin.split("## Arka planda çalışan durumlar")[1]
+        kontrol("### TEST_ARKA" in arka and arka.index("TestArkaPre") < arka.index("TestArkaIc")
+                and "TestSonPost" not in arka and "TestS1Ic" not in arka,
+                "arka plan bölümü: yalnız sınırdan sonraki durum, pre önce")
+        kopya = subprocess.run(
+            [PY, "-c", "import pathlib, sys; sys.path.insert(0, sys.argv[1]); import adimadim as a; "
+                       "sys.stdout.write(a.anlatim_kopyasi(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8')))",
+             str(REPO), str(md)], env=env, capture_output=True, text=True, timeout=120).stdout
+        kontrol("### Adım 4" in kopya and not any(x in kopya for x in ("## Başlamadan önce", "## Durum:", "Arka planda", "TestIlkPost")),
+                "Anlatımı kopyala: grup ve arka plan başlıkları yok, adımlar var")
+    finally:
+        ayar_yolu.write_text(ozgun, encoding="utf-8")
 
 
 def yedek_motor(env: dict, kok: Path) -> None:
@@ -679,6 +747,7 @@ def main() -> int:
             sesli_akis(env)
             mikrofon_akis(env, kok)
             api_cagrilari(env, kok)
+            akis_gruplari(env, kok)
             yedek_motor(env, kok)
             ipucu_ve_duzeltme(env, kok)
             goreli_klasor(env, kok)
