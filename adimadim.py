@@ -36,6 +36,11 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"); boşsa sistem varsayılanı (arecord)
   mikrofon_profil kulaklığın mikrofon profili (ör. "headset-head-unit-msbc"); yalnız sesli oturum boyunca
                   geçilir, bitince eski profile döner; boşsa profile dokunulmaz
+  son_ekran_durumu son ekranın iş akışı durumu (ör. "orderSubmit"); bu duruma geçilirken ekran
+                  biter, sonraki durumlar arka plandadır (ekran adımı değildir); boşsa sınır yok
+  baslatma_cagrisi oturumu başlatan çağrının uc'ünde geçen parça (ör. "initialize"); durum
+                  hesaplaması bu çağrının adımına göre tetikleme öncesi adımları ayırır; boşsa
+                  yalnızca ilk akışlı adımdan itibaren durum bilinir
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -931,6 +936,44 @@ def calisan_komutlar(tablo: list, akis: dict) -> list:
     secim = [(akis["mevcut"], "post"), (akis["sonraki"], "pre")] if akis["degisim"] else [(akis["mevcut"], "ic")]
     return [k for durum, asama in secim
             for k in sorted((k for k in tablo if k["durum"] == durum and k["asama"] == asama), key=lambda k: k["sira"])]
+
+
+def adim_durumlari(adimlar: list, ayar: dict) -> list:
+    """Adımların iş akışı durumu (workflow state): [durum, …], akışa kanmayan adımlar None.
+
+    İlk akışlı adımın (f) ilk akışının `mevcut`u başlangıç durumu (S). `baslatma_cagrisi`
+    uc'ünde geçen, f'den önceki ilk çağrının adımı t: veri gönderiyorsa (POST/…) bu çağrı
+    tetiklemedir, t+1..f ve t yoksa yalnız f adımları S'de; okuma (GET) ise t ile birlikte
+    t..f S'de, öncesi None. f'den sonra sırayla: adımdaki ilk akışın `mevcut`u adımın
+    durumunu belirler; `degisim` + `sonraki` geçişi sonraki adımlara taşınır (adımın kendi
+    `mevcut`u önceliklidir), akışsız adımlar önceki durumu sürer. Geçiş `son_ekran_durumu`
+    iken yapıldıysa artık ekran değişmez, durum o değerden ayrılmaz."""
+    akislari = [[c["akis"] for c in adim.get("api") or [] if c.get("akis")] for adim in adimlar]
+    if not any(akislari):
+        return [None] * len(adimlar)
+    f = next(i for i, degisik in enumerate(akislari) if degisik)
+    mevcut = akislari[f][0]["mevcut"]
+    sinir = ayar.get("son_ekran_durumu") or ""
+    durums = [None] * len(adimlar)
+    tetik = None
+    if ayar.get("baslatma_cagrisi"):  # boşsa tetikleme bilinmez, tahmin yok
+        for i in range(f):  # f'den önce uc'ünde bu parça geçen ilk çağrı
+            tetik = next(((i, c["metot"] in YAZAN_METOTLAR) for c in (adimlar[i].get("api") or [])
+                         if ayar["baslatma_cagrisi"] in c["uc"]), None)
+            if tetik:
+                break
+    if tetik:
+        i, yazan = tetik
+        durums[i + yazan:f] = [mevcut] * (f - i - yazan)  # okumada t, yazmada t+1'den itibaren
+    durum = mevcut
+    for i in range(f, len(adimlar)):
+        if i > f and akislari[i]:
+            durum = akislari[i][0]["mevcut"]  # adımın kendi çağrısı durumu belirler
+        durums[i] = durum
+        gecitler = [a["sonraki"] for a in akislari[i] if a["degisim"] and a["sonraki"]]
+        if gecitler and not (sinir and durum == sinir):
+            durum = gecitler[-1]  # adım sonundaki geçiş sonraki adımları taşır
+    return durums
 
 
 # --------------------------------------------------------------- komutlar

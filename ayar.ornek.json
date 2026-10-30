@@ -11,6 +11,8 @@
   "duzeltme": true,
   "api_filtre": [],
   "api_gizle": ["password", "parola", "sifre", "token", "secret"],
+  "son_ekran_durumu": "orderSubmit",
+  "baslatma_cagrisi": "initialize",
   "mikrofon": "",
   "mikrofon_profil": ""
 }
