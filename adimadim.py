@@ -187,23 +187,28 @@ def kaydet(oturum: Path, veri: dict) -> None:
 
 
 def markdown(veri: dict) -> str:
+    ust = veri.get("ust") or {}  # yeniden üretimde .md'deki düzeltilmiş üst alan değerleri
     satirlar = [f"# {veri['baslik']}", "",
                 f"- **Tarih:** {veri['tarih']}",
-                "- **Amaç:** …",
-                "- **Aktör:** …",
-                "- **Ön koşullar:** …",
-                "- **Son koşullar:** …", "",
+                f"- **Amaç:** {ust.get('Amaç') or '…'}",
+                f"- **Aktör:** {ust.get('Aktör') or '…'}",
+                f"- **Ön koşullar:** {ust.get('Ön koşullar') or '…'}",
+                f"- **Son koşullar:** {ust.get('Son koşullar') or '…'}", "",
                 "## Ana akış", ""]
     for no, adim in enumerate(veri["adimlar"], 1):
         satirlar += [f"### Adım {no}", "", f"![Adım {no}]({adim['gorsel']})", ""]
-        paragraflar = [m.strip() for m in (adim.get("ses_metni"), adim.get("not")) if m and m.strip()]
-        if not paragraflar:
-            if adim.get("ses") and adim.get("ses_metni") is None:
-                paragraflar = ["_Sesli anlatım kaydedildi; doküman bitirilince metne çevrilecek._"]
-            else:
-                paragraflar = ["_Açıklama eklenmedi._"]
-        for paragraf in paragraflar:
-            satirlar += [paragraf, ""]
+        metin = (adim.get("metin") or "").strip()
+        if metin:  # Rovo ya da elle düzeltilmiş anlatım; ses_metni/not yerine
+            satirlar += [metin, ""]
+        else:
+            paragraflar = [m.strip() for m in (adim.get("ses_metni"), adim.get("not")) if m and m.strip()]
+            if not paragraflar:
+                if adim.get("ses") and adim.get("ses_metni") is None:
+                    paragraflar = ["_Sesli anlatım kaydedildi; doküman bitirilince metne çevrilecek._"]
+                else:
+                    paragraflar = ["_Açıklama eklenmedi._"]
+            for paragraf in paragraflar:
+                satirlar += [paragraf, ""]
         if adim.get("api"):
             satirlar += ["#### API çağrıları", "", "| Yön | Metot | Uç nokta | Durum |", "|---|---|---|---|"]
             satirlar += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']} |" for c in adim["api"]]
@@ -1094,6 +1099,8 @@ def cmd_yeniden(args, ayar) -> int:
         bildir("Bu doküman hâlâ açık; önce: adimadim bitir")
         return 1
     veri = yukle(oturum)
+    for adim in veri["adimlar"]:
+        adim.pop("metin", None)  # eski .md düzeltmesi değil, yeni çeviri yazılmalı
     sesli = [a for a in veri["adimlar"] if a.get("ses")]
     if not sesli:
         bildir("Bu dokümanda ses kaydı yok.")
@@ -1169,9 +1176,26 @@ def bitmis_dokuman(klasor: str | None) -> tuple:
 
 
 def yeniden_yaz(oturum: Path, veri: dict) -> None:
-    """Bitmiş dokümanın .md'sini oturum.json'dan (öncekini .md.yedek'e alarak) ve Word'ü yeniden üretir."""
+    """Bitmiş dokümanın .md'sini oturum.json'dan (öncekini .md.yedek'e alarak) ve Word'ü yeniden üretir.
+
+    Üretimden önce .md'deki anlatım adim["metin"]'e, dolu üst alanlar veri["ust"]'e alınır:
+    Rovo ve elle yapılan düzeltmeler API ekle/komut tablosu sonrasındaki üretimde kaybolmaz."""
     md = md_bul(oturum)
     if md:  # .md'de elle yapılan düzeltmeler kaybolmasın
+        onceki = md.read_text(encoding="utf-8")
+        anlatim = anlatim_ayikla(onceki)
+        for no, adim in enumerate(veri["adimlar"], 1):
+            if anlatim.get(no):
+                adim["metin"] = anlatim[no]
+        ust = {}
+        for satir in onceki.splitlines():
+            if satir.startswith("## "):
+                break  # "## Ana akış"a kadarki üst alan satırları
+            m = re.fullmatch(r"- \*\*(Amaç|Aktör|Ön koşullar|Son koşullar):\*\*\s*(.*)", satir.strip())
+            if m and m.group(2).strip() not in ("", "…"):
+                ust[m.group(1)] = m.group(2).strip()
+        if ust:
+            veri["ust"] = ust
         shutil.copy2(md, md.with_name(md.name + ".yedek"))
         print(f"Önceki metin yedeklendi: {md.name}.yedek")
     kaydet(oturum, veri)
