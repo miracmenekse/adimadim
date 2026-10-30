@@ -78,10 +78,13 @@ KURALLAR
 11. Yanıt tek seferde sığmazsa son tamamlanan adımdan sonra dur ve kod bloğunu kapat. Altına
     `DEVAM: Adım <sıradaki numara>` yaz. "devam" denince aynı biçimle sürdür. Adımı yarıda kesme.
 12. Çıktıya açıklama ya da yorum ekleme; yalnız kod bloğu ve gerekirse DEVAM satırı.
+13. Metin müşteriye gidebilecek: kişi, iç ekip, iç proje, başka müşteri ve iç sistem adlarını; gerçek müşteri
+    verisini ve iç süreç yorumlarını kılavuza yazma. Çıkardıklarını Doğrulama Notu'nda "İç bilgi olarak çıkarıldı"
+    başlığıyla listele; emin değilsen kılavuzda bırakıp `[?]` koy. Doğrulama Notu yayımlanmaz.
 
 ## Kullanım
 
 1. adımadımda dokümanı aç, **Anlatımı kopyala**'ya bas.
 2. Rovo'da agent'a yapıştır: "Bu akışın kullanıcı kılavuzunu yaz:" + içerik.
 3. Metni Confluence sayfasına koy; görselleri aynı adlı `Görsel:` satırlarının yanına ekle.
-4. `[?]` işaretlerini ve Doğrulama Notu'nu kontrol et, sonra `Görsel:` satırlarını sil.
+4. `[?]` işaretlerini ve Doğrulama Notu'nu kontrol et. Yayımlamadan önce Doğrulama Notu'nu ve `Görsel:` satırlarını sil.
