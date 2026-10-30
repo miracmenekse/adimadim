@@ -202,6 +202,7 @@ class Pencere:
     def __init__(self, kok: tk.Tk):
         self.kok, self.surec, self.calisan, self.bas_zamani = kok, None, None, 0.0
         self.bitmis: Path | None = None  # bitiş ekranında gösterilen doküman
+        self.mesaj = ""  # son işlemin sonucu ("Kopyalandı", "N adım güncellendi…"); doluyken ipucu yerine görünür
         self.resimler, self.onizlenen, self.md_imza, self.ekran, self.sonra = [], None, None, None, None
         kok.title(a.UYGULAMA)
         c = ttk.Frame(kok, padding=10)
@@ -259,7 +260,7 @@ class Pencere:
         r = ttk.Frame(f)
         r.grid(row=3, column=0, columnspan=2, sticky="we", pady=(6, 0))
         r.columnconfigure(0, weight=1)
-        ttk.Label(r, text="Rovo çıktısını buraya yapıştır (Ctrl+V): .md ve Word kendiliğinden güncellenir",
+        ttk.Label(r, text="Rovo çıktısını buraya yapıştır (Ctrl+V): yalnız eşleşen adımların anlatımı güncellenir",
                   font=("", 9, "bold")).grid(row=0, column=0, sticky="w")
         self.rovo = tk.Text(r, height=4, wrap="word", font=("", 9))
         self.rovo.grid(row=1, column=0, sticky="we")
@@ -267,7 +268,7 @@ class Pencere:
         ttk.Button(r, text="Uygula", command=self.rovo_uygula).grid(row=1, column=1, sticky="ns", padx=(4, 0))
         d = ttk.Frame(f)
         d.grid(row=2, column=0, columnspan=2, sticky="w")
-        dugmeler(d, (("MD'yi kopyala", self.md_kopyala, "Rovo'ya yapıştırmak için"),
+        dugmeler(d, (("Anlatımı kopyala", self.md_kopyala, "Rovo'ya yapıştırılacak yalnız anlatım"),
                      ("Word'ü aç", lambda: self.ac(".docx"), "Hazır Word dosyası"),
                      ("Klasörü aç", lambda: self.ac(""), "Görseller, sesler, .md"),
                      ("Word'ü yenile", lambda: self.calistir("word", str(self.bitmis)), ".md'yi elle düzelttiysen"),
@@ -292,6 +293,7 @@ class Pencere:
     def calistir(self, *komut: str) -> None:
         if self.surec:
             return
+        self.mesaj = ""  # yeni komut başladı; önceki işlemin sonucu artık gösterilmez
         self.calisan, self.bas_zamani = komut[0], time.time()
         # Çıktı dosyaya: boru dolarsa (model yüklenirken uzun çıktı) komut da pencere de takılırdı.
         with open(GUNLUK, "w", encoding="utf-8") as g:
@@ -304,7 +306,7 @@ class Pencere:
     def basla(self) -> None:
         baslik = self.baslik.get().strip()
         if not baslik:
-            self.ipucu["text"] = "Önce dokümanın adını yaz."
+            self.mesaj = "Önce dokümanın adını yaz."
             return
         self.bitmis = None
         self.calistir("basla", baslik, *(["--ses"] if self.mod.get() == "ses" else []))
@@ -324,23 +326,31 @@ class Pencere:
             Duzenleyici(self.kok, oturum / adimlar[sira]["gorsel"], arac, bitince=lambda: self.guncelle(tekrar=False))
 
     def md_kopyala(self) -> None:
+        """Rovo'ya gönderilecek yalnız anlatımı (üst alanlar + başlıklar + metinler) panoya kopyalar."""
         md = a.md_bul(self.bitmis) if self.bitmis else None
         if md:
             self.kok.clipboard_clear()
-            self.kok.clipboard_append(md.read_text(encoding="utf-8"))
-            self.ipucu["text"] = "Kopyalandı. Rovo'ya yapıştır, çıktısını aşağıdaki alana yapıştır."
+            self.kok.clipboard_append(a.anlatim_kopyasi(md.read_text(encoding="utf-8")))
+            self.mesaj = "Kopyalandı: görseller ve API gövdeleri yok, yalnız anlatım. Rovo'ya yapıştır, çıktısını aşağıdaki alana yapıştır."
 
     def rovo_uygula(self) -> None:
-        """Rovo çıktısını .md'ye yazar (öncekini .md.yedek'e alır), sonra Word'ü yeniler."""
-        metin = self.rovo.get("1.0", "end").strip()
-        metin = re.sub(r"^```[a-z]*\n|\n```$", "", metin).strip()  # Rovo tek kod bloğu döndürür
+        """Rovo çıktısını yalnız anlatım olarak .md'ye işler (öncekini .md.yedek'e alır), sonra Word'ü yeniler."""
+        metin = re.sub(r"^```[a-z]*\n|\n```$", "", self.rovo.get("1.0", "end").strip()).strip()  # Rovo tek kod bloğu döndürür
         md = a.md_bul(self.bitmis) if self.bitmis else None
         if not metin or not md or self.surec:
             return
-        shutil.copy2(md, md.with_name(md.name + ".yedek"))
-        md.write_text(metin + "\n", encoding="utf-8")
+        try:
+            guncellendi, eksik = a.anlatim_uygula(self.bitmis, metin)
+        except ValueError:  # yanıtta 'Adım N' başlığı yok: dosya değişmez, yapıştırılan alan da silinmez
+            self.mesaj = "Rovo yanıtında Adım başlığı bulunamadı; doküman değişmedi. 'Anlatımı kopyala' ile verileni yapıştır."
+            return
         self.rovo.delete("1.0", "end")
+        n = len(guncellendi)
+        # calistir mesajı sıfırladığı için sonuç mesajı ondan sonra yazılır
+        bitti = (f"{n} adım güncellendi, {len(a.yukle(self.bitmis)['adimlar']) - n} adım değişmedi"
+                 + (f". Yanıtta olup dokümanda olmayan: {', '.join(f'Adım {x}' for x in eksik)}" if eksik else ""))
         self.calistir("word", str(self.bitmis))
+        self.mesaj = bitti
 
     def api_ekle(self) -> None:
         har = filedialog.askopenfilename(parent=self.kok, title="Ağ sekmesinden kaydedilen HAR dosyası",
@@ -373,7 +383,7 @@ class Pencere:
         if hedef and hedef.exists():
             a.klasoru_ac(hedef)
         else:
-            self.ipucu["text"] = f"Bulunamadı: {hedef}"
+            self.mesaj = f"Bulunamadı: {hedef}"
 
     def yeni(self) -> None:
         self.bitmis = None
@@ -397,6 +407,7 @@ class Pencere:
     def goster(self, ad: str) -> None:
         if self.ekran == ad:
             return
+        self.mesaj = ""  # ekran değişti; önceki işlemin sonucu artık gösterilmez
         for f in (self.basla_f, self.kayit_f, self.bitis_f):
             f.grid_remove()
         {"basla": self.basla_f, "kayit": self.kayit_f, "bitis": self.bitis_f}[ad].grid(row=1, column=0, sticky="nsew")
@@ -465,18 +476,18 @@ class Pencere:
             else:
                 self.kayit_isaret.grid_remove()
             self.seridi_yenile(oturum, veri)
-            self.ipucu["text"] = ipucu(veri, kayit)
+            self.ipucu["text"] = self.mesaj or ipucu(veri, kayit)
         elif self.bitmis:
             self.goster("bitis")
             self.bitis_baslik["text"] = f"Doküman hazır: {self.bitmis.name}"
             self.onizlemeyi_yenile()
-            self.ipucu["text"] = ("API çağrıları gerekiyorsa önce 'API ekle (HAR)', sonra komut tablosunu kopyalayıp 'Komut tablosu'. "
-                                  "Rovo ile resmîleştirmek için: 1) MD'yi kopyala  2) Rovo'ya yapıştır  "
-                                  "3) Rovo'nun çıktısını alttaki alana yapıştır. Sonra Word'ü aç ve kontrol et.")
+            self.ipucu["text"] = self.mesaj or ("API çağrıları gerekiyorsa önce 'API ekle (HAR)', sonra komut tablosunu kopyalayıp 'Komut tablosu'. "
+                                   "Rovo ile resmîleştirmek için: 1) Anlatımı kopyala  2) Rovo'ya yapıştır  "
+                                   "3) Rovo'nun çıktısını alttaki alana yapıştır. Word görseller ve API bölümleri dokunulmadan yenilenir.")
         else:
             self.goster("basla")
-            self.ipucu["text"] = ("Adını yaz, sesli ya da yazılı seç, Başla'ya bas. API çağrıları da gerekiyorsa "
-                                  "önce tarayıcıda F12 → Ağ sekmesini aç (dişli → Kayıtları sürdür).")
+            self.ipucu["text"] = self.mesaj or ("Adını yaz, sesli ya da yazılı seç, Başla'ya bas. API çağrıları da gerekiyorsa "
+                                   "önce tarayıcıda F12 → Ağ sekmesini aç (dişli → Kayıtları sürdür).")
         if self.surec:
             gecen = int(time.time() - self.bas_zamani)
             self.bekle_yazi["text"] = f"Lütfen bekle: {BEKLEME.get(self.calisan, self.calisan)}… ({gecen} sn)"
