@@ -192,19 +192,11 @@ def kaydet(oturum: Path, veri: dict) -> None:
 
 
 def markdown(veri: dict) -> str:
-    ust = veri.get("ust") or {}  # yeniden üretimde .md'deki düzeltilmiş üst alan değerleri
-    satirlar = [f"# {veri['baslik']}", "",
-                f"- **Tarih:** {veri['tarih']}",
-                f"- **Amaç:** {ust.get('Amaç') or '…'}",
-                f"- **Aktör:** {ust.get('Aktör') or '…'}",
-                f"- **Ön koşullar:** {ust.get('Ön koşullar') or '…'}",
-                f"- **Son koşullar:** {ust.get('Son koşullar') or '…'}", "",
-                "## Ana akış", ""]
-    for no, adim in enumerate(veri["adimlar"], 1):
-        satirlar += [f"### Adım {no}", "", f"![Adım {no}]({adim['gorsel']})", ""]
+    def adim_blok(no: int, adim: dict) -> list:  # bir adımın bütün satırları (başlık → komutlar)
+        blok = [f"### Adım {no}", "", f"![Adım {no}]({adim['gorsel']})", ""]
         metin = (adim.get("metin") or "").strip()
         if metin:  # Rovo ya da elle düzeltilmiş anlatım; ses_metni/not yerine
-            satirlar += [metin, ""]
+            blok += [metin, ""]
         else:
             paragraflar = [m.strip() for m in (adim.get("ses_metni"), adim.get("not")) if m and m.strip()]
             if not paragraflar:
@@ -213,30 +205,61 @@ def markdown(veri: dict) -> str:
                 else:
                     paragraflar = ["_Açıklama eklenmedi._"]
             for paragraf in paragraflar:
-                satirlar += [paragraf, ""]
+                blok += [paragraf, ""]
         if adim.get("api"):
-            satirlar += ["#### API çağrıları", "", "| Yön | Metot | Uç nokta | Durum |", "|---|---|---|---|"]
-            satirlar += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']} |" for c in adim["api"]]
-            satirlar.append("")
+            blok += ["#### API çağrıları", "", "| Yön | Metot | Uç nokta | Durum |", "|---|---|---|---|"]
+            blok += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']} |" for c in adim["api"]]
+            blok.append("")
             for c in adim["api"]:
                 for ad, govde_ in (("İstek", c["istek"]), ("Yanıt", c["yanit"])):
                     if govde_:  # ~~~: Rovo çıktıyı ```markdown bloğunda verir, ``` o bloğu erken kapatırdı
                         dil = "json" if govde_[0] in "{[" else "xml" if govde_[0] == "<" else ""
-                        satirlar += [f"{ad}: `{c['metot']} {c['uc']}`", "", f"~~~{dil}", govde_, "~~~", ""]
+                        blok += [f"{ad}: `{c['metot']} {c['uc']}`", "", f"~~~{dil}", govde_, "~~~", ""]
         akisli = [c for c in adim.get("api") or [] if c.get("akis")]
         if akisli and veri.get("komutlar"):
-            satirlar += ["#### Çalışan komutlar", ""]
+            blok += ["#### Çalışan komutlar", ""]
             for c in akisli:
                 a = c["akis"]
                 gecis = f"{a['mevcut']} → {a['sonraki'] or '?'}" if a["degisim"] else f"{a['mevcut']} (durum değişmedi)"
-                satirlar += [f"`{c['metot']} {c['uc']}` · {gecis}", ""]
+                blok += [f"`{c['metot']} {c['uc']}` · {gecis}", ""]
                 komutlar = calisan_komutlar(veri["komutlar"], a)
                 if komutlar:
-                    satirlar += ["| Durum | Ne zaman | Sıra | Komut |", "|---|---|---|---|"]
-                    satirlar += [f"| {k['durum']} | {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in komutlar]
+                    blok += ["| Durum | Ne zaman | Sıra | Komut |", "|---|---|---|---|"]
+                    blok += [f"| {k['durum']} | {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in komutlar]
                 else:
-                    satirlar.append("_Komut tablosunda bu çağrı için kayıt yok._")
-                satirlar.append("")
+                    blok.append("_Komut tablosunda bu çağrı için kayıt yok._")
+                blok.append("")
+        return blok
+
+    ust = veri.get("ust") or {}  # yeniden üretimde .md'deki düzeltilmiş üst alan değerleri
+    satirlar = [f"# {veri['baslik']}", "",
+                f"- **Tarih:** {veri['tarih']}",
+                f"- **Amaç:** {ust.get('Amaç') or '…'}",
+                f"- **Aktör:** {ust.get('Aktör') or '…'}",
+                f"- **Ön koşullar:** {ust.get('Ön koşullar') or '…'}",
+                f"- **Son koşullar:** {ust.get('Son koşullar') or '…'}", ""]
+    adimlar = veri["adimlar"]
+    durums = adim_durumlari(adimlar, ayarlari_oku()) if any(a.get("api") for a in adimlar) else []
+    if any(durums):  # API'li dokümanda akış state'e göre gruplanır; adım sırası (kronoloji) korunur
+        onceki = ""  # bir önceki ekran durumunun kodu; ilk durumda önceki yok
+        i = 0
+        while i < len(adimlar):
+            durum = durums[i]
+            j = i
+            while j < len(adimlar) and durums[j] == durum:  # ardışık aynı durumlu adımlar tek grup
+                j += 1
+            if durum:
+                satirlar += ["## Durum: " + (f"{durum} ({onceki} → {durum})" if onceki else durum), ""]
+                onceki = durum
+            else:
+                satirlar += ["## Başlamadan önce", ""]
+            for no in range(i + 1, j + 1):
+                satirlar += adim_blok(no, adimlar[no - 1])
+            i = j
+    else:  # akış kanmayan (ya da API'siz) doküman: çıktı bugünküyle birebir
+        satirlar += ["## Ana akış", ""]
+        for no, adim in enumerate(adimlar, 1):
+            satirlar += adim_blok(no, adim)
     return "\n".join(satirlar)
 
 
