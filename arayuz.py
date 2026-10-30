@@ -7,6 +7,8 @@ Başla ekranında son dokümanlar listelenir; listeden (ya da Başka klasör'den
 """
 from __future__ import annotations
 
+import base64
+import html
 import os
 import re
 import subprocess
@@ -204,6 +206,8 @@ class Pencere:
     def __init__(self, kok: tk.Tk):
         self.kok, self.surec, self.calisan, self.bas_zamani = kok, None, None, 0.0
         self.bitmis: Path | None = None  # bitiş ekranında gösterilen doküman
+        self.gorsel_dok: Path | None = None  # görsel kopyalama sayacının dokümanı; değişince sayaç sıfırlanır
+        self.gorsel_i = 0  # sıradaki beşlinin numarası (0 tabanlı)
         self.mesaj = ""  # son işlemin sonucu ("Kopyalandı", "N adım güncellendi…"); doluyken ipucu yerine görünür
         self.ayar = a.ayarlari_oku()  # başla ekranındaki son dokümanlar bundan okunur
         self.son_doklar: list[Path] = []  # son_liste satırlarının karşılığı
@@ -271,7 +275,7 @@ class Pencere:
         self.onizleme.grid(row=1, column=0, sticky="nsew", pady=4)
         yukari.grid(row=1, column=1, sticky="ns")
         r = ttk.Frame(f)
-        r.grid(row=3, column=0, columnspan=2, sticky="we", pady=(6, 0))
+        r.grid(row=4, column=0, columnspan=2, sticky="we", pady=(6, 0))
         r.columnconfigure(0, weight=1)
         ttk.Label(r, text="Rovo çıktısını buraya yapıştır (Ctrl+V): yalnız eşleşen adımların anlatımı güncellenir",
                   font=("", 9, "bold")).grid(row=0, column=0, sticky="w")
@@ -289,6 +293,10 @@ class Pencere:
                      ("API ekle (HAR)", self.api_ekle, "Tarayıcının Ağ kaydı"),
                      ("Komut tablosu", self.komutlar_yukle, "Panodan ya da CSV/TXT"),
                      ("Yeni doküman", self.yeni, "")))
+        e = ttk.Frame(f)  # düğme satırının altında ayrı satır: görseller beşli beşli panoya
+        e.grid(row=3, column=0, columnspan=2, sticky="w")
+        dugmeler(e, (("Görselleri kopyala (5'li)", self.gorselleri_kopyala,
+                      "Her basışta 5 görsel + adları; Confluence'a yapıştır"),))
 
         # --- Her ekranda: bekleme çubuğu ve ipucu
         self.bekle_f = f = ttk.Frame(c)
@@ -345,6 +353,54 @@ class Pencere:
             self.kok.clipboard_clear()
             self.kok.clipboard_append(a.anlatim_kopyasi(md.read_text(encoding="utf-8")))
             self.mesaj = "Kopyalandı: görseller ve API gövdeleri yok, yalnız anlatım. Rovo'ya yapıştır, çıktısını aşağıdaki alana yapıştır."
+
+    def gorselleri_kopyala(self) -> None:
+        """Adım görsellerini 5'li gruplar hâlinde panoya kopyalar (Confluence'a yapıştırılacak).
+        Her basışta sıradaki beşli, sondan sonra başa döner; doküman değişince sayaç sıfırlanır."""
+        if not self.bitmis:
+            return
+        try:
+            adimlar = a.yukle(self.bitmis)["adimlar"]
+        except (OSError, ValueError):
+            adimlar = []
+        # doküman değiştiği anda sayacın da o dokümana ait olduğu hatırlanır
+        yine_u = self.gorsel_dok != self.bitmis
+        self.gorsel_dok, self.gorsel_i = self.bitmis, (0 if yine_u else self.gorsel_i)
+        toplam = -(-len(adimlar) // 5)
+        if toplam == 0:
+            self.mesaj = "Bu dokümanda görsel yok."
+            return
+        i = self.gorsel_i % toplam
+        parca = adimlar[i * 5:(i + 1) * 5]
+        bulunan, eksikler = [], []
+        for adim in parca:
+            ad = Path(adim["gorsel"]).name
+            yol = self.bitmis / adim["gorsel"]
+            if yol.exists():
+                bulunan.append((ad, yol))
+            else:
+                eksikler.append(f"{ad} bulunamadı")
+        if not bulunan:  # pano değişmeden uyarı yeter
+            self.mesaj = f"Hiç görsel kopyalanmadı: {'; '.join(eksikler)}."
+            return
+        html_parcalar = []
+        for ad, yol in bulunan:
+            b64 = base64.b64encode(yol.read_bytes()).decode("ascii")
+            html_parcalar.append(f'<p><img src="data:image/png;base64,{b64}" alt="{html.escape(ad)}"></p>'
+                                 f"<p>{html.escape(ad)}</p>")
+        uriler = [f"file://{yol}" for _, yol in bulunan]
+        adlar = "\n".join(ad for ad, _ in bulunan)
+        self.kok.clipboard_clear()
+        self.kok.clipboard_append("\n".join(html_parcalar), type="text/html")
+        self.kok.clipboard_append("copy\n" + "\n".join(uriler), type="x-special/gnome-copied-files")
+        self.kok.clipboard_append("\n".join(uriler) + "\n", type="text/uri-list")
+        self.kok.clipboard_append(adlar, type="STRING")     # uç uygulamalar çoğu "STRING"i okur
+        self.kok.clipboard_append(adlar, type="UTF8_STRING")  # adların UTF-8 kaynağı da listelensin
+        self.gorsel_i = i + 1
+        son = "Son grup. " if i == toplam - 1 else ""
+        eksik = f"; {'; '.join(eksikler)}" if eksikler else ""
+        self.mesaj = (f"{son}{i + 1}. beşli kopyalandı: Adım {i * 5 + 1}-{i * 5 + len(parca)} "
+                      f"({toplam} gruptan {i + 1}'si{eksik}). Confluence'a yapıştır, pencereyi kapatma.")
 
     def rovo_uygula(self) -> None:
         """Rovo çıktısını yalnız anlatım olarak .md'ye işler (öncekini .md.yedek'e alır), sonra Word'ü yeniler."""
