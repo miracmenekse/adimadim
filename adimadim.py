@@ -293,6 +293,98 @@ def anlatim_ayikla(md_metni: str) -> dict[int, str]:
     return adimlar
 
 
+def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
+    """Rovo yanıtını böler: (gövdesi dolu adımlar, dolu üst alanlar, görülen Adım numaraları).
+
+    Baş/son ``` çiti atılır; yalnız tam satır "Adım N" (başında # olabilir) başlıktır; görsel
+    satırı ve "#### " bölümü (sonraki Adım başlığına kadar) yok sayılır; ilk Adım başlığından
+    öncekiler üst alanlardır (Amaç, Aktör, Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
+    satirlar = metin.splitlines()
+    while satirlar and not satirlar[0].strip():
+        satirlar.pop(0)
+    while satirlar and not satirlar[-1].strip():
+        satirlar.pop()
+    if satirlar and satirlar[0].lstrip().startswith("```"):  # "```markdown" gibi açılış çiti
+        satirlar.pop(0)
+        if satirlar and satirlar[-1].strip() == "```":
+            satirlar.pop()
+    ham, ust, no = {}, {}, None
+    for satir in satirlar:
+        k = satir.strip()
+        m = re.fullmatch(r"(?:#+\s*)?Adım (\d+)", k)
+        if m:
+            no = int(m.group(1))
+            ham.setdefault(no, [])
+            continue
+        if k.startswith("#### "):
+            no = None  # "#### " bölümü sonraki Adım başlığına kadar yok sayılır
+            continue
+        if no is None:  # ilk Adım başlığından öncekiler üst alanlardır
+            alan = re.fullmatch(r"- \*\*(Amaç|Aktör|Ön koşullar|Son koşullar):\*\*\s*(.*)", k)
+            if alan and alan.group(2).strip() not in ("", "…"):
+                ust[alan.group(1)] = alan.group(2).strip()
+            continue
+        if k.startswith("!["):
+            continue  # görsel satırı
+        ham[no].append(k)
+    govde = {}
+    for n, liste in ham.items():
+        paragraflar = [p.strip() for p in re.split(r"\n\s*\n", "\n".join(liste)) if p.strip()]
+        if paragraflar:
+            govde[n] = "\n\n".join(paragraflar)
+    return govde, ust, set(ham)
+
+
+def anlatim_uygula(oturum: Path, metin: str) -> tuple[list[int], list[int]]:
+    """Rovo'nun yalnız anlatım yanıtını .md'ye işler; (güncellenen adımlar, yanıtta olup dokümanda olmayanlar).
+
+    Yalnız eşleşen adımın anlatımı `.md`'de değişir (görsel satırı ve API bölümleri aynen kalır);
+    gövdesi boş adım değişmez; üst alanlar yanıtta doluysa güncellenir. Önce `.md.yedek` alınır.
+    Yanıtta hiç "Adım N" başlığı yoksa ValueError: dosyaya hiç yazılmaz."""
+    md = md_bul(oturum)
+    if md is None:
+        raise ValueError(f"Dokümanda .md bulunamadı: {oturum}")
+    govde, ust, basliklar = anlatim_bol(metin)
+    if not basliklar:
+        raise ValueError("Rovo yanıtında 'Adım N' başlığı yok; doküman değişmedi.")
+    satirlar = md.read_text(encoding="utf-8").splitlines()
+    mevcut = set(anlatim_ayikla("\n".join(satirlar)))
+    degisti = False
+    for i, satir in enumerate(satirlar):  # üst alanlar: her biri tek satır, satır sayısı değişmez
+        if satir.startswith("## "):
+            break
+        alan = re.fullmatch(r"- \*\*(Amaç|Aktör|Ön koşullar|Son koşullar):\*\*\s*(.*)", satir.strip())
+        if alan and alan.group(1) in ust:
+            satirlar[i] = f"- **{alan.group(1)}:** {ust[alan.group(1)]}"
+            degisti = True
+    # .md'deki Adım başlıkları (~~~ içindeki metin sayılmaz)
+    kod, adim_satirlari = False, []
+    for i, satir in enumerate(satirlar):
+        if satir.startswith("~~~"):
+            kod = not kod
+        elif not kod and (m := re.fullmatch(r"(?:#+\s*)?Adım (\d+)", satir.strip())):
+            adim_satirlari.append((i, int(m.group(1))))
+    degisiklikler = []  # (başlangıç, bitiş, yeni satırlar): soldan sağa değiştirince kayardı, tersten uygulanır
+    for a, (i, no) in enumerate(adim_satirlari):
+        if no not in govde or no not in mevcut:
+            continue
+        j = adim_satirlari[a + 1][0] if a + 1 < len(adim_satirlari) else len(satirlar)
+        basla = next((k for k in range(i + 1, j) if satirlar[k].strip().startswith("![")), i + 1) + 1
+        while basla < j and not satirlar[basla].strip():  # görsel satırının altındaki boşlukları at
+            basla += 1
+        son = next((k for k in range(basla, j) if satirlar[k].strip().startswith("#")), j)
+        while son > basla and not satirlar[son - 1].strip():  # sondaki boş satırlar ayraca dönüşür
+            son -= 1
+        degisiklikler.append((basla, son, govde[no].split("\n") + [""]))
+    for basla, son, yeni in reversed(degisiklikler):
+        satirlar[basla:son] = yeni
+        degisti = True
+    if degisti:
+        shutil.copy2(md, md.with_name(md.name + ".yedek"))
+        atomik_yaz(md, "\n".join(satirlar) + "\n")
+    return sorted(n for n in govde if n in mevcut), sorted(n for n in basliklar if n not in mevcut)
+
+
 def anlatim_kopyasi(md_metni: str) -> str:
     """Rovo'ya verilecek yalnız anlatım: üst alan satırları + her adımın başlığı ve metni."""
     ust = []
