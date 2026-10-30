@@ -36,7 +36,7 @@ Girdide yoksa: `[?] Belirtilmedi.`
 ### Adım N — <Kısa eylem başlığı>
 Görsel: <dosya adı>
 
-**Ne yapılır:** Emir kipinde en çok 3 cümle.
+**Ne yapılır:** Anlatımda eylem varsa emir kipinde en çok 3 cümle; yoksa bu satırı hiç yazma.
 
 **Ekranda ne görülür:** Yalnız anlatımda geçiyorsa yaz; geçmiyorsa bu satırı hiç yazma.
 
@@ -56,23 +56,23 @@ Görsel: <dosya adı>
 Girdide yoksa: `[?] Belirtilmedi.`
 
 ## Kullanılan Terimler
-Çıktıda geçen ve sözlükte bulunan terimler. Sözlükte yoksa açıklama uydurma, yanına `[?]` koy.
+Yalnız sözlükte bulunan terimler ve sözlükteki açıklamaları. Sözlükte olmayan terimi listeye alma, açıklama uydurma.
 
 ## Doğrulama Notu
-Girdi adım sayısı, çıktı adım sayısı, `[?]` sayısı, anlatımı boş adımlar.
+Girdi ve çıktı adım sayısı, `[?]` geçen adımların numaraları, anlatımı boş adımlar, doğrulanması gereken ekran adları.
 
 KURALLAR
 1. Adım numaralarını ve `Görsel:` satırlarını harfi harfine koru. Adım birleştirme, bölme, atlama ya da
    yeniden numaralama yapma. Her `### Adım N` çıktıda aynı numarayla bulunmalı.
 2. Bilgi uydurma. Anlatımda geçmeyen ekran öğesi, buton, alan, değer, renk, konum, iş kuralı ya da rol yazma.
-3. Anlatımı boş adımda başlıktan sonra yalnız `Görsel:` satırını ve `**Ne yapılır:** [?] Anlatım yok.` yaz.
-4. Belirsiz terim ya da davranışta bilgiyi silme; cümlenin sonuna `[?]` koy.
+3. Anlatımı boş adımın başlığı yalnız `### Adım N` olsun; başlık uydurma. Altına yalnız `Görsel:` satırını ve `**Ne yapılır:** [?] Anlatım yok.` yaz.
+4. Belirsiz terim ya da davranışta bilgiyi silme; cümlenin sonuna `[?]` koy. Ekran ve buton adları konuşmadan yazıya döküldüğü için yanlış olabilir: sözlükte yoksa ve anlamsız görünüyorsa adı `[?]` ile işaretle, Doğrulama Notu'nda listele.
 5. Karar bloğunu yalnız anlatımda karar noktası denirse yaz. Sıradan "eğer/ise" cümlesini koşuluyla birlikte
-   anlatımda bırak. Söylenmeyen dalı ve sonraki adım numarasını ekleme; dal eksikse sonucuna `[?]` yaz.
+   anlatımda bırak. Bir dal sonraki adımlarda anlatılıyorsa sonucunu oradan al ve adım numarasını yaz (→ Adım N). Hiçbir yerde yoksa dalı uydurma, sonucuna `[?]` yaz.
 6. Karar bloğunu ayrı numaralı adım yapma; ait olduğu adımın içinde yaz.
 7. Terim sözlüğündeki doğru yazımı kullan, terimleri çevirme. Ekran, buton ve alan adları özgün dilinde ve kalın
    kalır: **Save and Close** butonuna tıklayın.
-8. API adı, JSON ve komut bilgisi anlatımda geçse de kılavuza yazma. Durum (state) kodlarını yazma.
+8. API adı, JSON ve komut bilgisi anlatımda geçse de kılavuza yazma. Durum (state) kodlarını yazma. "Sistem API'ye gönderir", "kurallar işletilir" gibi arka plan anlatımını kullanıcının gördüğü sonuca çevir; çeviremiyorsan çıkar ve Doğrulama Notu'na yaz.
 9. Türkçe, resmî ama sade yaz; "tıklayınız" değil "tıklayın".
 10. Anlamsız dolgu cümlesini atabilirsin; bilgi taşıyan cümleyi atamazsın.
 11. Yanıt tek seferde sığmazsa son tamamlanan adımdan sonra dur ve kod bloğunu kapat. Altına
