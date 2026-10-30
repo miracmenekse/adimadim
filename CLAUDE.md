@@ -48,6 +48,8 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
    Şirkete özel terimler ana makinede `~/.config/adimadim/terimler.local.txt` dosyasındadır;
    kod bu dosyayı (ve ileride `duzeltmeler.local.txt` gibi eşlerini) okuyabilmeli ama içeriğine
    hiçbir test ya da varsayım bağlı olmamalı.
+   İstisna (kullanıcı kararı, 2026-10-30): `ayar.ornek.json`'daki `orderSubmit`, `customerOrder/initialize`,
+   `customerOrder/submit` gibi akış adları repodadır; testlerde uydurma ad kullanılır.
 5. **Gizlilik.** Araç çalışırken ağa veri göndermez. İnternet yalnızca kurulumda (paket, model indirme).
 6. **Test.** Her değişiklikten sonra `./test.sh` geçmeli. Yeni özellik = `testler/duman_testi.py`'ye
    yeni kontrol. Doğruluğu etkileyen her değişiklikten önce ve sonra `testler/stt_olc.py` ile ölç.
@@ -83,6 +85,9 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   Ham HAR saklanmaz (çerez/jeton içerir). İsteğinde `currentWorkFlowStateShortCode` olan çağrıya
   `c["akis"]` (mevcut, degisim, sonraki) yazılır; `komutlar` komut tablosunu `veri["komutlar"]`'a yükler,
   `calisan_komutlar` geçişte çalışanları seçer (değişimde post + sonrakinin pre'si, değilse durum içi).
+  `cagri_akisi(c, ayar)` çağrının geçişini verir: kayda yazılan `akis`, yoksa `sabit_gecisler`'den (kayda yazılmaz).
+  `adim_durumlari` her adımın state'ini tek ileri geçişle hesaplar; `markdown()` API'li dokümanı `## Durum:` ve
+  `## Başlamadan önce` başlıklarıyla gruplar, `son_ekran_durumu`'ndan sonrasını `## Arka planda çalışan durumlar`a yazar.
   Oturum açıkken .md her kayıtta oturum.json'dan yeniden üretilir; bitince .md elle düzenlenebilir,
   `word` komutu .docx'i ondan üretir.
 - Konuşma tanıma: tümü `cevirici_olustur(ayar)` üzerinden geçer (OpenVINO GenAI WhisperPipeline;

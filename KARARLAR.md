@@ -97,3 +97,17 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
     (ör. mss, sounddevice, tkinter; Word için python-docx); Windows paketi (ör. PyInstaller + kurulum
     sihirbazı); kurumsal engellere hazırlık (imzasız .exe'de SmartScreen uyarısı, IT onayı; kısayollar
     tüm tuşları dinleyen klavye kancasıyla değil RegisterHotKey ile).
+
+## İş akışı gruplama ve komut kuralı (2026-10-30)
+
+- **Komut kuralı** (kullanıcı kararı; `calisan_komutlar` buna uyar):
+  - pre=0, post=0: durum içinde işlem yapılınca (during).
+  - pre=1: yeni duruma geçilirken, durum başlarken.
+  - post=1: durum biterken, sonraki durumun pre'sinden önce.
+  - İkisi birden 1 olmaz. Durum içinde sıra: pre, during, post; her biri kendi içinde sort_id. CSV sırası akış sırasıdır.
+- **Ekran sınırı:** `orderSubmit` (`son_ekran_durumu`) sonrası süren durumlar arka uçta çalışır ve HAR'da görünmez.
+  Bu durumlar ekran adımı sayılmaz; "Arka planda çalışan durumlar" bölümüne gider. Sınır repo ile ana makinede aynıdır (kullanıcı kararı).
+- **Sabit geçiş:** `initialize` ve `submit` çağrıları iş akışı alanı (`currentWorkFlowStateShortCode`) taşımaz; bu yüzden
+  geçiş `sabit_gecisler` ile bilinir. Geçiş kayda yazılmaz, eski dokümanlar HAR'sız çalışır.
+- **Geri dönüş:** aynı duruma dönüş ayrı grup olur; adım sırası (kronoloji) korunur.
+- **Karar noktası:** sesli kalıp `Karar noktası: <koşul> → <sonuç>` seçildi. Rovo bunu `> **Karar noktası:** <koşul> → <sonuç>` bloğuna çevirir; her dal ayrı satır.
