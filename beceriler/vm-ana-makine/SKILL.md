@@ -13,6 +13,8 @@ disable-model-invocation: true
   Ubuntu kurulumu eksik olabilir. Gerçek şirket verisi yalnızca oradadır.
 - **Köprü:** yalnızca git. VM push'lar, ana makine `git pull` yapar. Ana makineden sana gelen tek şey
   kullanıcının yapıştırdığı metindir (hata satırları, `.ortam/ortam.sh kontrol` çıktısı).
+- **Güvenlik sınırları** (ssh/VS Code bağlantısı, QEMU ağ yalıtımı, dosya aktarım kuralı):
+  `vm-guvenlik` becerisi.
 
 ## Altın kural
 
