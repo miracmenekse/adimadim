@@ -2,6 +2,13 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.9 — kopyada API adları (2026-10-30)
+
+- **Anlatımı kopyala** her adımda `Çağrılan API: <yön> · <metot> · <uç nokta> · <durum>` satırlarını da verir; gövde ve sorgu dizesi girmez. Rovo yanıtındaki bu satırlar anlatıma yazılmaz.
+- **Kılavuz agent'ı** adımın altında API tablosunu, komut tablosundan önce yazar.
+
+**Ana makinede yapılacaklar:** dock'taki **adımadım güncelle**; `rovo/ajan-talimati.md` ve `rovo/kilavuz-ajani.md` Talimat bölümlerini ilgili agent'lara yeniden yapıştır.
+
 ## v0.9.8 — kopyada gruplar ve komutlar, 5'li görsel kopyalama (2026-10-30)
 
 - **Anlatımı kopyala** artık iş akışı başlıklarını, her adımın `Çalışan komut:` satırlarını ve arka plan bölümünü de verir; API gövdeleri girmez. Rovo yanıtındaki bu satırlar ve başlıklar anlatıma yazılmaz.
