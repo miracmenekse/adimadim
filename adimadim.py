@@ -376,8 +376,8 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
     Baş/son ``` çiti atılır; yalnız tam satır "Adım N" (başında # olabilir) başlıktır; Adım
     olmayan her başlık (grup başlığı, arka plan bölümü, "#### API çağrıları" gibi) gövdeyi
     bitirir ve kendisi yazılmaz; görsel satırı (![](... ya da tam olarak "Görsel: <tek
-    sözcük>") ve "Çalışan komut:" şeridi yok sayılır; ilk Adım başlığından öncekiler üst
-    alanlardır (Amaç, Aktör, Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
+    sözcük>"), "Çalışan komut:" ve "Çağrılan API:" şeridi yok sayılır; ilk Adım başlığından
+    öncekiler üst alanlardır (Amaç, Aktör, Ön koşullar, Son koşullar); "…" ve boş değer yok sayılır."""
     satirlar = metin.splitlines()
     while satirlar and not satirlar[0].strip():
         satirlar.pop(0)
@@ -403,8 +403,9 @@ def anlatim_bol(metin: str) -> tuple[dict[int, str], dict[str, str], set[int]]:
             if alan and alan.group(2).strip() not in ("", "…"):
                 ust[alan.group(1)] = alan.group(2).strip()
             continue
-        if k.startswith("![") or re.fullmatch(r"Görsel: \S+", k) or k.startswith("Çalışan komut:"):
-            continue  # görsel satırı ve kopyadaki komut şeridi anlatıma yazılmaz
+        if k.startswith("![") or re.fullmatch(r"Görsel: \S+", k) \
+                or k.startswith("Çalışan komut:") or k.startswith("Çağrılan API:"):
+            continue  # görsel satırı ve kopyadaki komut/api şeritleri anlatıma yazılmaz
         ham[no].append(k)
     govde = {}
     for n, liste in ham.items():
@@ -513,10 +514,45 @@ def calisan_komut_satirlari(md_metni: str) -> dict[int, list[str]]:
     return komutlar
 
 
+def api_satirlari(md_metni: str) -> dict[int, list[str]]:
+    """`#### API çağrıları` bölgesindeki tablo satırları: {adım: [API şeridi, ...]}.
+
+    Şerit: `Çağrılan API: <yön> · <metot> · <sorgusuz uç nokta> · <durum>`; uç noktadaki
+    ` işaretleri ve ? sonrası atılır; gövdeler (~~~ blokları) sayılmaz; akışsız dokümanda da çıkar."""
+    apis, kod, no, bolumde = {}, False, None, False
+    for satir in md_metni.splitlines():
+        if satir.startswith("~~~"):
+            kod = not kod
+            continue
+        if kod:
+            continue
+        k = satir.strip()
+        if k.startswith("#"):
+            if m := re.fullmatch(r"### Adım (\d+)", k):
+                no, bolumde = int(m.group(1)), False
+            elif k == "#### API çağrıları":
+                bolumde = True  # adım sürer; tablo satırları bu bölgede toplanır
+            elif not k.startswith("####"):
+                no, bolumde = None, False  # ## ya da # başlığı adım bölgesini bitirir
+            else:
+                bolumde = False  # "#### Çalışan komutlar" gibi: adım sürer, bölge kapalı
+            continue
+        if no is None or not bolumde:
+            continue
+        if k.startswith("|") and not k.startswith("|---"):
+            hucre = [h.strip() for h in k.strip("|").split("|")]
+            if len(hucre) == 4 and hucre[0] != "Yön":  # tablo başlık satırı atlanır
+                uc = hucre[2].replace("`", "").split("?", 1)[0]
+                apis.setdefault(no, []).append(
+                    f"Çağrılan API: {hucre[0]} · {hucre[1]} · {uc} · {hucre[3]}")
+    return apis
+
+
 def anlatim_kopyasi(md_metni: str) -> str:
     """Rovo'ya verilecek yalnız anlatım: üst alan satırları + durum başlıkları adım sırasında aynen
-    + her adımın başlığı, görsel adı, metni ve çalışan komut şeritleri + arka planda çalışan
-    durumlar bölümü aynen. API çağrıları ve gövdeler kopyaya girmez; akışsız doküman düz kalır."""
+    + her adımın başlığı, görsel adı, metni, API şeritleri (komut şeritlerinden önce) ve +
+    çalışan komut şeritleri + arka planda çalışan durumlar bölümü aynen. API gövdeleri kopyaya
+    girmez; akışsız dokümanda da API şeritleri yazılır."""
     satirlar = md_metni.splitlines()
     ust = []
     for satir in satirlar:
@@ -529,6 +565,7 @@ def anlatim_kopyasi(md_metni: str) -> str:
     gorseller = gorsel_adlari(md_metni)
     anlatimlar = anlatim_ayikla(md_metni)
     komutlar = calisan_komut_satirlari(md_metni)
+    api = api_satirlari(md_metni)
     kod, arka = False, ""  # ~~~ gövdeleri atlanır; arka plan bölümü sonda aynen eklenir
     for i, satir in enumerate(satirlar):
         if satir.startswith("~~~"):
@@ -549,6 +586,8 @@ def anlatim_kopyasi(md_metni: str) -> str:
                 metin += f"\nGörsel: {ad}"
             if anlatim := anlatimlar.get(no):
                 metin += f"\n\n{anlatim}"
+            if seritler := api.get(no):  # kılavuz agent API adlarını kopyadan alır; gövdeler girmez
+                metin += "\n\n" + "\n".join(seritler)
             if seritler := komutlar.get(no):  # kılavuz agent'ı komutu kopyadan alır
                 metin += "\n\n" + "\n".join(seritler)
     if arka:
