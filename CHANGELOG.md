@@ -2,6 +2,40 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.6 — workflow state gruplama ve arka plan komutları (2026-10-30)
+
+Bu sürüm v0.9.4 ve v0.9.5'i de içerir: v0.9.3'ten sonra ana makineye giden ilk paket.
+
+- **State grupları:** API'li dokümanda adımlar iş akışı durumuna göre `## Durum: <kod>` altında gruplanır; durum
+  değiştiğinde başlık `(önceki → yeni)` der. Durum başlamadan önceki adımlar `## Başlamadan önce` altındadır.
+  Adım sırası kronolojidir; aynı duruma dönüş ayrı grup olur. Durum okunamazsa düz liste (`## Ana akış`), uydurma yok.
+- **Sabit geçişler:** `initialize` ve `submit` çağrıları iş akışı alanı taşımadığı için `ayar.json`'daki
+  `sabit_gecisler` ile bilinir. Bu çağrıların komutları görünür: mevcut durumun post, sonraki durumun pre komutları.
+  Geçiş kayda yazılmaz; eski dokümanlar HAR'sız da doğru çalışır.
+- **Komutların görünmesi:** durum değişmeyen çağrıda mevcut durumun during komutları; durum değişince mevcut durumun
+  post'u, sonra sonraki durumun pre'si. Her grup kendi içinde `sort_id` sırasıyla. CSV sırası akış sırasıdır.
+- **`orderSubmit` sınırı (`son_ekran_durumu`):** bu durumdan sonra süren durumlar arka uçta çalışır ve HAR'da görünmez.
+  Sınırdan sonraki çekimler son ekran durumu grubunda kalır; arka uç için ekran başlığı açılmaz. Dokümanın sonunda
+  **Arka planda çalışan durumlar** bölümü: komut tablosunda sınırdan sonra gelen durumlar, her biri pre, during,
+  post sırasıyla. Sınır boşsa ya da tabloda yoksa bölüm yok.
+- **Çekimde imleç:** `gnome-screenshot -p` ile fare imleci ekran görüntüsünde görünür. Yedek araçlar değişmedi.
+- **Karar noktası kalıbı:** Rovo talimatında anlatımdaki "Karar noktası: …" ifadesi
+  `> **Karar noktası:** <koşul> → <sonuç>` bloğu olur; her dal ayrı `>` satırıdır. Söylenmemiş koşul uydurulmaz.
+- **Çalışma kuralı:** **fareyi getir → çek → anlat → bas**.
+- **Ölçüm** (gerçek 41 adımlı dokümanın kopyasında, içerik okunmadan): tüm .md ~2 MB iken anlatım kopyası ~4 KB;
+  8 grup ve arka plan bölümü; LibreOffice 31 sn'de açtı, ~2300 sayfa. Word'ün kendisinde denenmedi.
+- **Test:** `duman_testi.py`'ye iş akışı grupları kontrolü (sabit geçiş, sınır, arka plan, Anlatımı kopyala başlıksız).
+  Eski "## Ana akış" varsayan assert, grup başlıkları gelince IndexError veriyordu; yalnız `### Adım 1`'den sonrasına bakacak
+  biçimde düzeltildi.
+
+**Ana makinede yapılacaklar:**
+- Dock'taki **adımadım güncelle** düğmesi.
+- Rovo agent'ı: `rovo/ajan-talimati.md`nin **Talimat** bölümünü agent'ın Instructions alanına bir kez yeniden yapıştır.
+- Var olan dokümanı başla ekranından aç, **Komut tablosu** ile doğru komut tablosunu yeniden yükle. Doküman yeniden
+  üretilir ve gruplar gelir.
+- Doğrula: bir çekim yap, `gnome-screenshot -p` imleci gösteriyor mu.
+- Doğrula: `grep -E "son_ekran_durumu|sabit_gecisler" ~/.config/adimadim/ayar.json` iki anahtarı da göstermeli.
+
 ## v0.9.5 — dokümana dönüş ve yalnız anlatımla Rovo (2026-10-30)
 
 Bu sürüm v0.9.4 ile birlikte gönderildi (aynı push).
