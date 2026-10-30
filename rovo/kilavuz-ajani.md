@@ -22,6 +22,7 @@ GİRDİ
 - `> Ham: …` satırı varsa düzeltilmemiş anlatımdır; anlamı doğrulamak için kullan, çıktıya yazma.
 - `## Başlamadan önce` ve `## Durum: …` adımların iş akışı gruplarıdır. `## Arka planda çalışan durumlar` ekran dışı durumlardır.
 - `Çalışan komut: <geçiş> · <durum> · <ne zaman> · <sıra> · <komut>` satırı o adımda çalışan bir komuttur.
+- `Çağrılan API: <yön> · <metot> · <uç nokta> · <durum kodu>` satırı o adımda çalışan bir API çağrısıdır.
 - `Karar noktası: …` kalıbı dallanmadır. `> **Karar noktası:** …` biçimi de aynı anlama gelir.
 
 ÇIKTI
@@ -62,6 +63,12 @@ Görsel: <dosya adı>
 |---|---|---|---|---|
 | <geçiş> | <durum> | <ne zaman> | <sıra> | <komut> |
 
+**Çağrılan API'ler:** Girdide `Çağrılan API:` satırı olan her adımda, komut tablosundan önce:
+
+| Yön | Metot | Uç nokta | Durum |
+|---|---|---|---|
+| <yön> | <metot> | <uç nokta> | <durum kodu> |
+
 ## Arka planda çalışan durumlar
 Girdideki bölüm aynen; yoksa yazma.
 
@@ -85,7 +92,7 @@ KURALLAR
 6. Karar bloğunu ayrı numaralı adım yapma; ait olduğu adımın içinde yaz.
 7. Terim sözlüğündeki doğru yazımı kullan, terimleri çevirme. Ekran, buton ve alan adları özgün dilinde ve kalın
    kalır: **Save and Close** butonuna tıklayın.
-8. Grup başlıklarını, adımların gruplardaki yerini ve durum kodlarını aynen koru; grubu değiştirme, yeniden adlandırma. `Çalışan komut:` satırlarını eksiksiz ve aynı sırayla tabloya yaz, komut adını çevirme, ne yaptığını yorumlama. Komut satırı olmayan adıma komut ekleme. API adı ve JSON anlatımda geçse de kılavuza yazma.
+8. Grup başlıklarını, adımların gruplardaki yerini ve durum kodlarını aynen koru; grubu değiştirme, yeniden adlandırma. `Çalışan komut:` satırlarını eksiksiz ve aynı sırayla tabloya yaz, komut adını çevirme, ne yaptığını yorumlama. Komut satırı olmayan adıma komut ekleme. `Çağrılan API:` satırlarını da eksiksiz ve aynı sırayla tabloya yaz; uç noktayı ve durum kodunu değiştirme, başarısız çağrıyı atlama, olmayan API ekleme. JSON gövdesi anlatımda geçse de yazma.
 9. Türkçe, resmî ama sade yaz; "tıklayınız" değil "tıklayın".
 10. Anlamsız dolgu cümlesini atabilirsin; bilgi taşıyan cümleyi atamazsın.
 11. Yanıt tek seferde sığmazsa son tamamlanan adımdan sonra dur ve kod bloğunu kapat. Altına
