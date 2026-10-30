@@ -2,6 +2,13 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.7 — kopyada görsel adı (2026-10-30)
+
+- **Anlatımı kopyala**, her `### Adım N` altına `Görsel: <dosya adı>` yazar; Rovo gövdeyi hangi görsele yazdığını adından bilir.
+- Rovo yanıtındaki `Görsel:` satırları anlatıma yazılmaz; yalnız bu satırı olan adım değişmez. Görsel bağlantıları .md'de aynen kalır.
+
+**Ana makinede yapılacaklar:** dock'taki **adımadım güncelle**; `rovo/ajan-talimati.md` Talimat bölümünü Rovo ajanına yeniden yapıştır.
+
 ## v0.9.6 — workflow state gruplama ve arka plan komutları (2026-10-30)
 
 Bu sürüm v0.9.4 ve v0.9.5'i de içerir: v0.9.3'ten sonra ana makineye giden ilk paket.

@@ -220,3 +220,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.4 | 2026-10-30 | Büyük API gövdeli Word dosyaları açılıyor: her kod satırı ayrı paragraf olur (pandoc Lua filtresi); yaklaşık 1300 sayfalık dosya LibreOffice'te 400 sn'de açılamıyordu, şimdi 11 sn. |
 | v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
 | v0.9.6 | 2026-10-30 | İş akışı durumları: adımlar durum başlıklarında gruplanır; sabit `initialize`/`submit` geçişleri ve her çağrının komutları görünür; ekran sınırından sonrakiler ayrı bölümde; ekran görüntüsünde fare imleci; Rovo'da karar noktası blokları. 41 adımlık dokümanda ~2 MB Markdown → ~4 KB anlatım kopyası. |
+| v0.9.7 | 2026-10-30 | Anlatım kopyasına görsel adı eklendi; Rovo yanıtındaki bu satırlar anlatıma yazılmaz. |
