@@ -2,25 +2,19 @@
 # gereksiz öğeleri .ortam/yoksay.txt'e yaz. Ana makinede: .ortam/ortam.sh kontrol
 apt flameshot
 apt gnome-screenshot
-apt imagemagick
-apt openbox
 apt pandoc
-apt postgresql
-apt xdotool
-apt xvfb
 bin adimadim
 bin agent
-bin cursor-agent
 bin graphify
 bin npm
-bin opencode
-bin vscode-cli
 komut arecord
 komut git
 komut gnome-screenshot
 komut gsettings
 komut notify-send
+komut pactl
 komut pandoc
+komut parecord
 komut pgrep
 komut python3
 komut setsid
