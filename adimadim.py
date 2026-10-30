@@ -38,9 +38,10 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
                   geçilir, bitince eski profile döner; boşsa profile dokunulmaz
   son_ekran_durumu son ekranın iş akışı durumu (ör. "orderSubmit"); bu duruma geçilirken ekran
                   biter, sonraki durumlar arka plandadır (ekran adımı değildir); boşsa sınır yok
-  baslatma_cagrisi oturumu başlatan çağrının uc'ünde geçen parça (ör. "initialize"); durum
-                  hesaplaması bu çağrının adımına göre tetikleme öncesi adımları ayırır; boşsa
-                  yalnızca ilk akışlı adımdan itibaren durum bilinir
+  sabit_gecisler  HAR'sız da bilinen sabit iş akışı geçişleri: uc'ünde geçen parça →
+                  [mevcut durum, sonraki durum] (ör. "customerOrder/initialize":
+                  ["orderInitialize", "cartSummary"]); bu parça geçen yazan çağrı o geçişi
+                  yapmış sayılır, akış kayda yazılmaz; eski dokümanlar HAR'sız çalışır
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -215,14 +216,14 @@ def markdown(veri: dict) -> str:
                     if govde_:  # ~~~: Rovo çıktıyı ```markdown bloğunda verir, ``` o bloğu erken kapatırdı
                         dil = "json" if govde_[0] in "{[" else "xml" if govde_[0] == "<" else ""
                         blok += [f"{ad}: `{c['metot']} {c['uc']}`", "", f"~~~{dil}", govde_, "~~~", ""]
-        akisli = [c for c in adim.get("api") or [] if c.get("akis")]
+        akisli = [(c, akis) for c in adim.get("api") or [] if (akis := cagri_akisi(c, ayar))]
         if akisli and veri.get("komutlar"):
             blok += ["#### Çalışan komutlar", ""]
-            for c in akisli:
-                a = c["akis"]
-                gecis = f"{a['mevcut']} → {a['sonraki'] or '?'}" if a["degisim"] else f"{a['mevcut']} (durum değişmedi)"
+            for c, akis in akisli:
+                gecis = (f"{akis['mevcut']} → {akis['sonraki'] or '?'}" if akis["degisim"]
+                         else f"{akis['mevcut']} (durum değişmedi)")
                 blok += [f"`{c['metot']} {c['uc']}` · {gecis}", ""]
-                komutlar = calisan_komutlar(veri["komutlar"], a)
+                komutlar = calisan_komutlar(veri["komutlar"], akis)
                 if komutlar:
                     blok += ["| Durum | Ne zaman | Sıra | Komut |", "|---|---|---|---|"]
                     blok += [f"| {k['durum']} | {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in komutlar]
@@ -961,6 +962,23 @@ def is_akisi(istek: str, yanit: str) -> dict | None:
             "sonraki": y.get(AKIS_ALANLARI[2]) if isinstance(y, dict) else None}
 
 
+def cagri_akisi(c: dict, ayar: dict) -> dict | None:
+    """Çağrının iş akışı geçişi: kayda yazılan `akis` varsa o; yoksa sabit geçişten çıkarılır.
+
+    `sabit_gecisler`'de sorgusuz uc'ünde parçası geçen yazan çağrı, [mevcut, sonraki]
+    elemanlı o geçişi yapmış sayılır: {"mevcut", "degisim": True, "sonraki", "sabit": True}.
+    Sonuç kayda yazılmaz; eski dokümanlar HAR'sız çalışır."""
+    if c.get("akis"):
+        return c["akis"]
+    if not ayar.get("sabit_gecisler") or c["metot"] not in YAZAN_METOTLAR:
+        return None
+    sorgusuz = c["uc"].split("?", 1)[0]
+    for parca, gecis in ayar["sabit_gecisler"].items():
+        if parca in sorgusuz:
+            return {"mevcut": gecis[0], "degisim": True, "sonraki": gecis[1], "sabit": True}
+    return None
+
+
 def komut_tablosu_oku(metin: str) -> tuple:
     """Veritabanı aracının çıktısı → (akışlar, satırlar). DBeaver: Ctrl+C (sekme), CSV, TXT ve Markdown (|);
     başlık ve ayraç satırları atlanır. İlk iki sütun akış ve durum; son dördü bean_name, is_pre, is_post, sort_id."""
@@ -986,40 +1004,27 @@ def calisan_komutlar(tablo: list, akis: dict) -> list:
 
 
 def adim_durumlari(adimlar: list, ayar: dict) -> list:
-    """Adımların iş akışı durumu (workflow state): [durum, …], akışa kanmayan adımlar None.
+    """Adımların iş akışı durumu (workflow state); baştan tek ileri geçişle hesaplanır.
 
-    İlk akışlı adımın (f) ilk akışının `mevcut`u başlangıç durumu (S). `baslatma_cagrisi`
-    uc'ünde geçen, f'den önceki ilk çağrının adımı t: veri gönderiyorsa (POST/…) bu çağrı
-    tetiklemedir, t+1..f ve t yoksa yalnız f adımları S'de; okuma (GET) ise t ile birlikte
-    t..f S'de, öncesi None. f'den sonra sırayla: adımdaki ilk akışın `mevcut`u adımın
-    durumunu belirler; `degisim` + `sonraki` geçişi sonraki adımlara taşınır (adımın kendi
-    `mevcut`u önceliklidir), akışsız adımlar önceki durumu sürer. Geçiş `son_ekran_durumu`
-    iken yapıldıysa artık ekran değişmez, durum o değerden ayrılmaz."""
-    akislari = [[c["akis"] for c in adim.get("api") or [] if c.get("akis")] for adim in adimlar]
-    if not any(akislari):
-        return [None] * len(adimlar)
-    f = next(i for i, degisik in enumerate(akislari) if degisik)
-    mevcut = akislari[f][0]["mevcut"]
+    Adımın durumu gerçek akışının (HAR'da iş akışı alanlarıyla kaydedilen) `mevcut`udur;
+    akışı olmayan adım süren durumu taşır, başta durum yoktur (None). Sabit çağrı
+    (initialize/submit gibi uçlarıyla bilinen geçiş) adımın durumunu değiştirmez, sonrasını
+    taşır: çağrının `mevcut`u son ekran durumundaysa `mevcut` sürer (ekran sınırı), değilse
+    `sonraki`ye geçilir. Gerçek geçiş `degisim` + `sonraki` ile sonraki adımları taşır; süren
+    durum son ekran durumundayken durum değişmez (arka planda çalışan durumlar)."""
     sinir = ayar.get("son_ekran_durumu") or ""
-    durums = [None] * len(adimlar)
-    tetik = None
-    if ayar.get("baslatma_cagrisi"):  # boşsa tetikleme bilinmez, tahmin yok
-        for i in range(f):  # f'den önce uc'ünde bu parça geçen ilk çağrı
-            tetik = next(((i, c["metot"] in YAZAN_METOTLAR) for c in (adimlar[i].get("api") or [])
-                         if ayar["baslatma_cagrisi"] in c["uc"]), None)
-            if tetik:
-                break
-    if tetik:
-        i, yazan = tetik
-        durums[i + yazan:f] = [mevcut] * (f - i - yazan)  # okumada t, yazmada t+1'den itibaren
-    durum = mevcut
-    for i in range(f, len(adimlar)):
-        if i > f and akislari[i]:
-            durum = akislari[i][0]["mevcut"]  # adımın kendi çağrısı durumu belirler
-        durums[i] = durum
-        gecitler = [a["sonraki"] for a in akislari[i] if a["degisim"] and a["sonraki"]]
-        if gecitler and not (sinir and durum == sinir):
-            durum = gecitler[-1]  # adım sonundaki geçiş sonraki adımları taşır
+    durums = []
+    durum = None
+    for adim in adimlar:
+        akislari = [k for c in (adim.get("api") or []) if (k := cagri_akisi(c, ayar))]
+        if gercek := next((k for k in akislari if not k.get("sabit")), None):
+            durum = gercek["mevcut"]  # adımın durumu kendi gerçek akışının mevcutu önceliklidir
+        durums.append(durum)
+        for k in akislari:  # geçişler adım sonunda değerlendirilir, sonraki adımları taşır
+            if k.get("sabit"):
+                durum = k["mevcut"] if (sinir and k["mevcut"] == sinir) else k["sonraki"]
+            elif k["degisim"] and k["sonraki"] and not (sinir and durum == sinir):
+                durum = k["sonraki"]
     return durums
 
 

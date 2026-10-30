@@ -12,7 +12,10 @@
   "api_filtre": [],
   "api_gizle": ["password", "parola", "sifre", "token", "secret"],
   "son_ekran_durumu": "orderSubmit",
-  "baslatma_cagrisi": "initialize",
+  "sabit_gecisler": {
+    "customerOrder/initialize": ["orderInitialize", "cartSummary"],
+    "customerOrder/submit": ["orderSubmit", "asyncOrderSubmit"]
+  },
   "mikrofon": "",
   "mikrofon_profil": ""
 }
