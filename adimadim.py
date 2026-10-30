@@ -520,9 +520,9 @@ def ekran_goruntusu(hedef: Path, kip: str) -> bool:
         return hazir()
 
     if shutil.which("gnome-screenshot"):
-        if kip == "pencere" and dene(["gnome-screenshot", "-w", "-f", str(hedef)]):
+        if kip == "pencere" and dene(["gnome-screenshot", "-w", "-p", "-f", str(hedef)]):
             return True
-        if dene(["gnome-screenshot", "-f", str(hedef)]):
+        if dene(["gnome-screenshot", "-p", "-f", str(hedef)]):
             return True
     if shutil.which("flameshot") and dene(["flameshot", "full", "--raw"], stdout_dosyaya=True):
         return True
