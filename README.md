@@ -187,3 +187,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.0 | 2026-10-07 | Commands run per workflow call: the command configuration table (DBeaver copy, CSV, TXT, Markdown) is matched to workflow API calls by current/next state and pre/post flags. |
 | v0.9.1 | 2026-10-07 | One-click update on the host: an "adımadım güncelle" dock button pulls the latest code, reinstalls only when it changed and reopens the window. |
 | v0.9.2 | 2026-10-07 | API request/response bodies are written in full instead of being shortened; masking unchanged. |
+| v0.9.3 | 2026-10-30 | Microphone selection: during voice sessions a Bluetooth headset switches to its microphone profile and back at the end; the system default input is untouched. |

@@ -99,6 +99,8 @@ kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `ipucu`          | terimleri Whisper'a ipucu olarak ver: `prompt`, `hotwords` ya da boş (kapalı) |
 | `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
 | `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
+| `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`); boşsa sistem varsayılanı (arecord) |
+| `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; `mikrofon` doluyken etkili, boşsa profile dokunulmaz |
 | `api_gizle`      | gövde ve sorguda adında bunlardan biri geçen alanlar `***` yazılır (varsayılan: password, parola, sifre, token, secret) |
 
 Şirket Word şablonu: `~/.config/adimadim/sablon.docx`.
@@ -211,3 +213,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.0 | 2026-10-07 | İş akışında çalışan komutlar: komut yapılandırma tablosu (DBeaver kopyası, CSV, TXT, Markdown) iş akışı çağrılarıyla mevcut/sonraki durum ve pre/post bayraklarına göre eşlenir. |
 | v0.9.1 | 2026-10-07 | Ana makinede tek tıkla güncelleme: dock'taki "adımadım güncelle" düğmesi son kodu çeker, yalnızca değiştiyse yeniden kurar ve pencereyi açar. |
 | v0.9.2 | 2026-10-07 | API istek/yanıt gövdeleri kısaltılmadan tam yazılır; maskeleme aynı. |
+| v0.9.3 | 2026-10-30 | Mikrofon seçimi: sesli oturumda Bluetooth kulaklık mikrofon profiline geçer, bitince eski profil döner; sistem varsayılan girişi değişmez. |

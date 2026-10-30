@@ -59,6 +59,17 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
 - Ders: konuşma tanıma sonucunu değerlendirmeden önce kaydı dinle. Test kayıtları gerçek mikrofonla,
   ana makinede alınır.
 
+- **Ölçüm (2026-10-30):** ana makinede varsayılan giriş `bluez_output…monitor` (kulaklık A2DP'de), arecord
+  kulaklıkta çalan sesi kaydediyordu. FreeBuds mikrofonu (`bluez_input`) A2DP'de tamamen sıfır veri veriyor;
+  PipeWire kendiliğinden görüşme moduna geçmiyor. `headset-head-unit-msbc` profiliyle `parecord --device`
+  temiz kayıt aldı. Tek 12 kelimelik cümle, whisper-medium: Digital Microphone 3 hata (~21 dB), FreeBuds
+  mSBC 2 hata (~51 dB), CVSD 1 hata (~42 dB). Örneklem küçük.
+- **Karar (Kullanıcı A seçeneğini seçti):** adımadım kulaklık profilini yalnız sesli oturum boyunca yönetir,
+  bitince eski profile döner; sistem varsayılan girişine (`set-default-source`) dokunulmaz, çünkü kullanıcı
+  Teams kullanıyor. Ayarlar `mikrofon` ve `mikrofon_profil` (ikisi de boşsa eski davranış).
+- Kayıt sırasında kulaklığın ses kalitesi düşer (görüşme profili). Bu bilinen bir ödünleşim.
+- 2026-10-15'teki BT kart çökmesinde görüşme modu şüpheliydi; kanıtlanmadı.
+
 ## Ana makine hakkında bilinenler
 
 - Ubuntu 22.04, GNOME, Python 3.10; Intel GPU ve NPU.

@@ -2,6 +2,55 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.3 — mikrofon seçimi (2026-10-30)
+
+- **Kaynak seçimi:** `mikrofon` ayarı (ör. `bluez_input`) doluysa ses `parecord --device=<kaynak>` ile alınır.
+  Varsayılan giriş artık kullanılmaz: ana makinede varsayılan giriş kulaklığın monitörüydü, arecord
+  kulaklıkta çalan sesi kaydediyordu. Monitör kaynakları asla seçilmez.
+- **Kulaklık profili:** `mikrofon_profil` (ör. `headset-head-unit-msbc`) doluysa sesli oturum başladığında
+  kulaklık bu profile geçer; `bitir`de eski profile (`a2dp-sink`) döner. Oturum sırasında Bluetooth
+  düşüp A2DP'ye dönerse her adımda yeniden mikrofon profiline geçilir. Oturum kaydı (`oturum.json`)
+  eski profili tutar. Sistem varsayılan girişine dokunulmaz (Teams etkilenmez).
+- Kaynak ya da profil hazırlanamazsa `basla` oturum açmadan çıkar; oturum sırasında kaynak kaybolursa
+  adım uyarıyla kaydedilir, sesi alınmaz.
+- İki ayar da boşken davranış aynıdır: pactl çağrılmaz, arecord kullanılır.
+- Test: `duman_testi.py` sahte `pactl` ve `parecord` ile 8 yeni kontrol (profil geçişi ve geri alma,
+  monitör seçilmemesi, eski profilin ezilmemesi, kaynak ve kart yokken hata, Bluetooth düşmesi).
+
+**Ölçüm** (ana makinede kayıt; tek 12 kelimelik cümle, whisper-medium; örneklem küçük):
+
+| Kaynak | Hata | Seviye |
+|---|---|---|
+| Digital Microphone (dahili) | 3 | ~21 dB |
+| FreeBuds mikrofonu, mSBC (görüşme profili) | 2 | ~51 dB |
+| FreeBuds mikrofonu, CVSD | 1 | ~42 dB |
+| FreeBuds mikrofonu, A2DP (müzik profili) | — | tamamen sıfır veri |
+
+Kayıt sırasında kulaklığın ses kalitesi düşer (müzik profili yerine görüşme profili aktif). Bu oturum
+boyunca geçerlidir ve bitince geri gelir.
+
+**Ana makinede doğrula:** kayıt sırasında `pactl list cards | grep "Active Profile"` çıktısı
+`headset-head-unit-msbc` olmalı; bitirince `a2dp-sink`'e dönmeli.
+
+**Ana makinede yapılacaklar:**
+
+    cd ~/adimadim && git pull && ./kur.sh && ./test.sh
+
+Beklenen son satır: `SONUÇ: testler geçti`. Ardından ayarları bir kez yaz (diğer anahtarlar korunur):
+
+    python3 - <<'EOF'
+    import json, os
+    p = os.path.expanduser("~/.config/adimadim/ayar.json")
+    a = json.load(open(p, encoding="utf-8"))
+    a.update({"mikrofon": "bluez_input", "mikrofon_profil": "headset-head-unit-msbc"})
+    json.dump(a, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+    print("tamam:", a["mikrofon"], a["mikrofon_profil"])
+    EOF
+
+Beklenen: `tamam: bluez_input headset-head-unit-msbc`. Sonra kulaklığı bağlayıp kısa bir sesli oturum
+dene; geri getirmesi gereken: `Adım 1 — anlat` satırı ya da `Mikrofon bulunamadı` uyarısı, ve bitirdikten
+sonra kulaklığın Ses ayarlarında eski profile dönüp dönmediği (evet/hayır).
+
 ## v0.9.2 — API gövdeleri kısaltılmadan (2026-10-07)
 
 - İstek/yanıt gövdeleri dokümana tam yazılır: `… (+N satır)`, `… +N öğe` ve uzun metin kısaltmaları
