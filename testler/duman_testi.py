@@ -605,8 +605,8 @@ def akis_gruplari(env: dict, kok: Path) -> None:
             [PY, "-c", "import pathlib, sys; sys.path.insert(0, sys.argv[1]); import adimadim as a; "
                        "sys.stdout.write(a.anlatim_kopyasi(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8')))",
              str(REPO), str(md)], env=env, capture_output=True, text=True, timeout=120).stdout
-        kontrol("### Adım 4" in kopya and not any(x in kopya for x in ("## Başlamadan önce", "## Durum:", "Arka planda", "TestIlkPost")),
-                "Anlatımı kopyala: grup ve arka plan başlıkları yok, adımlar var")
+        kontrol(all(x in kopya for x in ("### Adım 4", "## Başlamadan önce", "## Durum:", "Arka planda", "Çalışan komut:", "TestIlkPost")) and "~~~" not in kopya,
+                "Anlatımı kopyala: grup başlıkları ve komutlar var, API gövdesi yok")
     finally:
         ayar_yolu.write_text(ozgun, encoding="utf-8")
 

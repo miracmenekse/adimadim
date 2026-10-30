@@ -388,14 +388,13 @@ class Pencere:
             b64 = base64.b64encode(yol.read_bytes()).decode("ascii")
             html_parcalar.append(f'<p><img src="data:image/png;base64,{b64}" alt="{html.escape(ad)}"></p>'
                                  f"<p>{html.escape(ad)}</p>")
-        uriler = [f"file://{yol}" for _, yol in bulunan]
+        uriler = [yol.resolve().as_uri() for _, yol in bulunan]
         adlar = "\n".join(ad for ad, _ in bulunan)
         self.kok.clipboard_clear()
-        self.kok.clipboard_append("\n".join(html_parcalar), type="text/html")
-        self.kok.clipboard_append("copy\n" + "\n".join(uriler), type="x-special/gnome-copied-files")
-        self.kok.clipboard_append("\n".join(uriler) + "\n", type="text/uri-list")
-        self.kok.clipboard_append(adlar, type="STRING")     # uç uygulamalar çoğu "STRING"i okur
-        self.kok.clipboard_append(adlar, type="UTF8_STRING")  # adların UTF-8 kaynağı da listelensin
+        self.kok.clipboard_append("\n".join(html_parcalar), type="text/html", format="UTF8_STRING")
+        self.kok.clipboard_append("copy\n" + "\n".join(uriler), type="x-special/gnome-copied-files", format="UTF8_STRING")
+        self.kok.clipboard_append("\r\n".join(uriler) + "\r\n", type="text/uri-list", format="UTF8_STRING")
+        self.kok.clipboard_append(adlar)
         self.gorsel_i = i + 1
         son = "Son grup. " if i == toplam - 1 else ""
         eksik = f"; {'; '.join(eksikler)}" if eksikler else ""

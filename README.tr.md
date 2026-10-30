@@ -221,3 +221,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.5 | 2026-10-30 | Dokümana dönüş: bitiş ekranında yalnız anlatım kopyalanır, Rovo'dan dönen metin API ve komut tablosu eklenince kaybolmaz; başla ekranı son dokümanları listeler. |
 | v0.9.6 | 2026-10-30 | İş akışı durumları: adımlar durum başlıklarında gruplanır; sabit `initialize`/`submit` geçişleri ve her çağrının komutları görünür; ekran sınırından sonrakiler ayrı bölümde; ekran görüntüsünde fare imleci; Rovo'da karar noktası blokları. 41 adımlık dokümanda ~2 MB Markdown → ~4 KB anlatım kopyası. |
 | v0.9.7 | 2026-10-30 | Anlatım kopyasına görsel adı eklendi; Rovo yanıtındaki bu satırlar anlatıma yazılmaz. |
+| v0.9.8 | 2026-10-30 | Kopyada iş akışı başlıkları ve çalışan komutlar; iç kullanım kılavuz agent'ı; bitiş ekranında 5'li görsel kopyalama. |

@@ -2,6 +2,16 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.9.8 — kopyada gruplar ve komutlar, 5'li görsel kopyalama (2026-10-30)
+
+- **Anlatımı kopyala** artık iş akışı başlıklarını, her adımın `Çalışan komut:` satırlarını ve arka plan bölümünü de verir; API gövdeleri girmez. Rovo yanıtındaki bu satırlar ve başlıklar anlatıma yazılmaz.
+- **Kılavuz agent'ı** iç kullanım dokümanı üretir: adımlar durum başlıkları altında, komutlar adım altında tablo olarak. Müşteri dokümanı ayrı hazırlanacak.
+- Bitiş ekranında **Görselleri kopyala (5'li)**: her basışta sıradaki 5 görsel ve adları panoya gelir, hangi beşlide olduğun yazar. Pano hem HTML hem dosya biçiminde doldurulur.
+
+**Ana makinede doğrula:** Confluence panodaki görselleri kabul ediyor mu, adlar görselin altında mı? VM'de yalnız panonun doğru dolduğu sınandı.
+
+**Ana makinede yapılacaklar:** dock'taki **adımadım güncelle**; `rovo/ajan-talimati.md` ve `rovo/kilavuz-ajani.md` Talimat bölümlerini ilgili Rovo agent'larına yeniden yapıştır.
+
 ## v0.9.7 — kopyada görsel adı (2026-10-30)
 
 - **Anlatımı kopyala**, her `### Adım N` altına `Görsel: <dosya adı>` yazar; Rovo gövdeyi hangi görsele yazdığını adından bilir.

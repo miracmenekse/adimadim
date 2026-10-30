@@ -194,3 +194,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.5 | 2026-10-30 | Back to the document: the finish screen copies the narration only, Rovo's paste-back survives API calls and command tables, and the start screen lists recent documents. |
 | v0.9.6 | 2026-10-30 | Workflow states: steps grouped under state headings; fixed `initialize`/`submit` transitions and each call's commands shown; post-screen commands in a background section; pointer in screenshots; Rovo `> **Karar noktası:**` blocks. A 41-step document: ~2 MB Markdown → ~4 KB narration copy. |
 | v0.9.7 | 2026-10-30 | The narration copy now names each step's image; those lines in Rovo's reply are not written into the narration. |
+| v0.9.8 | 2026-10-30 | Workflow headings and running commands in the copy; internal guide agent; copy images in groups of five from the finish screen. |
