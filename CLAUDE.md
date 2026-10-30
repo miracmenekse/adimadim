@@ -70,12 +70,12 @@ temiz olmalı; ana makineden gelen geri bildirim `.ortam/ortam.sh kontrol` çık
   Gerekirse modüllere bölünebilir; komut satırı arayüzü korunmalı.
 - Word çıktısı: `word_uret` pandoc'u `kod_satirlari.lua` filtresiyle çalıştırır; her kod satırı ayrı paragraf olur (tek paragraf büyük API gövdelerinde Word/LibreOffice'te açılmıyordu).
 - Ses kaydı: mikrofon ayarı doluysa `kayit_baslat` `parecord --device=<kaynak>` kullanır (arecord'a düşmez); `mikrofon_profil` doluysa `mikrofon_hazirla`/`mikrofon_birak` kulaklığı yalnız sesli oturum boyunca mikrofon profiline geçirip `pactl` ile eski profile döndürür.
-- `arayuz.py`: tkinter pencere, üç ekran (Başla → Kayıt: ekran önizlemeleri → Bitiş: .md önizlemesi).
+- `arayuz.py`: tkinter pencere, üç ekran (Başla → Kayıt: ekran önizlemeleri → Bitiş: .md önizlemesi). Başla'da son dokümanlar listesi (`son_dokumanlar`, çift tık ya da Aç).
   Düğmeler `adimadim.py <komut>`u alt süreçte çalıştırır (çıktı `arayuz.log`'a, `ADIMADIM_ARAYUZ=1`
   ile `bitir` klasör açmaz); durum oturum.json'u yoklayarak gösterilir, işlem sürerken bekleme çubuğu.
   `Duzenleyici`: Pillow ile kırp/kutu/ok/yazı (orijinal `gorseller/.orijinal/`); bitiş ekranında
-  MD'yi kopyala ve Rovo alanı (.md'ye yazar, `word` çalıştırır). Uygulama menüsü girdisini kur.sh yazar.
-- Oturum klasörü: `oturum.json` (kaynak), `gorseller/`, `ses/`, `<Başlık>.md`, `<Başlık>.docx`.
+  Anlatımı kopyala (`anlatim_kopyasi`: üst alanlar + `### Adım N` + anlatım) ve Rovo alanı (`anlatim_uygula`: yalnız eşleşen adımların anlatımını .md'ye yazar, görsel ve API bölümlerine dokunmaz, `### Adım` yoksa ValueError ve .md değişmez; `word` çalıştırır). Rovo/elle anlatım bir sonraki `yeniden_yaz`da (api, komutlar, yeniden) `adim["metin"]`e, dolu üst alanlar `veri["ust"]`e alınır. Uygulama menüsü girdisini kur.sh yazar.
+- Oturum klasörü: `oturum.json` (kaynak; adımda `metin` = Rovo/elle anlatım, üst kökte `ust` = Amaç/Aktör/koşul alanları), `gorseller/`, `ses/`, `<Başlık>.md` (öncekisi `.md.yedek`), `<Başlık>.docx`.
 - API çağrıları: `basla`/`cek`/`bitir` oturuma ve adımlara saat dilimli zaman yazar (`baslangic`, `zaman`,
   `bitis`). `api` bitmiş oturuma tarayıcının HAR'ını uygular (`api_ekle`): basla–bitir dışı atılır, GET
   sonraki adıma, POST/PUT/PATCH/DELETE butona basılan adıma; sonuç `adim["api"]`'de (başlıklar hiç yok,
