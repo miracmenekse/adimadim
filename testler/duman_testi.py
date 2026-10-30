@@ -632,12 +632,15 @@ assert p.ekran == "bitis" and u.a.aktif_oturum() is None, "Bitir → bitiş ekra
 assert "Adım 1" in p.onizleme.get("1.0", "end") and p.onizleme.image_names(), "doküman önizlemesi görselli"
 assert "Hazır" in u.son_satir(), u.son_satir()
 md = u.a.md_bul(p.bitmis)
-p.md_kopyala(); assert kok.clipboard_get() == md.read_text(encoding="utf-8"), "MD'yi kopyala"
-p.rovo.insert("1.0", "```markdown\\n# Resmî\\n\\nAdım 1\\n\\nKullanıcı ekranı açar.\\n```")
+p.md_kopyala(); kopya = kok.clipboard_get()
+assert kopya == u.a.anlatim_kopyasi(md.read_text(encoding="utf-8")), "Anlatımı kopyala: anlatım kopyası"
+assert "Pencereden not." in kopya and "gorseller/" not in kopya and "![" not in kopya and "####" not in kopya, kopya
+p.rovo.insert("1.0", "```markdown\\n### Adım 1\\n\\nKullanıcı ekranı açar.\\n```")
 p.rovo_uygula(); p.surec.wait(); p.guncelle(tekrar=False)
 yeni = md.read_text(encoding="utf-8")
 assert "```" not in yeni and "Kullanıcı ekranı açar." in yeni and "![Adım 1](gorseller/adim-01.png)" in yeni, yeni
-assert md.with_name(md.name + ".yedek").exists() and "Kullanıcı ekranı açar." in p.onizleme.get("1.0", "end"), "Rovo alanı .md + Word"
+assert md.with_name(md.name + ".yedek").exists() and "Kullanıcı ekranı açar." in p.onizleme.get("1.0", "end"), "Rovo yanıtı .md'de + Word"
+assert "1 adım güncellendi" in p.ipucu["text"] and p.rovo.get("1.0", "end").strip() == "", p.ipucu["text"]
 veri = json.loads((p.bitmis / "oturum.json").read_text(encoding="utf-8"))
 har = p.bitmis / "test.har"
 har.write_text(json.dumps({"log": {"entries": [{"startedDateTime": veri["adimlar"][0]["zaman"],
@@ -650,12 +653,19 @@ assert "API çağrıları" in p.onizleme.get("1.0", "end"), "API ekle (HAR) → 
 kok.clipboard_clear(); kok.clipboard_append("TEST_AKIS\\tsepetOzeti\\t10\\t1\\tKaydetCommand\\tKaydetCommand\\t0\\t1\\t10\\n")
 p.komutlar_yukle(); p.surec.wait(); p.guncelle(tekrar=False)
 assert "KaydetCommand" in p.onizleme.get("1.0", "end"), "Komut tablosu (panodan) → önizlemede"
-p.yeni(); assert p.ekran == "basla"
+m = md.read_text(encoding="utf-8")
+assert "Kullanıcı ekranı açar." in m and "![Adım 1](gorseller/adim-01.png)" in m and "API çağrıları" in m and "KaydetCommand" in m, "Rovo metni API ve komut tablosundan sonra da .md'de"
+dok = p.bitmis
+p.yeni(); p.guncelle(tekrar=False); kok.update()
+assert p.ekran == "basla" and dok in p.son_doklar, "başla ekranındaki son dokümanlar bu dokümanı listeler"
+assert any("Pencere testi" in p.son_liste.get(i) for i in range(p.son_liste.size())), "liste satırında başlık var"
+p.son_liste.selection_set(p.son_doklar.index(dok)); p.secileni_ac(); p.guncelle(tekrar=False); kok.update()
+assert p.ekran == "bitis" and p.bitmis == dok and "Kullanıcı ekranı açar." in p.onizleme.get("1.0", "end"), "listeden açılan doküman bitiş ekranında, Rovo metni yerinde"
 kok.destroy(); print("pencere tamam")
 """
     r = subprocess.run([PY, "-c", betik, str(REPO)], env={**env, "ZENITY_METIN": "Pencereden not."},
                        capture_output=True, text=True, timeout=120)
-    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı → API ekle → komut tablosu"
+    kontrol(r.returncode == 0, "arayüz: başla → önizleme → kırp/işaretle → bitir → kopyala → Rovo alanı → API ekle → komut tablosu → listeden aç"
             + ("" if r.returncode == 0 else f" ({r.stderr.strip()[-400:]})"))
     print("    " + r.stdout.strip())
 
