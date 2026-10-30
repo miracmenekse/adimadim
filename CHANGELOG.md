@@ -23,7 +23,7 @@ Bu sürüm v0.9.4 ve v0.9.5'i de içerir: v0.9.3'ten sonra ana makineye giden il
   `> **Karar noktası:** <koşul> → <sonuç>` bloğu olur; her dal ayrı `>` satırıdır. Söylenmemiş koşul uydurulmaz.
 - **Çalışma kuralı:** **fareyi getir → çek → anlat → bas**.
 - **Ölçüm** (gerçek 41 adımlı dokümanın kopyasında, içerik okunmadan): tüm .md ~2 MB iken anlatım kopyası ~4 KB;
-  8 grup ve arka plan bölümü; LibreOffice 31 sn'de açtı, ~2300 sayfa. Word'ün kendisinde denenmedi.
+  başlangıç + 8 durum grubu ve arka plan bölümü; LibreOffice 31 sn'de açtı, ~2300 sayfa. Word'ün kendisinde denenmedi.
 - **Test:** `duman_testi.py`'ye iş akışı grupları kontrolü (sabit geçiş, sınır, arka plan, Anlatımı kopyala başlıksız).
   Eski "## Ana akış" varsayan assert, grup başlıkları gelince IndexError veriyordu; yalnız `### Adım 1`'den sonrasına bakacak
   biçimde düzeltildi.
