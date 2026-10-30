@@ -33,6 +33,9 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   duzeltme        duzeltmeler.txt (+ .local) kurallarını çıktıya uygula (true/false)
   api_filtre      yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. ["/api/"]); boşsa JSON/XML olanlar
   api_gizle       istek/yanıt gövdesi ve sorguda adında bunlar geçen alanlar *** yazılır
+  mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"); boşsa sistem varsayılanı (arecord)
+  mikrofon_profil kulaklığın mikrofon profili (ör. "headset-head-unit-msbc"); yalnız sesli oturum boyunca
+                  geçilir, bitince eski profile döner; boşsa profile dokunulmaz (mikrofon doluyken etkili)
 Word şablonu: ~/.config/adimadim/sablon.docx varsa Word çıktısı onun biçimini alır.
 """
 
@@ -330,8 +333,73 @@ def surec_calisiyor(pid: int | None) -> bool:
     return any(ad.encode() in komut for ad in KAYITCILAR)
 
 
-def kayit_baslat(dosya: Path) -> int | None:
-    if shutil.which("arecord"):
+def pactl(*arglar: str) -> str | None:
+    """pactl çıktısı; çalışmazsa ya da hata verirse None."""
+    try:
+        r = subprocess.run(["pactl", *arglar], env={**os.environ, "LC_ALL": "C"}, capture_output=True,
+                           text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def kart_bul(profil: str) -> tuple[str, str] | None:
+    """(kart adı, aktif profil): profil listesinde `profil` geçen ilk kart."""
+    for blok in (pactl("list", "cards") or "").split("Card #")[1:]:
+        ad = re.search(r"^\s*Name:\s*(\S+)", blok, re.M)
+        aktif = re.search(r"^\s*Active Profile:\s*(\S+)", blok, re.M)
+        if ad and aktif and re.search(rf"^\s+{re.escape(profil)}:", blok, re.M):
+            return ad.group(1), aktif.group(1)
+    return None
+
+
+def kaynak_bul(parca: str) -> str | None:
+    """Adında `parca` geçen ilk giriş kaynağı; monitör (.monitor) asla seçilmez."""
+    for satir in (pactl("list", "short", "sources") or "").splitlines():
+        a = satir.split("\t")
+        if len(a) > 1 and parca in a[1] and not a[1].endswith(".monitor"):
+            return a[1]
+    return None
+
+
+def mikrofon_hazirla(veri: dict, ayar: dict) -> bool:
+    """Kulaklığı mikrofon profiline geçirir (eski profil veri["kulaklik"]'e, yalnız ilk seferde) ve kaynağı bekler."""
+    profil = ayar.get("mikrofon_profil")
+    if not profil:
+        return True
+    kart = kart_bul(profil)
+    if kart is None:
+        return False
+    ad, aktif = kart
+    if aktif != profil:
+        veri.setdefault("kulaklik", {"kart": ad, "profil": aktif})
+        if pactl("set-card-profile", ad, profil) is None:
+            return False
+        time.sleep(1)  # profil geçişi sürerken kaynak henüz görünmeyebilir
+    if not ayar.get("mikrofon"):
+        return True
+    for _ in range(30):  # en fazla ~3 sn
+        if kaynak_bul(ayar["mikrofon"]):
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def mikrofon_birak(veri: dict) -> None:
+    """Oturum bitince kulaklığı eski profiline döndürür."""
+    kulaklik = veri.pop("kulaklik", None)
+    if kulaklik and pactl("set-card-profile", kulaklik["kart"], kulaklik["profil"]) is None:
+        bildir(f"Kulaklık profili {kulaklik['profil']} olarak geri alınamadı; ses ayarlarından elle geri alın.")
+
+
+def kayit_baslat(dosya: Path, ayar: dict) -> int | None:
+    if ayar.get("mikrofon"):  # arecord'a düşülmez: varsayılan giriş monitör olabilir
+        kaynak = kaynak_bul(ayar["mikrofon"])
+        if not kaynak or not shutil.which("parecord"):
+            return None
+        komut = ["parecord", f"--device={kaynak}", "--channels=1", "--rate=16000", "--format=s16le",
+                 "--file-format=wav", str(dosya)]
+    elif shutil.which("arecord"):
         komut = ["arecord", "-q", "-f", "S16_LE", "-r", "16000", "-c", "1", "-t", "wav", str(dosya)]
     elif shutil.which("parecord"):
         komut = ["parecord", "--channels=1", "--rate=16000", "--format=s16le",
@@ -721,12 +789,20 @@ def cmd_basla(args, ayar) -> int:
     oturum, sayac = taban, 2
     while (oturum / "oturum.json").exists():
         oturum, sayac = taban.with_name(f"{taban.name}-{sayac}"), sayac + 1
-    (oturum / "gorseller").mkdir(parents=True, exist_ok=True)
-    if args.ses:
-        (oturum / "ses").mkdir(exist_ok=True)
     veri = {"baslik": baslik, "dosya": dosya_adi(baslik), "tarih": f"{simdi:%d.%m.%Y}",
             "mod": "ses" if args.ses else "yazi", "adimlar": [], "kayit_pid": None,
             "baslangic": zaman_damgasi()}
+    if args.ses and ayar.get("mikrofon"):  # klasör açılmadan önce: hata varsa oturum oluşmaz
+        if not shutil.which("parecord"):
+            bildir("Mikrofon ayarı için parecord gerekli: sudo apt install pulseaudio-utils")
+            return 1
+        if not (mikrofon_hazirla(veri, ayar) and kaynak_bul(ayar["mikrofon"])):
+            mikrofon_birak(veri)
+            bildir(f"Mikrofon ({ayar['mikrofon']}) hazırlanamadı; kulaklık bağlı mı? Oturum başlatılmadı.")
+            return 1
+    (oturum / "gorseller").mkdir(parents=True, exist_ok=True)
+    if args.ses:
+        (oturum / "ses").mkdir(exist_ok=True)
     with kilit():
         kaydet(oturum, veri)
         AKTIF.write_text(str(oturum), encoding="utf-8")
@@ -749,14 +825,21 @@ def cmd_cek(args, ayar) -> int:
         if not ekran_goruntusu(oturum / adim["gorsel"], "tam" if args.tam else ayar.get("ekran", "pencere")):
             bildir("Ekran görüntüsü alınamadı. Kurulu mu: sudo apt install gnome-screenshot")
             return 1
+        sessiz = False
         if veri["mod"] == "ses":
             kayit_durdur(veri.get("kayit_pid"))  # önceki adımın anlatımı burada biter
             adim["ses"] = f"ses/adim-{no:02d}.wav"
-            veri["kayit_pid"] = kayit_baslat(oturum / adim["ses"])
+            hazir = not ayar.get("mikrofon") or mikrofon_hazirla(veri, ayar)  # Bluetooth düşüp geri geldiyse yeniden alır
+            veri["kayit_pid"] = kayit_baslat(oturum / adim["ses"], ayar) if hazir else None
+            if veri["kayit_pid"] is None:
+                adim["ses"], sessiz = None, True
         veri["adimlar"].append(adim)
         kaydet(oturum, veri)
     if veri["mod"] == "ses":
-        bildir(f"Adım {no} — anlat 🎙️ (bitince sonraki ekranda Ctrl+Alt+S)")
+        if sessiz:
+            bildir(f"Mikrofon bulunamadı, bu adımın sesi kaydedilmedi (adım {no}).")
+        else:
+            bildir(f"Adım {no} — anlat 🎙️ (bitince sonraki ekranda Ctrl+Alt+S)")
         return 0
     metin = not_iste(f"Adım {no} — bu ekranda ne yapılıyor?", vazgec="Notsuz geç")
     if metin and metin.strip():
@@ -824,6 +907,7 @@ def cmd_bitir(args, ayar) -> int:
             return 1
         veri = yukle(oturum)
         kayit_durdur(veri.get("kayit_pid"))
+        mikrofon_birak(veri)
         veri["kayit_pid"], veri["bitis"] = None, zaman_damgasi()
         kaydet(oturum, veri)
         AKTIF.unlink(missing_ok=True)

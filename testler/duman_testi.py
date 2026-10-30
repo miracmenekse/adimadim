@@ -22,6 +22,18 @@ BASARISIZ = []
 
 # ------------------------------------------------------------------ sahte araçlar
 
+KAYIT_ORTAK = r'''
+import array, os, signal, struct, sys, time
+yol = sys.argv[-1]
+def wav_yaz(yol):
+    ornekler = array.array("h", [(8000 if (i // 20) % 2 else -8000) for i in range(16000)])
+    veri = ornekler.tobytes()
+    with open(yol, "wb") as f:
+        f.write(b"RIFF" + struct.pack("<I", 36 + len(veri)) + b"WAVEfmt "
+                + struct.pack("<IHHIIHH", 16, 1, 1, 16000, 32000, 2, 16)
+                + b"data" + struct.pack("<I", len(veri)) + veri)
+'''
+
 SAHTE_ARACLAR = {
     "gnome-screenshot": r'''
 import os, struct, sys, zlib
@@ -57,24 +69,46 @@ open(os.environ["SAHTE_LOG"], "a").write("xdg-open " + " ".join(sys.argv[1:]) + 
 import os
 print(os.path.join(os.environ["HOME"], "Belgeler"))
 ''',
-    # SIGINT gelene kadar bekler, sonra 1 sn'lik sessiz OLMAYAN bir WAV yazar
-    "arecord": r'''
-import array, os, signal, struct, sys, time
-yol = sys.argv[-1]
+    # SIGINT gelene kadar bekler, sonra 1 sn'lik sessiz OLMAYAN bir WAV yazar (arecord ve parecord ortak)
+    "arecord": KAYIT_ORTAK + r'''
 open(os.environ["SAHTE_LOG"], "a").write(f"kayit-basla {yol}\n")
-def dur(*_):
-    ornekler = array.array("h", [(8000 if (i // 20) % 2 else -8000) for i in range(16000)])
-    veri = ornekler.tobytes()
-    with open(yol, "wb") as f:
-        f.write(b"RIFF" + struct.pack("<I", 36 + len(veri)) + b"WAVEfmt "
-                + struct.pack("<IHHIIHH", 16, 1, 1, 16000, 32000, 2, 16)
-                + b"data" + struct.pack("<I", len(veri)) + veri)
-    open(os.environ["SAHTE_LOG"], "a").write(f"kayit-dur {yol}\n")
-    sys.exit(0)
-signal.signal(signal.SIGINT, dur)
-signal.signal(signal.SIGTERM, dur)
+kaydet_ve_cik = lambda *_: (wav_yaz(yol), open(os.environ["SAHTE_LOG"], "a").write(f"kayit-dur {yol}\n"), sys.exit(0))
+signal.signal(signal.SIGINT, kaydet_ve_cik)
+signal.signal(signal.SIGTERM, kaydet_ve_cik)
 while True:
     time.sleep(0.05)
+''',
+    "parecord": KAYIT_ORTAK + r'''
+open(os.environ["SAHTE_LOG"], "a").write("parecord " + " ".join(sys.argv[1:]) + "\n")
+kaydet_ve_cik = lambda *_: (wav_yaz(yol), open(os.environ["SAHTE_LOG"], "a").write(f"kayit-dur {yol}\n"), sys.exit(0))
+signal.signal(signal.SIGINT, kaydet_ve_cik)
+signal.signal(signal.SIGTERM, kaydet_ve_cik)
+while True:
+    time.sleep(0.05)
+''',
+    # Durum SAHTE_PACTL dosyasında: kart, profiller, aktif profil, profile göre kaynaklar (monitör önce)
+    "pactl": r'''
+import json, os, sys
+yol = os.environ["SAHTE_PACTL"]
+d = json.load(open(yol))
+a = sys.argv[1:]
+open(os.environ["SAHTE_LOG"], "a").write("pactl " + " ".join(a) + "\n")
+if a[:2] == ["list", "cards"]:
+    if d["kart"]:
+        print(f"Card #1\n\tName: {d['kart']}\n\tProfiles:")
+        for p in d["profiller"]:
+            print(f"\t\t{p}: sahte (sinks: 1, sources: 1, priority: 1, available: yes)")
+        print(f"\tActive Profile: {d['aktif']}")
+elif a[:3] == ["list", "short", "sources"]:
+    for i, s in enumerate(d["kaynaklar"].get(d["aktif"], [])):
+        print(f"{i}\t{s}\tmodule-sahte\ts16le 1ch 16000Hz\tRUNNING")
+elif a[:1] == ["set-card-profile"]:
+    if a[1] != d["kart"] or a[2] not in d["profiller"]:
+        sys.exit(1)
+    d["aktif"] = a[2]
+    json.dump(d, open(yol, "w"))
+else:
+    sys.exit(1)
 ''',
     "gsettings": r'''
 import json, os, sys
@@ -152,6 +186,7 @@ def ortam_kur(kok: Path) -> dict:
         "PATH": f"{sahte_bin}{os.pathsep}{os.environ.get('PATH', '')}",
         "PYTHONPATH": str(sahte_py), "XDG_SESSION_TYPE": "wayland",
         "SAHTE_LOG": str(kok / "log.txt"), "SAHTE_GSETTINGS": str(kok / "gsettings.json"),
+        "SAHTE_PACTL": str(kok / "pactl.json"),
     })
     env.pop("DBUS_SESSION_BUS_ADDRESS", None)
     return env
@@ -177,7 +212,7 @@ def kayitcilari_temizle(kok: Path) -> None:
                 komut = (pid_dizini / "cmdline").read_bytes()
             except OSError:
                 continue
-            if str(kok).encode() in komut and b"arecord" in komut:
+            if str(kok).encode() in komut and (b"arecord" in komut or b"parecord" in komut):
                 os.kill(int(pid_dizini.name), signal.SIGKILL)
 
 
@@ -238,6 +273,119 @@ def sesli_akis(env: dict) -> None:
     metin = md.read_text(encoding="utf-8")
     kontrol("### Adım 2\n\n![Adım 2](gorseller/adim-02.png)" in metin and "Preview unavailable" not in metin,
             "word: kopyalanan Rovo çıktısına görseller geri konuyor")
+
+
+MAC = "AA_BB_CC_DD_EE_FF"
+PACTL_VARSAYILAN = {  # sahte kulaklık: a2dp'de yalnız monitör var, mikrofon profilinde giriş kaynağı da (monitör önce)
+    "kart": f"bluez_card.{MAC}", "profiller": ["a2dp-sink", "headset-head-unit-msbc", "off"], "aktif": "a2dp-sink",
+    "kaynaklar": {"a2dp-sink": [f"bluez_output.{MAC}.monitor"],
+                  "headset-head-unit-msbc": [f"bluez_output.{MAC}.monitor", f"bluez_input.{MAC}"]},
+}
+
+
+def pactl_oku(env: dict) -> dict:
+    return json.loads(Path(env["SAHTE_PACTL"]).read_text(encoding="utf-8"))
+
+
+def pactl_yaz(env: dict, durum: dict) -> None:
+    Path(env["SAHTE_PACTL"]).write_text(json.dumps(durum, ensure_ascii=False), encoding="utf-8")
+
+
+def log_oku(env: dict) -> str:
+    yol = Path(env["SAHTE_LOG"])
+    return yol.read_text(encoding="utf-8") if yol.exists() else ""
+
+
+def mikrofon_akis(env: dict, kok: Path) -> None:
+    print("Mikrofon: kulaklık profili yalnız sesli oturum boyunca")
+    ayar_dizini = Path(env["XDG_CONFIG_HOME"]) / "adimadim"
+    ayar_yolu = ayar_dizini / "ayar.json"
+    ozgun = ayar_yolu.read_text(encoding="utf-8")
+    oturum_say = lambda: len(list((kok / "dokumanlar").glob("*/oturum.json")))
+    try:
+        # ayarlar boşken: pactl hiç çağrılmaz, arecord kullanılır
+        pactl_yaz(env, PACTL_VARSAYILAN)
+        n = len(log_oku(env))
+        calistir(env, "basla", "Arecord testi", "--ses")
+        calistir(env, "cek")
+        time.sleep(0.3)
+        calistir(env, "bitir")
+        yeni = log_oku(env)[n:]
+        kontrol("pactl" not in yeni and "kayit-basla" in yeni and "parecord" not in yeni,
+                "ayarlar boşken pactl çağrılmaz, arecord kullanılır")
+
+        ayar = json.loads(ozgun)
+        ayar.update(mikrofon="bluez_input", mikrofon_profil="headset-head-unit-msbc")
+        ayar_yolu.write_text(json.dumps(ayar, ensure_ascii=False), encoding="utf-8")
+
+        pactl_yaz(env, {**PACTL_VARSAYILAN, "kart": ""})  # kart yok
+        n_oturum = oturum_say()
+        r = calistir(env, "basla", "Kart yok", "--ses", beklenen=1)
+        kontrol(r.returncode == 1 and oturum_say() == n_oturum and not (ayar_dizini / "aktif").exists(),
+                "kart yokken basla çıkış 1 verir, oturum oluşmaz")
+
+        pactl_yaz(env, {**PACTL_VARSAYILAN, "kaynaklar": {"headset-head-unit-msbc": [f"bluez_output.{MAC}.monitor"]}})
+        r = calistir(env, "basla", "Kaynak yok", "--ses", beklenen=1)
+        kontrol(r.returncode == 1 and oturum_say() == n_oturum and pactl_oku(env)["aktif"] == "a2dp-sink",
+                "kaynak yokken basla reddedilir ve kulaklık eski profiline döner")
+
+        pactl_yaz(env, PACTL_VARSAYILAN)
+        calistir(env, "basla", "Mikrofon testi", "--ses")
+        oturum = Path((ayar_dizini / "aktif").read_text(encoding="utf-8").strip())
+        kulaklik = json.loads((oturum / "oturum.json").read_text(encoding="utf-8")).get("kulaklik")
+        kontrol(pactl_oku(env)["aktif"] == "headset-head-unit-msbc"
+                and kulaklik == {"kart": f"bluez_card.{MAC}", "profil": "a2dp-sink"},
+                "basla profili mikrofon moduna geçirir, eski profil (a2dp-sink) oturumda saklanır")
+
+        n = len(log_oku(env))
+        calistir(env, "cek")
+        time.sleep(0.3)
+        yeni = log_oku(env)[n:]
+        kontrol(f"parecord --device=bluez_input.{MAC}" in yeni and "monitor" not in yeni and "kayit-basla" not in yeni,
+                "cek parecord ile giriş kaynağını kaydeder; monitör ve arecord kullanılmaz")
+
+        d = pactl_oku(env)  # Bluetooth düştü, profil a2dp'ye döndü
+        d["aktif"] = "a2dp-sink"
+        pactl_yaz(env, d)
+        n = len(log_oku(env))
+        calistir(env, "cek")
+        time.sleep(0.3)
+        kontrol(pactl_oku(env)["aktif"] == "headset-head-unit-msbc"
+                and f"set-card-profile bluez_card.{MAC} headset-head-unit-msbc" in log_oku(env)[n:],
+                "profil a2dp'ye düşünce cek yeniden mikrofon profiline geçirir")
+
+        d = pactl_oku(env)  # yine düştü, bu kez farklı bir profile
+        d["aktif"] = "off"
+        pactl_yaz(env, d)
+        calistir(env, "cek")
+        time.sleep(0.3)
+        kulaklik = json.loads((oturum / "oturum.json").read_text(encoding="utf-8"))["kulaklik"]
+        kontrol(kulaklik["profil"] == "a2dp-sink", "iki cek'te eski profil ezilmez")
+
+        calistir(env, "bitir")
+        veri = json.loads((oturum / "oturum.json").read_text(encoding="utf-8"))
+        kontrol(pactl_oku(env)["aktif"] == "a2dp-sink" and "kulaklik" not in veri,
+                "bitir profili a2dp-sink'e döndürür ve kulaklik anahtarını siler")
+
+        calistir(env, "basla", "Kaynak kayboldu", "--ses")
+        d = pactl_oku(env)  # oturum sırasında giriş kaynağı kayboldu
+        d["kaynaklar"] = {"headset-head-unit-msbc": [f"bluez_output.{MAC}.monitor"]}
+        pactl_yaz(env, d)
+        r = calistir(env, "cek")
+        oturum = acik_oturum_yolu(env)
+        adimlar = json.loads((oturum / "oturum.json").read_text(encoding="utf-8"))["adimlar"]
+        kontrol("anlat" not in r.stdout and "Mikrofon bulunamadı" in r.stdout and len(adimlar) == 1
+                and adimlar[0]["ses"] is None and (oturum / adimlar[0]["gorsel"]).exists(),
+                "oturum sırasında kaynak kaybolunca cek 'anlat' demez, uyarır, adım yine kaydedilir")
+        d["kaynaklar"] = PACTL_VARSAYILAN["kaynaklar"]
+        pactl_yaz(env, d)
+        calistir(env, "bitir")
+    finally:
+        ayar_yolu.write_text(ozgun, encoding="utf-8")
+
+
+def acik_oturum_yolu(env: dict) -> Path:
+    return Path((Path(env["XDG_CONFIG_HOME"]) / "adimadim" / "aktif").read_text(encoding="utf-8").strip())
 
 
 def har_girdisi(zaman: str, metot: str, url: str, yanit: str = "{}", tur: str = "application/json",
@@ -491,6 +639,7 @@ def main() -> int:
         try:
             yazili_akis(env)
             sesli_akis(env)
+            mikrofon_akis(env, kok)
             api_cagrilari(env, kok)
             yedek_motor(env, kok)
             ipucu_ve_duzeltme(env, kok)

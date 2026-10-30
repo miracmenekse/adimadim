@@ -10,5 +10,7 @@
   "ipucu": "prompt",
   "duzeltme": true,
   "api_filtre": [],
-  "api_gizle": ["password", "parola", "sifre", "token", "secret"]
+  "api_gizle": ["password", "parola", "sifre", "token", "secret"],
+  "mikrofon": "",
+  "mikrofon_profil": ""
 }

@@ -22,8 +22,9 @@ if [ -r /etc/os-release ]; then . /etc/os-release; fi
 # Aracın çağırdığı her dış komutun paketi burada; ana makinenin kurulumu eksik olabilir, hiçbiri varsayılmaz.
 # xdg-utils: xdg-open · xdg-user-dirs: xdg-user-dir · libglib2.0-bin: gsettings (kısayollar)
 # python3-tk: düğmeli pencere (arayuz.py) · fonts-dejavu-core: görsele yazılan işaret yazısı
+# pulseaudio-utils: pactl, parecord (ayar.json'da mikrofon seçiliyse kayıt ve kulaklık profili)
 PAKETLER=(python3-venv python3-tk fonts-dejavu-core git gnome-screenshot zenity pandoc alsa-utils libnotify-bin
-          xdg-utils xdg-user-dirs libglib2.0-bin)
+          xdg-utils xdg-user-dirs libglib2.0-bin pulseaudio-utils)
 EKSIK=()
 for p in "${PAKETLER[@]}"; do
   dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q "install ok installed" || EKSIK+=("$p")
