@@ -259,6 +259,55 @@ def gorselleri_geri_koy(md: Path) -> None:
         md.write_text("\n".join(satirlar_) + "\n", encoding="utf-8")
 
 
+YER_TUTUCULAR = ("_Açıklama eklenmedi._",  # metni olmayan adımların yer tutucuları: boş sayılır
+                 "_Sesli anlatım kaydedildi; doküman bitirilince metne çevrilecek._")
+
+
+def anlatim_ayikla(md_metni: str) -> dict[int, str]:
+    """`### Adım N` başlıklarının altındaki anlatım metni: {adım numarası: metin}.
+
+    Görsel satırı, API bölümü (`####` ve sonrası) ve ~~~ içi gövdeler sayılmaz;
+    yer tutucular boş sayılır. Boş satırlar paragraf ayraçı olarak korunur."""
+    adimlar, no, kod, ham = {}, None, False, []
+
+    def kapat() -> None:  # son adımın birikmiş satırlarını metne çevirir
+        if no is not None:
+            paragraflar = [p.strip() for p in re.split(r"\n\s*\n", "\n".join(ham)) if p.strip()]
+            adimlar[no] = "\n\n".join(p for p in paragraflar if p not in YER_TUTUCULAR)
+
+    for satir in md_metni.splitlines():
+        if satir.startswith("~~~"):  # API gövdesi Rovo'nun ```markdown bloğunu erken kapatmasın diye ~~~ içinde
+            kod = not kod
+            continue
+        if kod:
+            continue
+        if satir.strip().startswith("#"):  # başlık: ya yeni adım ya da anlatımın sonu
+            m = re.fullmatch(r"### Adım (\d+)", satir.strip())
+            kapat()
+            no, ham = (int(m.group(1)), []) if m else (None, [])
+            continue
+        if no is None or satir.startswith("!["):  # üst alanlar ve görsel satırı sayılmaz
+            continue
+        ham.append(satir)  # boş satır da saklanır: paragraf ayracı
+    kapat()
+    return adimlar
+
+
+def anlatim_kopyasi(md_metni: str) -> str:
+    """Rovo'ya verilecek yalnız anlatım: üst alan satırları + her adımın başlığı ve metni."""
+    ust = []
+    for satir in md_metni.splitlines():
+        if satir.strip().startswith("## ") or re.fullmatch(r"### Adım (\d+)", satir.strip()):
+            break  # "Ana akış" başlığı ve adımlar ayrı yazılır
+        if not ust and not satir.strip():  # ilk başlıktan önceki boş satırları at
+            continue
+        ust.append(satir)
+    metin = "\n".join(ust).rstrip()
+    for no, anlatim in anlatim_ayikla(md_metni).items():
+        metin += f"\n\n### Adım {no}" + (f"\n\n{anlatim}" if anlatim else "")
+    return metin + "\n"
+
+
 def word_uret(oturum: Path) -> bool:
     md = md_bul(oturum)
     if md is None:
