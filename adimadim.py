@@ -53,7 +53,6 @@ import base64
 import bisect
 import contextlib
 import datetime as dt
-import fcntl
 import importlib.util
 import json
 import os
@@ -63,14 +62,24 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
 import time
 import uuid
 from pathlib import Path
 from urllib.parse import urlsplit
 
+if os.name == "nt":
+    import msvcrt
+    import platform_win
+else:
+    import fcntl
+
 UYGULAMA = "adımadım"
 REPO_DIZINI = Path(__file__).resolve().parent
-AYAR_DIZINI = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "adimadim"
+if os.name == "nt":
+    AYAR_DIZINI = Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / "adimadim"
+else:
+    AYAR_DIZINI = Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "adimadim"
 AYAR_DOSYASI = AYAR_DIZINI / "ayar.json"
 AKTIF = AYAR_DIZINI / "aktif"  # açık oturumun klasörü
 SON = AYAR_DIZINI / "son"  # en son biten oturumun klasörü
@@ -92,6 +101,10 @@ def bildir(mesaj: str) -> None:
     """Terminale yazar, masaüstü bildirimi gösterir (kısayolla çalışırken tek geri bildirim bu)."""
     with contextlib.suppress(OSError, ValueError):
         print(mesaj, flush=True)
+    if os.name == "nt":
+        with contextlib.suppress(Exception):
+            platform_win.bildirim(mesaj)
+        return
     if shutil.which("notify-send"):
         with contextlib.suppress(OSError, subprocess.SubprocessError):
             subprocess.run(["notify-send", "-a", UYGULAMA, "-h", "int:transient:1", UYGULAMA, mesaj],
@@ -100,6 +113,8 @@ def bildir(mesaj: str) -> None:
 
 def belgeler_dizini(tur: str = "DOCUMENTS") -> Path:
     """xdg kullanıcı dizini (DOWNLOAD: İndirilenler); bulunamazsa ~/Documents ya da ev dizini."""
+    if os.name == "nt":
+        return Path.home() / "Documents"
     with contextlib.suppress(OSError, subprocess.SubprocessError):
         r = subprocess.run(["xdg-user-dir", tur], capture_output=True, text=True, timeout=5)
         yol = r.stdout.strip()
@@ -141,6 +156,17 @@ def kilit():
     """İki kısayola art arda basılırsa oturum dosyası bozulmasın."""
     AYAR_DIZINI.mkdir(parents=True, exist_ok=True)
     with open(KILIT, "w", encoding="utf-8") as f:
+        if os.name == "nt":
+            f.write("kilit")
+            f.flush()
+            f.seek(0)
+            msvcrt.locking(f.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                f.seek(0)
+                msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+            return
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             yield
@@ -160,6 +186,10 @@ def dosya_adi(metin: str) -> str:
 
 
 def klasoru_ac(yol: Path) -> None:
+    if os.name == "nt":
+        with contextlib.suppress(OSError):
+            os.startfile(str(yol))
+        return
     if shutil.which("xdg-open"):
         with contextlib.suppress(OSError):
             subprocess.Popen(["xdg-open", str(yol)], stdout=subprocess.DEVNULL,
@@ -623,6 +653,9 @@ def word_uret(oturum: Path) -> bool:
 
 def ekran_goruntusu(hedef: Path, kip: str) -> bool:
     """GNOME'da (X11 ve Wayland) gnome-screenshot; yoksa sırayla diğer araçlar."""
+    if os.name == "nt":
+        return platform_win.ekran(hedef, kip)
+
     def hazir() -> bool:
         return hedef.exists() and hedef.stat().st_size > 0
 
@@ -663,6 +696,8 @@ def surec_calisiyor(pid: int | None) -> bool:
     """pid hâlâ bizim ses kaydedicimiz mi? (Bitmiş, zombi ya da başka bir süreçse hayır.)"""
     if not pid:
         return False
+    if os.name == "nt":
+        return platform_win.surec_calisiyor(pid)
     try:
         komut = Path(f"/proc/{pid}/cmdline").read_bytes()
     except OSError:
@@ -733,6 +768,12 @@ def mikrofon_birak(veri: dict) -> None:
 
 
 def kayit_baslat(dosya: Path, ayar: dict) -> int | None:
+    if os.name == "nt":
+        dosya.parent.mkdir(parents=True, exist_ok=True)
+        komut = [sys.executable, str(REPO_DIZINI / "platform_win.py"), "kaydet", str(dosya)]
+        surec = subprocess.Popen(komut, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
+        return surec.pid
     if ayar.get("mikrofon"):  # arecord'a düşülmez: varsayılan giriş monitör olabilir
         kaynak = kaynak_bul(ayar["mikrofon"])
         if not kaynak or not shutil.which("parecord"):
@@ -753,6 +794,15 @@ def kayit_baslat(dosya: Path, ayar: dict) -> int | None:
 
 def kayit_durdur(pid: int | None) -> None:
     if not surec_calisiyor(pid):
+        return
+    if os.name == "nt":
+        time.sleep(0.5)  # tampondaki son kelime kaybolmasın
+        Path(tempfile.gettempdir(), f"adimadim-kayit-{pid}.dur").write_text("dur", encoding="utf-8")
+        for _ in range(60):  # en çok 3 sn
+            if not surec_calisiyor(pid):
+                return
+            time.sleep(0.05)
+        platform_win.sonlandir(pid)
         return
     time.sleep(0.5)  # ses sunucusunun tamponundaki son kelime kaybolmasın
     with contextlib.suppress(OSError):
@@ -778,6 +828,8 @@ def zenity(*arglar: str, girdi: str = "") -> str | None:
 
 
 def not_iste(baslik: str, mevcut: str = "", vazgec: str = "Vazgeç") -> str | None:
+    if os.name == "nt":
+        return platform_win.metin_iste(baslik, mevcut=mevcut, coklu=True, tamam="Kaydet", vazgec=vazgec)
     return zenity("--text-info", "--editable", f"--title={baslik}", "--width=680", "--height=340",
                   "--ok-label=Kaydet", f"--cancel-label={vazgec}", girdi=mevcut)
 
@@ -1155,7 +1207,10 @@ def cmd_basla(args, ayar) -> int:
         return 1
     baslik = " ".join(args.baslik).strip()
     if not baslik:
-        baslik = (zenity("--entry", "--title=Yeni doküman", "--text=Akışın adı:", "--width=420") or "").strip()
+        if os.name == "nt":
+            baslik = (platform_win.metin_iste("Yeni doküman", coklu=False, tamam="Tamam") or "").strip()
+        else:
+            baslik = (zenity("--entry", "--title=Yeni doküman", "--text=Akışın adı:", "--width=420") or "").strip()
     if not baslik:
         bildir("Başlık girilmedi; iptal edildi.")
         return 1
@@ -1163,7 +1218,11 @@ def cmd_basla(args, ayar) -> int:
         if not (importlib.util.find_spec("openvino_genai") or importlib.util.find_spec("faster_whisper")):
             bildir("Sesli mod için konuşma tanıma kurulu değil. Repoda ./kur.sh çalıştır.")
             return 1
-        if not any(shutil.which(k) for k in KAYITCILAR):
+        if os.name == "nt":
+            if importlib.util.find_spec("sounddevice") is None:
+                bildir("Ses kaydedici için sounddevice kurulu değil.")
+                return 1
+        elif not any(shutil.which(k) for k in KAYITCILAR):
             bildir("Ses kaydedici bulunamadı: sudo apt install alsa-utils")
             return 1
     simdi = dt.datetime.now()
