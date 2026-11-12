@@ -1,0 +1,6 @@
+# Windows'a özel bağımlılıklar. Ortak bağımlılıklar requirements.txt'te durur.
+# kur.ps1 önce PyTorch'un CPU sürümünü, sonra bu dosyayı kurar.
+-r requirements.txt
+mss            # ekran görüntüsü
+sounddevice    # mikrofon kaydı
+pynput         # klavye kısayolları
