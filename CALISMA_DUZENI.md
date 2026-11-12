@@ -1,13 +1,14 @@
 # Çalışma düzeni: VM'de geliştir, ana makinede çalıştır
 
-Bu dosya iki makinenin ilk kurulumunu ve günlük akışı adım adım anlatır. Ana makinede Claude Code
-olmadığı için bu dosyayı orada GitHub'dan okuyup komutları kopyala-yapıştır ile çalıştırabilirsin.
-Claude Code'un kuralları CLAUDE.md'de, arka plan KARARLAR.md'de, iş planı YOL_HARITASI.md'dedir.
+Bu dosya iki makinenin ilk kurulumunu ve günlük akışı adım adım anlatır. Ana makine Windows'tur;
+orada Claude Code olmadığı için bu dosyayı GitHub'dan okuyup komutları kopyala-yapıştır ile
+çalıştırabilirsin. Claude Code'un kuralları CLAUDE.md'de, arka plan KARARLAR.md'de, iş planı
+YOL_HARITASI.md'dedir.
 
 ## Düzen
 
 ```
-  VM (Ubuntu 22.04)                                     Ana makine (Ubuntu 22.04)
+  VM (Ubuntu 22.04)                                     Ana makine (Windows 10/11)
   Claude Code geliştirir     ── git push ──► GitHub ── git pull ──►   sen çalıştırırsın
   uydurma test verisi, CPU                                      gerçek veri, Intel GPU/NPU
           ▲                                                                  │
@@ -15,25 +16,26 @@ Claude Code'un kuralları CLAUDE.md'de, arka plan KARARLAR.md'de, iş planı YOL
 ```
 
 İki makine yalnızca bu GitHub reposu üzerinden konuşur. VM'deki Claude Code ana makineyi göremez,
-ana makinede Claude Code yoktur.
+ana makinede Claude Code yoktur. WSL yalnızca geliştirme içindir; kullanımda yerel Windows Python
+3.10 çalışır.
 
 ### Temel kural
 
-> **Ana makinede yalnızca repodaki betikler çalışır.** Ana makinenin Ubuntu kurulumu her şeye hazır
-> değil. Bu yüzden VM'de terminalde yapılan her kurulum ya da ayar (apt, pip, model indirme,
-> kısayol, `~/.config` altındaki dosyalar) ya `kur.sh`'ye işlenir ya da, yalnızca bir kez
+> **Ana makinede yalnızca repodaki betikler çalışır.** Ana makinenin Windows kurulumu her şeye hazır
+> değil. Bu yüzden VM'de terminalde yapılan her kurulum ya da ayar (paket, pip, model indirme,
+> kısayol, `%APPDATA%\adimadim` altındaki dosyalar) ya `kur.ps1`'ye işlenir ya da, yalnızca bir kez
 > gerekiyorsa, CHANGELOG.md'deki **"Ana makinede yapılacaklar"** bölümüne kopyala-yapıştır komut
 > olarak yazılır. "VM'de çalışıyor" yetmez: ana makinede şu üç komutla aynı sonuç alınmalı:
 >
->     git pull && ./kur.sh && ./test.sh
+>     git pull; .\kur.ps1; .\test.ps1
 
 ### Hangi iş nerede
 
 | İş                                                        | VM (Claude Code)    | Ana makine (sen)                      |
 |-----------------------------------------------------------|---------------------|---------------------------------------|
-| Kod yazma, `./test.sh`                                    | evet                | her güncellemeden sonra `./test.sh`   |
-| `./kur.sh`                                                | evet                | her güncellemeden sonra               |
-| GPU / NPU ile çalıştırma ve ölçüm                         | yok (yalnızca CPU)  | evet, CHANGELOG'daki komutla          |
+| Kod yazma, `./test.sh`                                    | evet                | her güncellemeden sonra `.\test.ps1`  |
+| `./kur.sh`                                                | evet                | her güncellemeden sonra `.\kur.ps1`   |
+| GPU / NPU ile çalıştırma ve ölçüm                         | yok (yalnızca CPU)  | evet, `adimadim cevir` ile            |
 | Gerçek mikrofonla test kaydı                              | hayır               | evet (6. bölüm)                       |
 | Gerçek şirket ekranları, dokümanlar, `terimler.local.txt` | **asla**            | evet                                  |
 | `git push`                                                | evet, senin onayınla | yalnızca `testler/ses/` kayıtları    |
@@ -158,37 +160,38 @@ Claude Code'un bu turda yapacakları:
    yazılır ve commit'lenir; `denetle` kur.sh'ye işlenmemiş bir şey bırakmaz.
 5. Onayınla `git push`; istersen sürüm etiketi: `git tag v0.1.0 && git push origin v0.1.0`.
 
-Ardından YOL_HARITASI.md'deki "Başlarken" adımlarıyla devam eder (test kaydı ister, Windows
-desteğini sorar).
+Ardından YOL_HARITASI.md'deki "Başlarken" adımlarıyla devam eder (test kaydı ister; Windows kararı
+verildi, ana makine Windows).
 
-## 3. Ana makine: ilk kurulum (bir kez)
+## 3. Ana makine: ilk kurulum (Windows, bir kez)
 
-Ön koşul: 2. bölüm push'lanmış olmalı (GitHub'da `requirements.lock` görünmeli).
+Ön koşul: 2. bölüm push'lanmış olmalı (GitHub'da `requirements.lock` ve `kur.ps1` görünmeli).
 
 ### 3.1 Temel paketler
 
-```bash
-sudo apt-get update
-sudo apt-get install -y git openssh-client
+Windows 10/11, PowerShell 5.1+ ve Git for Windows yeterli. Python'u `kur.ps1` uv ile kurar; yönetici
+hakkı gerekmez.
+
+```powershell
+git --version
 ```
 
 ### 3.2 GitHub erişimi
 
-VM'dekiyle aynı blok; yalnızca anahtarın adı farklı. Bir kez çalıştır:
+VM'dekiyle aynı mantık; yalnızca anahtarın adı farklı. Bir kez çalıştır:
 
-```bash
-mkdir -p ~/.ssh && chmod 700 ~/.ssh
-ssh-keygen -t ed25519 -C "adimadim-ana-makine" -f ~/.ssh/adimadim_ed25519   # parola sorar; boş bırakabilirsin
-cat >> ~/.ssh/config <<'EOF'
+```powershell
+New-Item -ItemType Directory -Force $HOME\.ssh | Out-Null
+ssh-keygen -t ed25519 -C "adimadim-ana-makine" -f $HOME\.ssh\adimadim_ed25519   # parola sorar; boş bırakabilirsin
+Add-Content $HOME\.ssh\config @"
 
 Host github-adimadim
     HostName github.com
     User git
     IdentityFile ~/.ssh/adimadim_ed25519
     IdentitiesOnly yes
-EOF
-chmod 600 ~/.ssh/config
-cat ~/.ssh/adimadim_ed25519.pub
+"@
+Get-Content $HOME\.ssh\adimadim_ed25519.pub
 ```
 
 GitHub'da *Settings → Deploy keys → Add deploy key*: başlık `Ana makine`. **Allow write access**
@@ -196,71 +199,59 @@ kutusunu yalnızca test ses kayıtlarını bu makineden push'layacaksan işaretl
 İşaretlemezsen ana makine repoya hiçbir şey yazamaz; en güvenlisi budur.
 
 Repo public kalırsa anahtarsız da klonlayabilirsin:
-`git clone https://github.com/miracmenekse/adimadim.git ~/adimadim` (push için yine anahtar gerekir).
+`git clone https://github.com/miracmenekse/adimadim.git $HOME\adimadim` (push için yine anahtar gerekir).
 
 ### 3.3 Klonla
 
-```bash
-[ -e ~/adimadim ] && mv ~/adimadim ~/adimadim.eski-$(date +%Y%m%d)   # aynı adda eski bir klasör varsa kenara al
+```powershell
+cd $HOME
+if (Test-Path .\adimadim) { Rename-Item .\adimadim "adimadim.eski-$(Get-Date -Format yyyyMMdd)" }
 ssh -T github-adimadim      # ilk seferde "yes" yaz
-git clone github-adimadim:miracmenekse/adimadim.git ~/adimadim
-cd ~/adimadim
+git clone github-adimadim:miracmenekse/adimadim.git adimadim
+cd adimadim
 git config pull.ff only     # ana makinede birleştirme (merge) commit'i oluşmasın, yalnızca ileri sarılsın
-ls requirements.lock        # "No such file" derse dur: 2. bölüm henüz push'lanmamış
+Test-Path requirements.lock # False derse dur: 2. bölüm henüz push'lanmamış
 ```
 
 ### 3.4 Kur ve test et
 
-Masaüstündeki bir terminalde çalıştır (SSH ile bağlıyken klavye kısayolları tanımlanamaz):
-
-```bash
-./kur.sh      # apt-get için sudo şifreni sorar
-./test.sh     # sonunda "SONUÇ: testler geçti" görmelisin
-.ortam/ortam.sh kontrol   # "ORTAM: fark yok" görmelisin; yoksa EKSIK/FARKLI satırlarını Claude Code'a ver
+```powershell
+.\kur.ps1     # uv + Python 3.10, bağımlılıklar, model dönüşümü, masaüstü kısayolu, klavye kısayolları
+.\test.ps1    # sonunda "SONUÇ: testler geçti" görmelisin
 ```
 
-Bu makinede kur.sh şunları yapar (CHANGELOG, v0.1.0):
+`kur.ps1` tekrar çalıştırılabilir; kurulu olanı atlar, eksiği tamamlar. Şunları yapar:
 
-- Mevcut `~/modeller/whisper-medium-ov` modeli kullanılır, yeniden dönüştürülmez.
-- `~/.config/adimadim/ayar.json`'daki mevcut değerler korunur (ör. `"cihaz": "GPU"`); yalnızca eksik
+- Python 3.10'u uv ile `%LOCALAPPDATA%\adimadim\venv` ortamına kurar; yönetici hakkı istemez.
+- `%APPDATA%\adimadim\ayar.json` varsa mevcut değerler korunur (ör. `"cihaz": "GPU"`); yalnızca eksik
   anahtarlar eklenir.
-- Eski `~/.local/bin/adimadim` kopyası `adimadim.eski` olarak yedeklenir; artık repodaki araç çalışır.
-- Python paketleri ayrı bir ortama kurulur; daha önce `pip --user` ile kurulanlara dokunulmaz.
+- OpenVINO modeli hazırsa yeniden dönüştürmez; değilse `optimum-cli` ile bir kez dönüştürür.
+- Masaüstüne `adımadım.lnk` kısayolunu ve `adimadim.cmd` komutunu ekler; klavye kısayollarını tanımlar.
 
-Repoyu `~/adimadim`'de tut: `adimadim` komutu ve kısayollar repo yolunu içerir. Klasörü taşırsan
-`./kur.sh`'yi yeniden çalıştır.
+PowerShell betiği engellerse: `powershell -ExecutionPolicy Bypass -File .\kur.ps1`.
 
-### 3.5 GPU'da çalıştığını doğrula
+Repoyu `$HOME\adimadim`'de tut: `adimadim` komutu ve kısayollar repo yolunu içerir. Klasörü taşırsan
+`.\kur.ps1`'yi yeniden çalıştır.
 
-```bash
-arecord -f S16_LE -r 16000 -c 1 -d 5 /tmp/deneme.wav     # 5 saniye konuş
-adimadim cevir /tmp/deneme.wav
+### 3.5 GPU/NPU'da çalıştığını doğrula
+
+Kısa bir WAV dosyasını (16 kHz, tek kanal) `kayit.wav` olarak kaydet, sonra:
+
+```powershell
+adimadim cevir kayit.wav
 ```
 
-İlk satırda `(OpenVINO / GPU)` görmelisin, ardından söylediğin metin gelir.
+İlk satırda `(OpenVINO / GPU)` ya da `(OpenVINO / NPU)` görmelisin, ardından söylediğin metin gelir.
 `OpenVINO (GPU) kullanılamadı: …` yazarsa araç CPU'daki yedek motora düşmüştür; o satırı VM'deki
 Claude Code'a ver (5. bölüm).
 
-### 3.6 VM kısayolu (isteğe bağlı)
+### 3.6 Eski: Ubuntu ana makine (2026-11-11'e kadar)
 
-VM'i açan bir simgeyi Sık Kullanılanlar'a (dock) ekler ve VM'i hemen açar:
-
-```bash
-~/adimadim/beceriler/vm-ana-makine/ana-makine/vm-kisayol.sh
-```
-
-Birden çok VM varsa adlarını listeler; istediğinin adını tırnak içinde ekleyerek yeniden çalıştır.
-Sonra VM'i dock'taki "VM: …" simgesinden açarsın. Kaldırmak için aynı komutun sonuna `--kaldir`.
-
-VM'i virt-manager/VirtualBox yerine kendi betiğinle ya da doğrudan `qemu-system-x86_64` ile açıyorsan
-kısayola o komutu ver:
-
-```bash
-~/adimadim/beceriler/vm-ana-makine/ana-makine/vm-kisayol.sh --komut "RAM=12G CPU=6 ~/vm-is/vm.sh ac" "VM İş"
-```
-
-Simge terminal açmadan çalışır; VM açılamazsa (ör. zaten açıksa) bildirim gösterir, ayrıntı
-`~/.cache/vm-ac-<ad>.log`'dadır.
+Ubuntu 22.04 ana makine düzeni Windows'a geçilince bırakıldı. Kurulum `./kur.sh`, test `./test.sh`,
+güncelleme `git pull && ./kur.sh && ./test.sh`; GPU doğrulaması
+`arecord -f S16_LE -r 16000 -c 1 -d 5 /tmp/deneme.wav && adimadim cevir /tmp/deneme.wav`.
+Dock'taki **adımadım güncelle** düğmesi ve `vm-kisayol.sh` yalnız bu düzende vardı; ayrıntılar git
+geçmişinde.
 
 ## 4. Günlük akış
 
@@ -274,25 +265,25 @@ cd ~/adimadim && git pull && claude
 CHANGELOG'a "Ana makinede yapılacaklar"ı yazar; push ve sürüm etiketi için sana sorar
 (`.claude/settings.json` push ve etiketi her seferinde onaya bağlar).
 
-**Ana makine:** dock'taki **adımadım güncelle** düğmesine bas. Bir terminal açılır: GitHub'dan son
-hâli çeker, değişiklik varsa `./kur.sh` çalıştırır (adımadım açıksa önce kapatmanı bekler), sonra
-pencereyi açar. Hata olursa terminal açık kalır; o ekranı VM'deki Claude Code'a ilet (5. bölüm).
-Düğme ilk `./kur.sh`'de oluşur; ayarı `.ortam/guncelle`'de. Testler dahil tam kontrol için:
+**Ana makine (Windows):** PowerShell'de:
 
-```bash
-cd ~/adimadim && git pull && ./kur.sh && ./test.sh && .ortam/ortam.sh kontrol
+```powershell
+cd $HOME\adimadim
+git pull; .\kur.ps1; .\test.ps1
 ```
 
-Sonra CHANGELOG.md'nin en üstündeki sürümün "Ana makinede yapılacaklar" maddelerini sırayla uygula.
+`kur.ps1` değişiklik yoksa hızlı geçer; kurulu olanı atlar, eksiği tamamlar. Hata olursa çıktıyı
+VM'deki Claude Code'a ilet (5. bölüm). Sonra CHANGELOG.md'nin en üstündeki sürümün **"Ana makinede
+yapılacaklar"** maddelerini sırayla uygula.
 
-Önceki bir sürüme dönmek için: `git checkout v0.1.0 && ./kur.sh`.
-Yeniden en güncele geçmek için: `git checkout main && git pull && ./kur.sh`.
+Önceki bir sürüme dönmek için: `git checkout v0.1.0; .\kur.ps1`.
+Yeniden en güncele geçmek için: `git checkout main; git pull; .\kur.ps1`.
 
 ## 5. Ana makineden VM'e geri bildirim
 
 VM'deki Claude Code'a yalnızca senin getirdiğin metin ulaşır.
 
-- **Getir:** hata satırları, `./test.sh`'nin özet satırları, sürüm (`git log -1 --oneline`), cihaz satırı
+- **Getir:** hata satırları, `.\test.ps1`'nin özet satırları, sürüm (`git log -1 --oneline`), cihaz satırı
   (ör. `(OpenVINO / GPU)`).
 - **Getirme:** şirket ekranlarının görüntüsü, gerçek doküman ya da anlatım metni,
   `terimler.local.txt`'nin içeriği, müşteri bilgisi.
@@ -304,7 +295,7 @@ Ana makinede <çalıştırdığım komut> çalıştırdım. Sürüm: <git log -1
 Hata:
 <yalnızca hata satırları>
 Ortam:
-<.ortam/ortam.sh kontrol çıktısı>
+<Windows sürümü; PowerShell sürümü>
 ```
 
 Sanallaştırma yazılımında pano paylaşımı açıksa yönünü "ana makineden VM'e" ile sınırla
@@ -316,10 +307,11 @@ taşınmaz, VM'e de yalnızca bilerek yapıştırdığın metin gider.
 Önce repoyu private yap (0. bölüm) ve ana makinenin anahtarına yazma izni ver (3.2). Kayıt kuralları
 testler/README.md'de.
 
-```bash
-cd ~/adimadim && git pull
-arecord -f S16_LE -r 16000 -c 1 testler/ses/01.wav      # konuş, bitince Ctrl+C
-echo "Müşterinin fatura döngüsünü ayın on beşine çekiyoruz." > testler/ses/01.txt
+```powershell
+cd $HOME\adimadim
+git pull
+# Kaydı 16 kHz, tek kanal WAV olarak testler\ses\01.wav dosyasına al (herhangi bir kaydedici olur)
+"Müşterinin fatura döngüsünü ayın on beşine çekiyoruz." | Set-Content testler\ses\01.txt -Encoding UTF8
 # … 10-20 kayıt
 git status --short          # yalnızca testler/ses/ altındaki dosyalar görünmeli
 git add testler/ses/
@@ -334,12 +326,12 @@ Sonra VM'de `git pull`; Claude Code ölçümleri bu kayıtlarla yapar.
 Ana makinede:
 
 - Repodaki dosyaları elle düzenleme; değişiklik VM'den gelir. Makineye özel ayarların
-  `~/.config/adimadim/` altında durur ve repoya girmez.
-- Eksik bir şey için elle `apt install` / `pip install` yapma. Hatayı VM'deki Claude Code'a ver,
-  kur.sh'ye eklesin; böylece bir sonraki kurulumda da çalışır. Acil durumda elle bir şey kurduysan
-  Claude Code'a söyle.
+  `%APPDATA%\adimadim\` altında durur ve repoya girmez.
+- Eksik bir şey için elle `winget` / `pip install` yapma. Hatayı VM'deki Claude Code'a ver,
+  `kur.ps1`'ye eklesin; böylece bir sonraki kurulumda da çalışır. Acil durumda elle bir şey
+  kurduysan Claude Code'a söyle.
 - `git add .` ya da `git add -A` kullanma; yalnızca `git add testler/ses/`.
-- Şifresiz sudo tanımlama.
+- Yönetici haklarıyla kurulum yapma; `kur.ps1` buna gerek duymaz.
 
 VM'e:
 
@@ -351,11 +343,11 @@ VM'e:
 |---|---|
 | `Permission denied (publickey)` | Deploy key eklenmemiş ya da adres `github-adimadim` yerine `github.com` yazılmış. `ssh -T github-adimadim` ile dene. |
 | `connect to host github.com port 22: Connection timed out` (kurumsal ağ) | `~/.ssh/config`'teki `github-adimadim` bloğunda `HostName ssh.github.com` yaz ve altına `Port 443` ekle. |
-| `git pull`: `untracked working tree files would be overwritten … requirements.lock` | Kilit dosyası push'lanmadan kur.sh çalışmış: `rm requirements.lock && git pull && ./kur.sh` |
+| `git pull`: `untracked working tree files would be overwritten … requirements.lock` | Kilit dosyası push'lanmadan kur betiği çalışmış: `Remove-Item requirements.lock; git pull; .\kur.ps1` |
 | `git pull`: `Your local changes … would be overwritten` | Ana makinede bir repo dosyası değişmiş. `git status` ile bak; değişikliği atmak için `git restore <dosya>`. |
-| `git pull`: `Not possible to fast-forward` | Push'lanmamış bir commit var (ör. test kayıtları): `git pull --rebase && git push` |
-| `adimadim: command not found` | `source ~/.profile` ya da oturumu kapatıp aç. |
+| `git pull`: `Not possible to fast-forward` | Push'lanmamış bir commit var (ör. test kayıtları): `git pull --rebase; git push` |
+| `'adimadim' is not recognized` | Oturumu kapatıp aç ya da `$env:Path`'e `%USERPROFILE%\.local\bin` ekle. |
+| PowerShell betiği engelliyor | `powershell -ExecutionPolicy Bypass -File .\kur.ps1` ya da `.\test.ps1`. |
 | VM'de kur.sh `sudo` şifresi istiyor | 1.3'ü uygula. |
-| Ctrl+Alt+S / Ctrl+Alt+N çalışmıyor | Masaüstündeki terminalde `adimadim kisayol`. |
-| Repo klasörünü taşıdın | `./kur.sh`'yi yeniden çalıştır. |
-| VM takılıyor, donuyor (QEMU) | VM'de *Ayarlar → Hakkında → Grafik* `llvmpipe` diyorsa ekran hızlandırması yok: qemu komutunda `-device virtio-vga -display gtk` yerine `-device virtio-vga-gl -display gtk,gl=on` (VM kapalıyken). Doğru olunca `virgl` yazar. Sürerse VM belleğini artır. |
+| Ctrl+Alt+S / Ctrl+Alt+N çalışmıyor | `adimadim kisayol` komutunu çalıştır. |
+| Repo klasörünü taşıdın | `.\kur.ps1`'yi yeniden çalıştır. |

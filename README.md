@@ -38,7 +38,7 @@ chosen by measurement rather than guesswork.
 
 ## 🛠 Tech Stack
 
-* **Language:** Python 3.10 (single CLI entry point `adimadim.py`), Bash (`kur.sh`, `test.sh`)
+* **Language:** Python 3.10 (single CLI entry point `adimadim.py`), PowerShell (`kur.ps1`, `test.ps1`), Bash (`kur.sh`, `test.sh`)
 * **UI:** tkinter (always-on-top window), Pillow (image editor), zenity and libnotify (dialogs, notifications), GNOME custom shortcuts
 * **Speech / AI:** OpenAI Whisper medium converted with optimum-intel 2.2 and run by OpenVINO GenAI 2026.4; faster-whisper fallback; Silero VAD; Atlassian Rovo for formal wording (optional, outside the tool)
 * **Data:** files only: `oturum.json` per session, PNG screenshots, WAV recordings, Markdown and DOCX
@@ -70,7 +70,19 @@ the command line and the UI always behave the same.
 
 ## 🚀 Quick Start
 
-**Prerequisites:** Ubuntu 22.04 (GNOME), Python 3.10, git, sudo for `apt-get`. An Intel GPU/NPU is optional.
+**Windows 10/11 (main platform):** PowerShell 5.1+ and Git for Windows. The setup script installs
+Python 3.10 itself with uv; no administrator rights are needed. An Intel GPU/NPU is optional.
+
+```powershell
+git clone https://github.com/miracmenekse/adimadim.git
+cd adimadim
+.\kur.ps1     # uv + Python 3.10 venv, dependencies, Whisper → OpenVINO conversion, desktop shortcut, hotkeys
+.\test.ps1    # syntax, status and real speech-recognition check; last line: SONUÇ: testler geçti
+```
+
+If PowerShell blocks the script, run `powershell -ExecutionPolicy Bypass -File .\kur.ps1`.
+
+**Linux (Ubuntu 22.04 / GNOME — legacy host, development):** Python 3.10, git and sudo for `apt-get`.
 
 ```bash
 git clone https://github.com/miracmenekse/adimadim.git
@@ -79,10 +91,12 @@ cd adimadim
 ./test.sh    # end-to-end check; last line: SONUÇ: testler geçti
 ```
 
-No environment variables are needed. Settings live in `~/.config/adimadim/ayar.json`, created by
-`kur.sh` with the device detected automatically (all keys: [README.tr.md](README.tr.md#ayarlar)).
-`kur.sh` is idempotent and never overwrites existing values. To update: `git pull && ./kur.sh && ./test.sh`,
-or on the host the **adımadım güncelle** button that `kur.sh` adds to the dock (pull, reinstall if changed, open).
+No environment variables are needed. Settings live in `%APPDATA%\adimadim\ayar.json` on Windows and
+`~/.config/adimadim/ayar.json` on Linux, created by the setup script with the device detected
+automatically (all keys: [README.tr.md](README.tr.md#ayarlar)). Both scripts are idempotent and never
+overwrite existing values. To update on Windows: `git pull; .\kur.ps1; .\test.ps1`; on Linux:
+`git pull && ./kur.sh && ./test.sh`, or the **adımadım güncelle** dock button that `kur.sh` adds (pull,
+reinstall if changed, open).
 
 Bluetooth headset microphone: set `mikrofon` (part of the source name, e.g. `bluez_input`) and `mikrofon_profil` (e.g. `headset-head-unit-msbc`). During a voice session the headset switches to that microphone profile and back to its previous profile at the end; the system default input is never changed. Both empty keeps the old behaviour.
 
@@ -158,7 +172,7 @@ Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek sipari
 - [x] Commands run per workflow call from the command configuration table
 - [ ] Keyboard shortcut for finishing a session
 - [ ] Visible recording-duration indicator in voice mode
-- [ ] Windows support (under evaluation; screenshots, shortcuts and audio are Linux-specific today)
+- [x] Windows support (2026-11-11: native Windows Python, WSL only for development)
 
 Full plan and decisions: `YOL_HARITASI.md`, `KARARLAR.md` (Turkish).
 

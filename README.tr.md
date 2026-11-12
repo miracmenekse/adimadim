@@ -37,7 +37,7 @@ adım tahminle değil ölçümle seçilmiştir.
 
 ## 🛠 Teknolojik Altyapı
 
-* **Dil:** Python 3.10 (tek giriş noktası `adimadim.py`), Bash (`kur.sh`, `test.sh`)
+* **Dil:** Python 3.10 (tek giriş noktası `adimadim.py`), PowerShell (`kur.ps1`, `test.ps1`), Bash (`kur.sh`, `test.sh`)
 * **Arayüz:** tkinter (hep üstte pencere), Pillow (görsel düzenleyici), zenity ve libnotify (pencereler, bildirimler), GNOME kısayolları
 * **Konuşma / YZ:** OpenAI Whisper medium; optimum-intel 2.2 ile dönüştürülüp OpenVINO GenAI 2026.4 ile çalıştırılır; yedek faster-whisper; Silero VAD; resmi dil için Atlassian Rovo (isteğe bağlı, aracın dışında)
 * **Veri:** yalnızca dosyalar: oturum başına `oturum.json`, PNG görseller, WAV kayıtlar, Markdown ve DOCX
@@ -69,7 +69,19 @@ pencere her zaman aynı davranır.
 
 ## 🚀 Hızlı Başlangıç ve Kurulum
 
-**Gereksinimler:** Ubuntu 22.04 (GNOME), Python 3.10, git, `apt-get` için sudo. Intel GPU/NPU isteğe bağlı.
+**Windows 10/11 (ana makine):** PowerShell 5.1+ ve Git for Windows. Python 3.10'u kurulum betiği uv ile
+kendisi kurar; yönetici hakkı gerekmez. Intel GPU/NPU isteğe bağlı.
+
+```powershell
+git clone https://github.com/miracmenekse/adimadim.git
+cd adimadim
+.\kur.ps1     # uv + Python 3.10 ortamı, bağımlılıklar, Whisper → OpenVINO dönüşümü, masaüstü kısayolu, kısayollar
+.\test.ps1    # sözdizimi, durum ve gerçek konuşma tanıma kontrolü; son satır: SONUÇ: testler geçti
+```
+
+PowerShell betiği engellerse: `powershell -ExecutionPolicy Bypass -File .\kur.ps1`.
+
+**Linux (Ubuntu 22.04 / GNOME — eski ana makine, geliştirme):** Python 3.10, git ve `apt-get` için sudo.
 
 ```bash
 git clone https://github.com/miracmenekse/adimadim.git
@@ -78,14 +90,17 @@ cd adimadim
 ./test.sh    # uçtan uca kontrol; son satır: SONUÇ: testler geçti
 ```
 
-Ortam değişkeni gerekmez; ayarlar aşağıda. `kur.sh` tekrar çalıştırılabilir ve mevcut değerleri ezmez.
-Güncellemek için: `git pull && ./kur.sh && ./test.sh` ya da ana makinede `kur.sh`'nin dock'a eklediği
-**adımadım güncelle** düğmesi (çeker, değiştiyse kurar, pencereyi açar). İki makineli (VM'de geliştir, ana makinede
-kullan) düzenin kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
+Ortam değişkeni gerekmez; ayarlar aşağıda. Windows'ta `%APPDATA%\adimadim\ayar.json`, Linux'ta
+`~/.config/adimadim/ayar.json`; kurulum betiği cihazı kendisi algılar. Betikler tekrar çalıştırılabilir
+ve mevcut değerleri ezmez. Güncellemek için Windows'ta `git pull; .\kur.ps1; .\test.ps1`; Linux'ta
+`git pull && ./kur.sh && ./test.sh` ya da `kur.sh`'nin dock'a eklediği **adımadım güncelle** düğmesi
+(çeker, değiştiyse kurar, pencereyi açar). İki makineli (VM'de geliştir, ana makinede kullan) düzenin
+kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 ## Ayarlar
 
-`~/.config/adimadim/ayar.json` (kur.sh oluşturur, varsayılanlar `ayar.ornek.json`'da):
+`%APPDATA%\adimadim\ayar.json` (Windows; kur.ps1 oluşturur) ya da `~/.config/adimadim/ayar.json`
+(Linux; kur.sh oluşturur), varsayılanlar `ayar.ornek.json`'da:
 
 | Anahtar          | Anlamı                                                          |
 |------------------|-----------------------------------------------------------------|
@@ -185,7 +200,7 @@ Müşteri ekranında Order Summary sekmesine geçiyoruz ve iptal edilecek sipari
 - [x] Komut yapılandırma tablosundan her iş akışı çağrısında çalışan komutlar
 - [ ] Oturumu bitirmek için klavye kısayolu
 - [ ] Sesli modda kayıt süresini gösteren gösterge
-- [ ] Windows desteği (değerlendiriliyor; ekran çekme, kısayollar ve ses kaydı bugün Linux'a bağlı)
+- [x] Windows desteği (2026-11-11: yerel Windows Python, WSL yalnız geliştirme)
 
 Ayrıntılı plan ve kararlar: `YOL_HARITASI.md`, `KARARLAR.md`.
 

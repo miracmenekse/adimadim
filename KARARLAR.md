@@ -16,7 +16,7 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
    görüntüleri, ses ve metin makinede kalır. Claude Code bu yüzden şirket araçlarına bağlanmadı.
 2. **Claude yalnızca aracın kodunu ve uydurma test verisini görür.** Geliştirme izole bir VM'de,
    gerçek kullanım ana makinede yapılır; iki makine yalnızca bu GitHub reposu üzerinden konuşur.
-3. **Tekrarlanabilir kurulum.** VM'de ne yapıldıysa ana makinede `git pull && ./kur.sh && ./test.sh`
+3. **Tekrarlanabilir kurulum.** VM'de ne yapıldıysa ana makinede `git pull; .\kur.ps1; .\test.ps1`
    ile aynı sonuç alınmalı. Ana makinede Claude Code yok; komutları kullanıcı çalıştırır.
 
 ## Araç tasarımı (v0.1.0)
@@ -70,7 +70,9 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
 - Kayıt sırasında kulaklığın ses kalitesi düşer (görüşme profili). Bu bilinen bir ödünleşim.
 - 2026-10-15'teki BT kart çökmesinde görüşme modu şüpheliydi; kanıtlanmadı.
 
-## Ana makine hakkında bilinenler
+## Eski ana makine (Ubuntu 22.04) hakkında bilinenler
+
+2026-11-11'de ana makine Windows oldu; aşağıdakiler Ubuntu düzeninden kalan notlardır.
 
 - Ubuntu 22.04, GNOME, Python 3.10; Intel GPU ve NPU.
 - Kurumsal bir güvenlik ajanı çalışıyor. HWE çekirdeğine geçildikten sonra ajanın bu çekirdekte tam
@@ -86,17 +88,18 @@ açık kalan kararlar. Kurallar CLAUDE.md'de, iş planı YOL_HARITASI.md'dedir.
 - `ai-terminal` adlı yerel asistan OpenVINO ile GPU'da bir LLM çalıştırıyor; Faz 6'da yeniden
   kullanılabilir.
 
-## Açık kararlar
+## Windows desteği (karar: 2026-11-11)
 
-- **Windows desteği.** Kullanıcı aracı Windows kullanan birine vermeyi düşünüyor; karar verilmedi
-  (YOL_HARITASI.md, Başlarken).
-  - Taşınabilen: OpenVINO + Whisper ve doküman üretimi.
-  - Linux'a bağlı olan: gnome-screenshot, zenity, GNOME kısayolları, arecord, notify-send, fcntl,
-    /proc ve kur.sh/apt. Kod Windows'ta daha açılışta `import fcntl` satırında durur.
-  - Gerekenler: kısayolları kendisi dinleyen ve sesi kendi içinde kaydeden tek parça bir uygulama
-    (ör. mss, sounddevice, tkinter; Word için python-docx); Windows paketi (ör. PyInstaller + kurulum
-    sihirbazı); kurumsal engellere hazırlık (imzasız .exe'de SmartScreen uyarısı, IT onayı; kısayollar
-    tüm tuşları dinleyen klavye kancasıyla değil RegisterHotKey ile).
+- **Karar: evet.** Ana makine Windows 10/11. Araç yerel Windows Python 3.10 ortamında çalışır; WSL
+  yalnızca geliştirme içindir, kullanımda gerekmez.
+- Kurulum `.\kur.ps1`, test `.\test.ps1`; ikisi de tekrar çalıştırılabilir. Python 3.10'u uv kurar;
+  yönetici hakkı gerekmez.
+- Windows'ta ekran görüntüsü `mss`, mikrofon kaydı `sounddevice`, kısayollar `pynput` ile yapılır.
+  Linux yolu (`gnome-screenshot`, `arecord`, GNOME kısayolları, `kur.sh`/`test.sh`) korunur.
+- `fcntl`/`/proc` gibi Linux'a bağlı çağrılar `platform_win.py` ile ayrılır; Windows'ta bu yol
+  kullanılmaz.
+- Paketleme (imzasız .exe'de SmartScreen uyarısı, IT onayı) ayrı bir adımda ele alınır; bugünkü
+  kurulum git + PowerShell'dir.
 
 ## İş akışı gruplama ve komut kuralı (2026-10-30)
 

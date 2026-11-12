@@ -2,6 +2,26 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.10.0 — Windows ana makine (2026-11-11)
+
+- **Windows desteği:** araç Windows 10/11'de yerel Python 3.10 ile çalışır; WSL yalnızca geliştirme
+  içindir. Linux yolu (`kur.sh`/`test.sh`, `gnome-screenshot`, `arecord`, GNOME kısayolları) korunur.
+- **`kur.ps1`:** uv ile Python 3.10 ortamı, bağımlılıklar, OpenVINO modeli, masaüstü kısayolu ve
+  klavye kısayolları. Tekrar çalıştırılabilir; `%APPDATA%\adimadim\ayar.json` değerlerini ezmez.
+- **`test.ps1`:** sözdizimi, `durum` komutu ve gerçek konuşma tanıma kontrolü.
+- Windows'ta ekran görüntüsü `mss`, mikrofon kaydı `sounddevice`, kısayollar `pynput` ile yapılır.
+
+**Ana makinede yapılacaklar (Windows'ta ilk kurulum):**
+
+```powershell
+git clone https://github.com/miracmenekse/adimadim.git
+cd adimadim
+.\kur.ps1
+.\test.ps1
+```
+
+Ana makine hâlâ Ubuntu ise eski düzen geçerli: `git pull && ./kur.sh && ./test.sh`.
+
 ## v0.9.9 — kopyada API adları (2026-10-30)
 
 - **Anlatımı kopyala** her adımda `Çağrılan API: <yön> · <metot> · <uç nokta> · <durum>` satırlarını da verir; gövde ve sorgu dizesi girmez. Rovo yanıtındaki bu satırlar anlatıma yazılmaz.
