@@ -1531,6 +1531,18 @@ def gv_tirnakla(metin: str) -> str:
 
 
 def cmd_kisayol(args, ayar) -> int:
+    if os.name == "nt":
+        import kisayol_win
+        baslangic = (Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming")
+                     / "Microsoft/Windows/Start Menu/Programs/Startup")
+        baslangic.mkdir(parents=True, exist_ok=True)
+        pythonw = kisayol_win.pythonw()
+        betik = REPO_DIZINI / "kisayol_win.py"
+        (baslangic / "adimadim-kisayol.cmd").write_text(
+            f'@echo off\r\nstart "" "{pythonw}" "{betik}"\r\n', encoding="utf-8")
+        subprocess.Popen([pythonw, str(betik)], creationflags=kisayol_win.AYRIK, cwd=REPO_DIZINI)
+        bildir("Kısayollar hazır: Ctrl+Alt+S ekranı çeker, Ctrl+Alt+N son adımın notunu açar.")
+        return 0
     if not shutil.which("gsettings"):
         bildir("gsettings bulunamadı; kısayolları Ayarlar > Klavye > Özel Kısayollar'dan elle ekle.")
         return 1
