@@ -6,6 +6,8 @@ param([switch]$Kuru)
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $OutputEncoding = [System.Text.Encoding]::UTF8
+$env:PYTHONUTF8 = '1'          # Python çıktısı Türkçe karakterde cp1252'ye takılmasın
+$env:PYTHONIOENCODING = 'utf-8'
 $ErrorActionPreference = 'Stop'
 $Repo = $PSScriptRoot
 $Venv = Join-Path $env:LOCALAPPDATA 'adimadim\venv'
