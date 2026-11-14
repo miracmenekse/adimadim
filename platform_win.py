@@ -151,6 +151,14 @@ def metin_iste(baslik: str, mevcut: str = "", coklu: bool = True,
     else:
         kutu = tk.Entry(kok)
         kutu.insert(0, mevcut)
+    # Düğmeler önce ve altta yerleşir: yoksa metin kutusu tüm pencereyi kaplayıp onları dışarı iter.
+    dugmeler = tk.Frame(kok)
+    dugmeler.pack(side="bottom", fill="x", padx=8, pady=(0, 8))
+    tk.Label(dugmeler, text="Ctrl+Enter: kaydet · Esc: vazgeç" if coklu else "Enter: kaydet · Esc: vazgeç",
+             fg="#666").pack(side="left")
+    tk.Button(dugmeler, text=tamam, width=10, default="active",
+              command=lambda: al()).pack(side="right", padx=(4, 0))
+    tk.Button(dugmeler, text=vazgec, width=10, command=lambda: bitir(None)).pack(side="right", padx=4)
     kutu.pack(fill="both", expand=True, padx=8, pady=8)
     kutu.focus_set()
 
@@ -170,10 +178,6 @@ def metin_iste(baslik: str, mevcut: str = "", coklu: bool = True,
             return "break"
         return None
 
-    dugmeler = tk.Frame(kok)
-    dugmeler.pack(pady=(0, 8))
-    tk.Button(dugmeler, text=vazgec, command=lambda: bitir(None)).pack(side="left", padx=4)
-    tk.Button(dugmeler, text=tamam, command=al).pack(side="left", padx=4)
     kok.bind("<Key>", tus)
     kok.protocol("WM_DELETE_WINDOW", lambda: bitir(None))
     kok.mainloop()
