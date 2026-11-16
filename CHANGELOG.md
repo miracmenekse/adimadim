@@ -8,6 +8,11 @@ Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılaca
   `Microphone Array`); eşleşen cihaz 16 kHz açılamazsa ya da bulunamazsa varsayılan girişe düşülür. Önceden
   Windows'ta ayar yok sayılıyordu; dolu bir `mikrofon` ayarı da Linux'taki parecord denetimi yüzünden oturumu açtırmıyordu.
 - **Sayfayı aç:** bitiş ekranında `<Başlık>.html` yolculuk sayfasını tarayıcıda açan düğme.
+- **Sessizlik eşiği (`ses_esigi`, varsayılan 0.003):** VAD'nin konuşma saydığı ama ortalama genliği bu eşiğin
+  altında kalan bölüm çevrilmez. Kısık dizüstü mikrofonunda sessiz kayda Whisper "Başka bir video da görüşmek
+  üzere." uyduruyordu; artık boş. Ölçüm (ana makine, GPU): WER %41,9 ve terim isabeti 88/95, eşikli ve eşiksiz
+  aynı. Gerçek kayıtta konuşma RMS ~0,03, sessiz oda ~0,0006.
+- `testler/stt_olc.py` Windows'ta `PYTHONPATH` vermeden çalışıyor.
 - Ana makinede denendi: varsayılan mikrofonla kayıt alınıyor; `testler/ses/01.wav` GPU'da 5,2 sn'de çevrildi
   (tek hata: "faturalı" → "Fatrıola").
 

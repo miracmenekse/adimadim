@@ -21,5 +21,6 @@
   "hazirlayan": "",
   "durum_adlari": {},
   "mikrofon": "",
+  "ses_esigi": 0.003,
   "mikrofon_profil": ""
 }

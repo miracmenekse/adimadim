@@ -16,6 +16,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 SES = REPO / "testler" / "ses"
 
+sys.path.insert(0, str(REPO))  # Windows: adimadim.py platform_win'i içe aktarır
 _spec = importlib.util.spec_from_file_location("adimadim", REPO / "adimadim.py")
 adimadim = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(adimadim)

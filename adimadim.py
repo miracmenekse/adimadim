@@ -35,6 +35,7 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   api_gizle       istek/yanıt gövdesi ve sorguda adında bunlar geçen alanlar *** yazılır
   mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"; Windows'ta cihaz adı parçası,
                   ör. "Microphone Array"); boşsa sistem varsayılanı (arecord / Windows varsayılan girişi)
+  ses_esigi       konuşma sayılacak en düşük ortalama genlik (RMS, 0-1; varsayılan 0.003); altı sessizlik sayılır
   mikrofon_profil kulaklığın mikrofon profili (ör. "headset-head-unit-msbc"); yalnız sesli oturum boyunca
                   geçilir, bitince eski profile döner; boşsa profile dokunulmaz
   son_ekran_durumu son ekranın iş akışı durumu (ör. "orderSubmit"); bu duruma geçilirken ekran
@@ -1261,15 +1262,18 @@ def faster_whisper_cevirici(ayar: dict):
     return parcala
 
 
-def konusma_bolumleri(ses) -> list:
+def konusma_bolumleri(ses, esik: float = 0.003) -> list:
     """Silero VAD (faster-whisper ile gelir): konuşma bölümleri [(başlangıç, bitiş)] örnek olarak.
-    VAD yoksa sesin tamamı tek bölümdür."""
+    VAD yoksa sesin tamamı tek bölümdür. Ortalama genliği (RMS) `esik`in altındaki bölüm atılır:
+    VAD çok kısık oda gürültüsünü de konuşma sayabiliyor ve Whisper oraya cümle uyduruyor."""
     try:
         from faster_whisper.vad import VadOptions, get_speech_timestamps
     except ImportError:
         return [(0, len(ses))]
-    return [(b["start"], b["end"]) for b in
-            get_speech_timestamps(ses, VadOptions(min_silence_duration_ms=2000, speech_pad_ms=400))]
+    import numpy as np
+    bolumler = [(b["start"], b["end"]) for b in
+                get_speech_timestamps(ses, VadOptions(min_silence_duration_ms=2000, speech_pad_ms=400))]
+    return [(b, e) for b, e in bolumler if e > b and float(np.sqrt(np.mean(np.square(ses[b:e])))) >= esik]
 
 
 def openvino_cevirici(ayar: dict, cihaz: str):
@@ -1290,7 +1294,7 @@ def openvino_cevirici(ayar: dict, cihaz: str):
     def parcala(ses) -> list:
         if ses.size == 0 or float(np.abs(ses).max()) < 0.01:  # sessiz kayıtta model uydurmasın
             return []
-        bolumler = konusma_bolumleri(ses)
+        bolumler = konusma_bolumleri(ses, float(ayar.get("ses_esigi", 0.003)))
         if not bolumler:  # gürültü var, konuşma yok: Whisper "Altyazı M.K." gibi metin uydurur
             return []
         kisa = np.concatenate([ses[b:e] for b, e in bolumler])

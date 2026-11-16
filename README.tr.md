@@ -118,6 +118,7 @@ kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
 | `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
 | `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`; Windows'ta giriş cihazı adının parçası, ör. `FreeBuds`, `Microphone Array`); boşsa ya da eşleşmezse sistem varsayılanı |
+| `ses_esigi`      | konuşma sayılacak en düşük ortalama genlik (RMS, 0–1, varsayılan `0.003`); altındaki bölüm sessizlik sayılır ve çevrilmez. Kısık mikrofonda konuşma kayboluyorsa düşür |
 | `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; boşsa profile dokunulmaz |
 | `api_haric`      | URL'sinde bu parçalardan biri geçen çağrılar (ortam dosyası, feature flag…) dokümana girmez |
 | `durum_adlari`   | iş akışı durum kodu → iş dilinde aşama adı (ör. `{"paymentBilling": "Ödeme ve Fatura"}`); boşsa kod yazılır |
