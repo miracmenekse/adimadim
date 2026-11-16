@@ -74,6 +74,11 @@ def kucult(yol: Path, genislik: int) -> tk.PhotoImage | None:
 
 YAZI_TIPI = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # fonts-dejavu-core (kur.sh)
 KIRMIZI = "#e53935"
+RENKLER = {"Kırmızı": "#e53935", "Sarı": "#fdd835", "Yeşil": "#43a047"}
+
+
+def kontur_rengi(renk) -> str:
+    return "#000000" if renk == "#fdd835" else "#ffffff"
 
 
 def isaretleri_uygula(yol: Path, isaretler: list) -> None:
@@ -92,19 +97,40 @@ def isaretleri_uygula(yol: Path, isaretler: list) -> None:
     except OSError:
         yazi_tipi = ImageFont.load_default()
     kirp = None
-    for tur, k, metin in isaretler:
+    for item in isaretler:
+        if len(item) >= 5:
+            tur, k, metin, renk = item[0], item[1], item[2], item[3]
+        elif len(item) == 4:
+            if isinstance(item[3], (list, tuple)):
+                tur, k, metin, renk = item[0], item[1], item[2], KIRMIZI
+            else:
+                tur, k, metin, renk = item
+        else:
+            tur, k, metin = item[0], item[1], item[2]
+            renk = KIRMIZI
+        if renk is None:
+            renk = KIRMIZI
         if tur == "kirp":
             kirp = (min(k[0], k[2]), min(k[1], k[3]), max(k[0], k[2]), max(k[1], k[3]))
         elif tur == "kutu":
+            kontur = kontur_rengi(renk)
+            ciz.rectangle((min(k[0], k[2]) - 2, min(k[1], k[3]) - 2, max(k[0], k[2]) + 2, max(k[1], k[3]) + 2),
+                          outline=kontur, width=kalin + 4)
             ciz.rectangle((min(k[0], k[2]), min(k[1], k[3]), max(k[0], k[2]), max(k[1], k[3])),
-                          outline=KIRMIZI, width=kalin)
+                          outline=renk, width=kalin)
         elif tur == "ok":
-            ciz.line(k, fill=KIRMIZI, width=kalin)
+            kontur = kontur_rengi(renk)
             aci, boy = math.atan2(k[3] - k[1], k[2] - k[0]), kalin * 6
+            ciz.line(k, fill=kontur, width=kalin + 4)
+            boy2 = boy + 4
+            ciz.polygon([(k[2], k[3])] + [(k[2] - boy2 * math.cos(aci + d), k[3] - boy2 * math.sin(aci + d))
+                                           for d in (0.45, -0.45)], fill=kontur)
+            ciz.line(k, fill=renk, width=kalin)
             ciz.polygon([(k[2], k[3])] + [(k[2] - boy * math.cos(aci + d), k[3] - boy * math.sin(aci + d))
-                                           for d in (0.45, -0.45)], fill=KIRMIZI)
+                                           for d in (0.45, -0.45)], fill=renk)
         elif tur == "yazi":
-            ciz.text((k[0], k[1]), metin, fill=KIRMIZI, font=yazi_tipi, stroke_width=2, stroke_fill="white")
+            kontur = kontur_rengi(renk)
+            ciz.text((k[0], k[1]), metin, fill=renk, font=yazi_tipi, stroke_width=2, stroke_fill=kontur)
     if kirp and kirp[2] - kirp[0] > 5 and kirp[3] - kirp[1] > 5:
         resim = resim.crop(kirp)
     resim.save(yol)
@@ -113,10 +139,14 @@ def isaretleri_uygula(yol: Path, isaretler: list) -> None:
 class Duzenleyici(tk.Toplevel):
     """Görseli kırpma ve işaretleme penceresi (kutu, ok, yazı). Kaydet görseli yerinde değiştirir."""
 
+    son_renk = KIRMIZI
+
     def __init__(self, ust, yol: Path, arac: str = "kutu", bitince=None):
         from PIL import Image, ImageTk
         super().__init__(ust)
         self.yol, self.bitince, self.isaretler, self.cizim = yol, bitince, [], None
+        self.renk = tk.StringVar(value=Duzenleyici.son_renk)
+        self.renk.trace_add("write", lambda *_: setattr(Duzenleyici, "son_renk", self.renk.get()))
         self.title(f"Kırp / işaretle: {yol.name}")
         self.attributes("-topmost", True)
         resim = Image.open(yol)
@@ -128,10 +158,15 @@ class Duzenleyici(tk.Toplevel):
         self.arac = tk.StringVar(value=arac)
         for metin, deger in (("Kırp", "kirp"), ("Kutu", "kutu"), ("Ok", "ok"), ("Yazı", "yazi")):
             ttk.Radiobutton(ust_cubuk, text=metin, variable=self.arac, value=deger).pack(side="left", padx=4)
+        ttk.Label(ust_cubuk, text="Renk:").pack(side="left", padx=4)
+        for hex in RENKLER.values():
+            tk.Radiobutton(ust_cubuk, variable=self.renk, value=hex, indicatoron=0, width=2, bg=hex,
+                           activebackground=hex, selectcolor=hex, relief="raised", offrelief="flat").pack(side="left", padx=2)
         ttk.Button(ust_cubuk, text="Kaydet", command=self.kaydet).pack(side="right", padx=2)
         ttk.Button(ust_cubuk, text="Vazgeç", command=self.destroy).pack(side="right", padx=2)
         ttk.Button(ust_cubuk, text="Geri al", command=self.geri_al).pack(side="right", padx=2)
         ttk.Label(self, text="Kırp/Kutu/Ok: sürükle · Yazı: tıkla, yazını gir · Kaydet'e basınca görsel değişir "
+                             "· Renk: kutuya tıkla, sonraki işarete uygulanır "
                              "(orijinali gorseller/.orijinal/ altında saklanır)", foreground="#666").pack(anchor="w", padx=6)
         self.tuval = tk.Canvas(self, width=self.foto.width(), height=self.foto.height(), cursor="crosshair",
                                highlightthickness=0)
@@ -149,30 +184,31 @@ class Duzenleyici(tk.Toplevel):
 
     def bas(self, olay) -> None:
         tur = self.arac.get()
+        renk = None if tur == "kirp" else self.renk.get()
         if tur == "yazi":
             metin = simpledialog.askstring("Yazı", "Görsele yazılacak metin:", parent=self)
             if metin:
-                oge = self.tuval.create_text(olay.x, olay.y, text=metin, anchor="nw", fill=KIRMIZI,
+                oge = self.tuval.create_text(olay.x, olay.y, text=metin, anchor="nw", fill=self.renk.get(),
                                              font=("", 14, "bold"))
-                self.isaretler.append(("yazi", self.gercek(olay.x, olay.y), metin, [oge]))
+                self.isaretler.append(("yazi", self.gercek(olay.x, olay.y), metin, self.renk.get(), [oge]))
             return
         if tur == "ok":
-            oge = self.tuval.create_line(olay.x, olay.y, olay.x, olay.y, fill=KIRMIZI, width=3, arrow="last")
+            oge = self.tuval.create_line(olay.x, olay.y, olay.x, olay.y, fill=self.renk.get(), width=3, arrow="last")
         else:
             oge = self.tuval.create_rectangle(olay.x, olay.y, olay.x, olay.y, width=2 if tur == "kirp" else 3,
-                                              outline="#1e88e5" if tur == "kirp" else KIRMIZI,
+                                              outline="#1e88e5" if tur == "kirp" else self.renk.get(),
                                               dash=(6, 4) if tur == "kirp" else None)
-        self.cizim = (tur, olay.x, olay.y, oge)
+        self.cizim = (tur, olay.x, olay.y, oge, renk)
 
     def surukle(self, olay) -> None:
         if self.cizim:
-            _, x, y, oge = self.cizim
+            _, x, y, oge, _ = self.cizim
             self.tuval.coords(oge, x, y, olay.x, olay.y)
 
     def birak(self, olay) -> None:
         if not self.cizim:
             return
-        tur, x, y, oge = self.cizim
+        tur, x, y, oge, renk = self.cizim
         self.cizim = None
         if abs(olay.x - x) < 5 and abs(olay.y - y) < 5:  # tıklama, çizim değil
             self.tuval.delete(oge)
@@ -180,16 +216,16 @@ class Duzenleyici(tk.Toplevel):
         if tur == "kirp":  # tek kırpma alanı: öncekini kaldır
             for eski in [i for i in self.isaretler if i[0] == "kirp"]:
                 self.isaretler.remove(eski)
-                self.tuval.delete(*eski[3])
-        self.isaretler.append((tur, self.gercek(x, y, olay.x, olay.y), "", [oge]))
+                self.tuval.delete(*eski[-1])
+        self.isaretler.append((tur, self.gercek(x, y, olay.x, olay.y), "", renk, [oge]))
 
     def geri_al(self) -> None:
         if self.isaretler:
-            self.tuval.delete(*self.isaretler.pop()[3])
+            self.tuval.delete(*self.isaretler.pop()[-1])
 
     def kaydet(self) -> None:
         if self.isaretler:
-            isaretleri_uygula(self.yol, [i[:3] for i in self.isaretler])
+            isaretleri_uygula(self.yol, [i[:4] for i in self.isaretler])
         self.destroy()
         if self.bitince:
             self.bitince()
