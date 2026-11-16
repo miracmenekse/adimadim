@@ -358,6 +358,20 @@ def markdown(veri: dict) -> str:
             satirlar += [f"| {no} | `{c['uc']}` | {c['durum']} | {hata_mesaji(c['yanit']).replace('|', '/')} | … |"
                          for no, c in hatalar]
             satirlar.append("")
+        acik = []  # anlatımdaki [?] cümleleri: Açık konular tablosu
+        for no, adim in enumerate(adimlar, 1):
+            metin = (adim.get("metin") or "").strip() or " ".join(
+                m.strip() for m in (adim.get("ses_metni"), adim.get("not")) if m and m.strip())
+            for cumle in re.findall(r"[^.!?\n]*\[\?\][^.!?\n]*[.!?]?", metin):
+                konu = re.sub(r"\s+", " ", cumle.replace("[?]", "")).strip(" .")
+                if konu:
+                    acik.append((no, konu))
+        if acik:
+            satirlar += ["## Açık konular", "", "| No | Konu | Adım | Sorumlu rol | Hedef tarih | Durum |",
+                         "|---|---|---|---|---|---|"]
+            satirlar += [f"| AK-{i:02d} | {konu.replace('|', '/')} | {no} | … | … | Açık |"
+                         for i, (no, konu) in enumerate(acik, 1)]
+            satirlar.append("")
         apili = [(no, adim) for no, adim in enumerate(adimlar, 1) if adim.get("api")]
         if apili:
             satirlar += ["## Ek A — API çağrıları", ""]
@@ -665,6 +679,21 @@ def api_satirlari(md_metni: str) -> dict[int, list[str]]:
                 apis.setdefault(no, []).append(
                     f"Çağrılan API: {hucre[0]} · {hucre[1]} · {uc} · {hucre[3]}")
     return apis
+
+
+def kalite_uyarilari(md_metni: str) -> list[str]:
+    """Rovo'ya vermeden önce: anlatımı boş adımlar, 4 kelimeden kısa anlatımlar, [?] sayısı."""
+    anlatim = anlatim_ayikla(md_metni)
+    bos = [n for n, m in sorted(anlatim.items()) if not m.strip()]
+    kisa = [n for n, m in sorted(anlatim.items()) if m.strip() and len(m.split()) < 4]
+    uyari = []
+    if bos:
+        uyari.append(f"Adım {', '.join(map(str, bos))}: anlatım yok")
+    if kisa:
+        uyari.append(f"Adım {', '.join(map(str, kisa))}: anlatım çok kısa")
+    if soru := sum(m.count("[?]") for m in anlatim.values()):
+        uyari.append(f"{soru} yerde [?] var")
+    return uyari
 
 
 def anlatim_kopyasi(md_metni: str) -> str:

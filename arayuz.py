@@ -351,8 +351,11 @@ class Pencere:
         md = a.md_bul(self.bitmis) if self.bitmis else None
         if md:
             self.kok.clipboard_clear()
-            self.kok.clipboard_append(a.anlatim_kopyasi(md.read_text(encoding="utf-8")))
+            metin = md.read_text(encoding="utf-8")
+            self.kok.clipboard_append(a.anlatim_kopyasi(metin))
             self.mesaj = "Kopyalandı: görseller ve API gövdeleri yok, yalnız anlatım. Rovo'ya yapıştır, çıktısını aşağıdaki alana yapıştır."
+            if uyari := a.kalite_uyarilari(metin):  # kopya yine yapılır; eksikler önceden görülsün
+                self.mesaj = "Dikkat: " + "; ".join(uyari) + ". " + self.mesaj
 
     def gorselleri_kopyala(self) -> None:
         """Adım görsellerini 5'li gruplar hâlinde panoya kopyalar (Confluence'a yapıştırılacak).
