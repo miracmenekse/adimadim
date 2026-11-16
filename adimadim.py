@@ -1393,8 +1393,8 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
         url = urlsplit(istek["url"])
         uc = gizle_yol(gizle_metin(url.path + (f"?{url.query}" if url.query else ""), kalip)).replace("|", "%7C")
         istek_metni = gonderilen.get("text") or ""
-        if (sira, metot, uc) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır + adet
-            gorulen[(sira, metot, uc)]["adet"] += 1
+        if (sira, metot, uc, istek_metni) in gorulen:  # aynı ekranda birebir tekrarlanan çağrı tek satır + adet
+            gorulen[(sira, metot, uc, istek_metni)]["adet"] += 1
             continue
         yanit_metni = icerik.get("text") or ""
         if icerik.get("encoding") == "base64":
@@ -1403,7 +1403,7 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
             "yon": "Butonla giden" if yazan else "Ekrana gelen", "metot": metot, "uc": uc,
             "durum": yanit["status"], "istek": govde(istek_metni, kalip),
             "yanit": govde(yanit_metni, kalip), "akis": is_akisi(istek_metni, yanit_metni), "adet": 1}
-        gorulen[(sira, metot, uc)] = kayit
+        gorulen[(sira, metot, uc, istek_metni)] = kayit
         adimlar[sira]["api"].append(kayit)
         sayi += 1
     return sayi
