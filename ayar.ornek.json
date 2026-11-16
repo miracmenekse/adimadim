@@ -17,6 +17,8 @@
     "customerOrder/initialize": ["orderInitialize", "cartSummary"],
     "customerOrder/submit": ["orderSubmit", "asyncOrderSubmit"]
   },
+  "kilavuz_bicimi": false,
+  "hazirlayan": "",
   "durum_adlari": {},
   "mikrofon": "",
   "mikrofon_profil": ""
