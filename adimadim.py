@@ -1870,6 +1870,9 @@ def cmd_kisayol(args, ayar) -> int:
 # --------------------------------------------------------------- giriş
 
 def main(argv: list[str] | None = None) -> int:
+    for akim in (sys.stdout, sys.stderr):  # arayüz çıktıyı dosyaya yönlendirince Windows cp1252'ye düşer; "ı" çöker
+        with contextlib.suppress(Exception):
+            akim.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(prog="adimadim",
                                  description="Ekrandan ekrana gezerek kullanım senaryosu / doküman çıkarır.")
     alt = ap.add_subparsers(dest="komut", required=True, metavar="komut")
