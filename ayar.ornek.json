@@ -16,6 +16,7 @@
     "customerOrder/initialize": ["orderInitialize", "cartSummary"],
     "customerOrder/submit": ["orderSubmit", "asyncOrderSubmit"]
   },
+  "durum_adlari": {},
   "mikrofon": "",
   "mikrofon_profil": ""
 }

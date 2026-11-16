@@ -53,6 +53,7 @@ import base64
 import bisect
 import contextlib
 import datetime as dt
+import html
 import importlib.util
 import json
 import os
@@ -296,6 +297,20 @@ def markdown(veri: dict) -> str:
     # son ekrandan sonra arka planda çalışmaya başlayan işler (CSV satır sırası = akış sırası)
     tablo = veri.get("komutlar") or []
     onlu = ["pre", "ic", "post"]  # ASAMA etiketlerinin görünme sırası: pre, during, post
+    arka = arka_durumlar(tablo, ayar)
+    if arka:
+        satirlar += ["## Arka planda çalışan durumlar", ""]
+        for d in arka:
+            satirlar += [f"### {d}", "", "| Ne zaman | Sıra | Komut |", "|---|---|---|"]
+            secili = sorted((k for k in tablo if k["durum"] == d),
+                            key=lambda k: (onlu.index(k["asama"]), k["sira"]))
+            satirlar += [f"| {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in secili]
+            satirlar.append("")
+    return "\n".join(satirlar)
+
+
+def arka_durumlar(tablo: list, ayar: dict) -> list[str]:
+    """Ekran sınırının tablodaki son satırından sonra ilk görülen durumlar (arka planda çalışanlar)."""
     sinir = ayar.get("son_ekran_durumu") or ""
     sinir_son = -1
     for i, k in enumerate(tablo):
@@ -307,15 +322,7 @@ def markdown(veri: dict) -> str:
             d = k["durum"]
             if i > sinir_son and d not in arka and not any(c["durum"] == d for c in tablo[:sinir_son + 1]):
                 arka.append(d)
-    if arka:
-        satirlar += ["## Arka planda çalışan durumlar", ""]
-        for d in arka:
-            satirlar += [f"### {d}", "", "| Ne zaman | Sıra | Komut |", "|---|---|---|"]
-            secili = sorted((k for k in tablo if k["durum"] == d),
-                            key=lambda k: (onlu.index(k["asama"]), k["sira"]))
-            satirlar += [f"| {ASAMA[k['asama']]} | {k['sira']} | {k['komut']} |" for k in secili]
-            satirlar.append("")
-    return "\n".join(satirlar)
+    return arka
 
 
 def son_dokumanlar(ayar: dict, adet: int = 10) -> list[Path]:
@@ -625,11 +632,167 @@ def anlatim_kopyasi(md_metni: str) -> str:
     return metin + "\n"
 
 
+
+HTML_CSS = """
+:root{--zemin:#f6f7f9;--kart:#fff;--kenar:#e3e5ea;--yazi:#1d2129;--soluk:#6b7280;--vurgu:#4338ca;--etiket:#e0e7ff;--etiket-yazi:#3730a3}
+@media (prefers-color-scheme:dark){:root{--zemin:#14161a;--kart:#1c1f25;--kenar:#2c3038;--yazi:#e6e8ec;--soluk:#9aa1ad;--vurgu:#a5b4fc;--etiket:#2a2f4a;--etiket-yazi:#c7d2fe}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--zemin);color:var(--yazi);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:900px;margin:0 auto;padding:40px 16px 64px}
+.ust-etiket,.bolum-etiket{color:var(--vurgu);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:34px;margin:6px 0 10px}
+.ozet{color:var(--soluk);max-width:640px;margin:0 0 12px}
+.etiket{display:inline-block;background:var(--etiket);color:var(--etiket-yazi);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600;margin-right:6px}
+.bolum{margin-top:40px}
+.bolum h2{font-size:22px;margin:4px 0 16px;padding-bottom:10px;border-bottom:2px solid var(--yazi)}
+.kart{display:flex;gap:20px;background:var(--kart);border:1px solid var(--kenar);border-radius:12px;padding:20px;margin-bottom:16px;break-inside:avoid}
+.faz{flex:0 0 56px;text-align:center}
+.faz small{display:block;font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--soluk)}
+.faz b{display:block;font-size:30px;line-height:1.1;color:var(--vurgu)}
+.icerik{flex:1;min-width:0}
+.icerik h3{margin:0 0 6px;font-size:18px}
+ol.adimlar{list-style:none;margin:14px 0 0;padding:0}
+ol.adimlar>li{display:flex;gap:12px;padding:14px 0;border-top:1px solid var(--kenar)}
+.no{flex:0 0 22px;color:var(--soluk);font-size:13px;padding-top:2px}
+.govde{flex:1;min-width:0}
+.govde img{display:block;width:100%;height:auto;border:1px solid var(--kenar);border-radius:8px}
+.govde p{margin:10px 0 0}
+.adim-no{color:var(--soluk);font-size:12px}
+.bos{color:var(--soluk);font-style:italic}
+details{margin-top:10px;font-size:14px}
+summary{cursor:pointer;color:var(--soluk)}
+table{border-collapse:collapse;width:100%;margin:8px 0;font-size:13px}
+th,td{border:1px solid var(--kenar);padding:4px 6px;text-align:left;vertical-align:top;word-break:break-word}
+code{font-size:12px}
+@media print{body{background:#fff}.kart{border-color:#ccc}details>*{display:block}}
+"""
+
+
+def _html_metin(metin: str) -> str:
+    """Anlatım → güvenli HTML paragrafları; **x** → <strong>x</strong>, satır sonu <br>."""
+    parcalar = []
+    for p in re.split(r"\n\s*\n", metin.strip()):
+        e = html.escape(p.strip())
+        e = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", e)
+        parcalar.append(f"<p>{e.replace(chr(10), '<br>')}</p>")
+    return "".join(parcalar)
+
+
+def html_uret(oturum: Path) -> Path | None:
+    """Tek dosyalık HTML yolculuk sayfası (.md'nin yanında): aşama kartları, adımda görsel, altında
+    anlatım ve kapalı 'Diğer bilgiler' (API ve komut tabloları). Dış kaynak ve JS yoktur."""
+    md = md_bul(oturum)
+    if md is None:
+        return None
+    veri = yukle(oturum)
+    md_metni = md.read_text(encoding="utf-8")
+    anlatimlar = anlatim_ayikla(md_metni)
+    ust = dict(veri.get("ust") or {})
+    for satir in md_metni.splitlines():
+        if satir.startswith("## "):
+            break
+        m = re.fullmatch(r"- \*\*(Amaç|Aktör):\*\*\s*(.*)", satir.strip())
+        if m and m.group(2).strip() not in ("", "…"):
+            ust[m.group(1)] = m.group(2).strip()
+    ayar = ayarlari_oku()
+    adlar = ayar.get("durum_adlari") or {}
+    esc = html.escape
+    adimlar = veri["adimlar"]
+
+    def tablo(baslik: list, satirlar: list) -> str:
+        bas = "".join(f"<th>{esc(b)}</th>" for b in baslik)
+        govde_ = "".join("<tr>" + "".join(f"<td>{h}</td>" for h in s) + "</tr>" for s in satirlar)
+        return f"<table><tr>{bas}</tr>{govde_}</table>"
+
+    def adim_html(sira: int, no: int, adim: dict) -> str:
+        metin = anlatimlar.get(no) or (adim.get("metin") or "").strip() or "\n\n".join(
+            m.strip() for m in (adim.get("ses_metni"), adim.get("not")) if m and m.strip())
+        yol = esc(adim["gorsel"], quote=True)
+        parca = [f'<a href="{yol}" target="_blank"><img src="{yol}" alt="Adım {no}" loading="lazy"></a>',
+                 _html_metin(metin) if metin else '<p class="bos">Açıklama eklenmedi.</p>']
+        diger = []
+        if adim.get("api"):
+            diger.append("<b>API çağrıları</b>" + tablo(["Yön", "Metot", "Uç nokta", "Durum"], [
+                [esc(c["yon"]), esc(c["metot"]), f"<code>{esc(c['uc'])}</code>", esc(str(c["durum"]))]
+                for c in adim["api"]]))
+        if veri.get("komutlar"):
+            for c in adim.get("api") or []:
+                akis = cagri_akisi(c, ayar)
+                if not akis:
+                    continue
+                gecis = (f"{akis['mevcut']} → {akis['sonraki'] or '?'}" if akis["degisim"]
+                         else f"{akis['mevcut']} (durum değişmedi)")
+                komutlar = calisan_komutlar(veri["komutlar"], akis)
+                diger.append(f"<b>Çalışan komutlar</b> · {esc(gecis)}" + (tablo(
+                    ["Ne zaman", "Sıra", "Komut"],
+                    [[esc(ASAMA[k["asama"]]), esc(str(k["sira"])), esc(k["komut"])] for k in komutlar])
+                    if komutlar else "<p class='bos'>Komut tablosunda kayıt yok.</p>"))
+        if diger:
+            parca.append("<details><summary>Diğer bilgiler</summary>" + "".join(diger) + "</details>")
+        return (f'<li><span class="no">{sira}</span><div class="govde"><span class="adim-no">Adım {no}</span>'
+                + "".join(parca) + "</div></li>")
+
+    def kart(numara: int, baslik: str, kod: str, icerik: str) -> str:
+        etiket = f' <span class="etiket">{esc(kod)}</span>' if kod and kod != baslik else ""
+        return (f'<section class="kart"><div class="faz"><small>AŞAMA</small><b>{numara}</b></div>'
+                f'<div class="icerik"><h3>{esc(baslik)}</h3>{etiket}{icerik}</div></section>')
+
+    gruplar = []  # (başlık, kod, [adım no])
+    durums = adim_durumlari(adimlar, ayar) if any(a.get("api") for a in adimlar) else []
+    if any(durums):
+        i = 0
+        while i < len(adimlar):
+            j = i
+            while j < len(adimlar) and durums[j] == durums[i]:
+                j += 1
+            d = durums[i]
+            gruplar.append((adlar.get(d) or d if d else "Başlangıç", d or "", list(range(i + 1, j + 1))))
+            i = j
+    else:
+        gruplar.append(("Ana akış", "", list(range(1, len(adimlar) + 1))))
+
+    govde_ = ['<main><div class="ust-etiket">UÇTAN UCA SENARYO</div>',
+              f"<h1>{esc(veri['baslik'])}</h1>"]
+    if ust.get("Amaç"):
+        govde_.append(f'<p class="ozet">{esc(ust["Amaç"])}</p>')
+    if ust.get("Aktör"):
+        govde_.append(f'<span class="etiket">{esc(ust["Aktör"])}</span>')
+    govde_.append('<section class="bolum"><div class="bolum-etiket">BÖLÜM 1</div><h2>Ana akış</h2>')
+    for n, (baslik, kod, nolar) in enumerate(gruplar, 1):
+        adim_listesi = "".join(adim_html(s, no, adimlar[no - 1]) for s, no in enumerate(nolar, 1))
+        govde_.append(kart(n, baslik, kod, f'<ol class="adimlar">{adim_listesi}</ol>'))
+    govde_.append("</section>")
+    tablo_ = veri.get("komutlar") or []
+    arka = arka_durumlar(tablo_, ayar)
+    if arka:
+        onlu = ["pre", "ic", "post"]
+        govde_.append('<section class="bolum"><div class="bolum-etiket">BÖLÜM 2</div>'
+                      "<h2>Arka planda çalışan durumlar</h2>")
+        for n, d in enumerate(arka, 1):
+            secili = sorted((k for k in tablo_ if k["durum"] == d),
+                            key=lambda k: (onlu.index(k["asama"]), k["sira"]))
+            govde_.append(kart(n, adlar.get(d) or d, d, tablo(["Ne zaman", "Sıra", "Komut"], [
+                [esc(ASAMA[k["asama"]]), esc(str(k["sira"])), esc(k["komut"])] for k in secili])))
+        govde_.append("</section>")
+    govde_.append("</main>")
+    sayfa = ('<!doctype html><html lang="tr"><head><meta charset="utf-8">'
+             '<meta name="viewport" content="width=device-width,initial-scale=1">'
+             f"<title>{esc(veri['baslik'])}</title><style>{HTML_CSS}</style></head><body>"
+             + "".join(govde_) + "</body></html>\n")
+    hedef = md.with_suffix(".html")
+    atomik_yaz(hedef, sayfa)
+    return hedef
+
+
 def word_uret(oturum: Path) -> bool:
     md = md_bul(oturum)
     if md is None:
         bildir(f"Klasörde .md bulunamadı: {oturum}")
         return False
+    try:  # HTML hatası Word üretimini engellemez
+        html_uret(oturum)
+    except Exception as hata:
+        bildir(f"HTML üretilemedi: {hata}")
     if not shutil.which("pandoc"):
         bildir(f"Markdown hazır: {md}\nWord için: sudo apt install pandoc")
         return False
