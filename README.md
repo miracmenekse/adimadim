@@ -34,6 +34,8 @@ chosen by measurement rather than guesswork.
 * **Built-in image editor:** crop, box, arrow and text annotations on any screenshot; the original is kept.
 * **API calls per step:** export the browser's Network log as HAR and each JSON/XML call lands under the step it belongs to (GET → the screen that shows the data, POST/PUT/DELETE → the screen whose button sent it), with tokens, cookies and configured fields masked. Load the workflow command table (DBeaver copy or CSV/TXT) and each workflow call also lists the commands that ran: the current state's post commands and the next state's pre commands.
 * **Workflow states:** with the workflow call's state in the HAR (or the fixed `initialize`/`submit` transitions in `sabit_gecisler`), steps are grouped under `## Durum: <state>` headings, and each call lists the commands that run; commands after the last on-screen state (`son_ekran_durumu`) go to an "Arka planda çalışan durumlar" (background) section. Screenshots include the mouse pointer (`gnome-screenshot -p`).
+* **HTML journey page:** alongside Word, a single-file `<Title>.html` is generated: stage cards, each step's screenshot with the narration below it and a collapsible "Diğer bilgiler" (API and command tables). Works offline, with dark mode and print styles.
+* **Guide format (`kilavuz_bicimi`):** the .md/Word follows a company user-guide skeleton: extended header fields, a journey map, `## Aşama N — <name> (<code>)` headings, figure captions, an error table from 4xx/5xx HAR responses, an open-issues table from `[?]` sentences; API calls and commands move to appendices A/B, the figure list to appendix C. API paths mask IDs (`{id}`), `api_haric` drops infrastructure calls and repeated calls in a step collapse into one row with a count (`200 ×3`).
 * **Document output:** Markdown (live in Obsidian) plus Word through pandoc and an optional company template; **Anlatımı kopyala** sends Rovo only the narration, and its polished reply updates just that text, so screenshots and API sections stay; both files update.
 
 ## 🛠 Tech Stack
@@ -93,7 +95,7 @@ cd adimadim
 
 No environment variables are needed. Settings live in `%APPDATA%\adimadim\ayar.json` on Windows and
 `~/.config/adimadim/ayar.json` on Linux, created by the setup script with the device detected
-automatically (all keys: [README.tr.md](README.tr.md#ayarlar)). Both scripts are idempotent and never
+automatically (all keys: [README.tr.md](README.tr.md#ayarlar); new in 0.11: `kilavuz_bicimi`, `durum_adlari`, `api_haric`, `hazirlayan`). Both scripts are idempotent and never
 overwrite existing values. To update on Windows: `git pull; .\kur.ps1; .\test.ps1`; on Linux:
 `git pull && ./kur.sh && ./test.sh`, or the **adımadım güncelle** dock button that `kur.sh` adds (pull,
 reinstall if changed, open).

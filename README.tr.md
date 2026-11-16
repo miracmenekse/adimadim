@@ -33,6 +33,8 @@ adım tahminle değil ölçümle seçilmiştir.
 * **Görsel düzenleyici:** her görselde kırp, kutu, ok, yazı; orijinal saklanır.
 * **Adım adım API çağrıları:** tarayıcının Ağ kaydı HAR olarak verilince her JSON/XML çağrı ait olduğu adıma yazılır (GET → verinin göründüğü ekran, POST/PUT/DELETE → butonuna basılan ekran); jeton, çerez ve ayardaki alanlar maskelenir. İş akışı komut tablosu (DBeaver kopyası ya da CSV/TXT) yüklenince her iş akışı çağrısının altında çalışan komutlar da listelenir: mevcut durumun post, sonraki durumun pre komutları.
 * **İş akışı durumları:** HAR'daki iş akışı durumu (ya da `sabit_gecisler`'deki sabit `initialize`/`submit` geçişleri) ile adımlar `## Durum: <kod>` başlıklarında gruplanır ve her çağrının çalışan komutları yazılır; son ekran durumundan (`son_ekran_durumu`) sonraki komutlar "Arka planda çalışan durumlar" bölümüne gider. Ekran görüntülerinde fare imleci görünür (`gnome-screenshot -p`).
+* **HTML yolculuk sayfası:** Word'le birlikte `<Başlık>.html` üretilir: aşama kartları, her adımda görsel, altında anlatım ve açılır "Diğer bilgiler" (API ve komut tabloları). Tek dosya, internet gerektirmez, koyu tema ve yazdırma görünümü var.
+* **Kılavuz biçimi (`kilavuz_bicimi`):** .md/Word şirket kılavuzu iskeletine geçer: genişletilmiş üst alanlar (Ürün/modül, Kanal, Hazırlayan, Jira, Kapsam dışı, Kısıtlar ve varsayımlar), yolculuk haritası, `## Aşama N — <ad> (<kod>)` başlıkları, Şekil altyazıları, HAR'daki 4xx/5xx mesajlarıyla Hata durumları, `[?]` cümlelerinden Açık konular tablosu; API ve komutlar Ek A/B'ye, görsel listesi Ek C'ye taşınır.
 * **Doküman çıktısı:** Markdown (Obsidian'da canlı) ve pandoc ile, varsa şirket şablonuyla Word; **Anlatımı kopyala** ile Rovo'ya yalnız anlatım gider, resmileştirilen yanıt yalnız anlatımı değiştirir, görseller ve API bölümleri kalır; iki dosya da güncellenir.
 
 ## 🛠 Teknolojik Altyapı
@@ -117,6 +119,10 @@ kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
 | `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`); boşsa sistem varsayılanı (arecord) |
 | `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; boşsa profile dokunulmaz |
+| `api_haric`      | URL'sinde bu parçalardan biri geçen çağrılar (ortam dosyası, feature flag…) dokümana girmez |
+| `durum_adlari`   | iş akışı durum kodu → iş dilinde aşama adı (ör. `{"paymentBilling": "Ödeme ve Fatura"}`); boşsa kod yazılır |
+| `kilavuz_bicimi` | `true`: .md/Word kılavuz iskeletinde (aşamalar, ekler, hata ve açık konular tabloları); `false` (varsayılan): eski düzen |
+| `hazirlayan`     | kılavuz biçiminde Hazırlayan alanının varsayılanı |
 | `api_gizle`      | gövde ve sorguda adında bunlardan biri geçen alanlar `***` yazılır (varsayılan: password, parola, sifre, token, secret) |
 | `son_ekran_durumu` | iş akışının son ekran durumu (ör. `orderSubmit`); bu duruma geçilince ekran biter, sonrası arka plandadır; boşsa sınır yok |
 | `sabit_gecisler` | HAR'sız bilinen sabit geçişler: uç adının bir parçası → `[mevcut, sonraki]` (ör. `"customerOrder/initialize": ["orderInitialize", "cartSummary"]`) |

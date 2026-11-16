@@ -2,6 +2,29 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.11.0 — şirket kılavuzlarına uyum (2026-11-16)
+
+Şirket içi kullanıcı kılavuzları ve iki örnek doküman incelendi; çıktı onların güçlü yanlarına göre geliştirildi.
+
+- **HTML yolculuk sayfası:** Word'le birlikte `<Başlık>.html`: aşama kartları, her adımda görsel, altında anlatım
+  ve açılır "Diğer bilgiler" (API ve komut tabloları; gövdeler yok). Tek dosya, dış kaynak ve JS yok; koyu tema ve
+  yazdırma görünümü. pandoc yoksa da üretilir.
+- **API gürültüsü:** uç nokta yolundaki kimlikler `{id}`, sorgudaki uzun sayılar `***`; yeni `api_haric` ayarı
+  altyapı çağrılarını atar; aynı adımda tekrarlanan çağrı tek satır ve `200 ×3` gibi adetle yazılır.
+- **Kılavuz biçimi (`kilavuz_bicimi`, varsayılan kapalı):** genişletilmiş üst alanlar (Ürün/modül, Kanal,
+  Hazırlayan, Jira, Bağımlı özellikler, Kapsam dışı, Kısıtlar ve varsayımlar), yolculuk haritası,
+  `## Aşama N — <ad> (<kod>)` başlıkları (`durum_adlari` ile iş dilinde ad), Word'de "Şekil N" altyazısı,
+  4xx/5xx yanıtlarının mesajlarıyla Hata durumları, `[?]` cümlelerinden Açık konular (AK-nn), API/komutlar
+  Ek A/B'de, görsel listesi Ek C'de; adımda yalnız "Teknik referans" kalır. Rovo kopyası ve geri yazma iki biçimde de çalışır.
+- **Kalite uyarısı:** **Anlatımı kopyala** anlatımı boş ya da çok kısa adımları ve `[?]` sayısını "Dikkat:" ile bildirir.
+- **Rovo kılavuz agent'ı:** yeni iskelet, adımda Sonuç ve somut **Doğrulayın** satırı, İlgili sistemleri Rovo
+  çıkarır, CSR notu kutusu, Gönderim sonrası, Açık konular, Ek D Given/When/Then taslağı ve "senaryo listesi yaz"
+  kipi (Geçti/Kaldı sütunlu UAT listesi).
+
+**Ana makinede yapılacaklar:** `git pull; .\kur.ps1`; yeni biçim için `%APPDATA%\adimadim\ayar.json`'da
+`"kilavuz_bicimi": true` yap, istersen `durum_adlari` ve `hazirlayan` doldur; `rovo/kilavuz-ajani.md` ve
+`rovo/ajan-talimati.md` Talimat bölümlerini ilgili agent'lara yeniden yapıştır.
+
 ## v0.10.0 — Windows ana makine (2026-11-11)
 
 - **Windows desteği:** araç Windows 10/11'de yerel Python 3.10 ile çalışır; WSL yalnızca geliştirme
