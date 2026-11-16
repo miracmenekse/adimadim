@@ -49,6 +49,28 @@ def _pencere_alani() -> dict | None:
     return {"left": alan.left, "top": alan.top, "width": genislik, "height": yukseklik}
 
 
+def _imlec() -> tuple[int, int] | None:
+    """Fare imlecinin ekran koordinatı; alınamazsa None."""
+    with contextlib.suppress(Exception):
+        import ctypes.wintypes
+        nokta = ctypes.wintypes.POINT()
+        if ctypes.windll.user32.GetCursorPos(ctypes.byref(nokta)):
+            return nokta.x, nokta.y
+    return None
+
+
+def monitor_sec(monitorler: list[dict], nokta: tuple[int, int]) -> dict:
+    """nokta'yı içeren tekil monitör (monitorler[1:]); yoksa ilk monitör, yalnız [0] varsa o."""
+    if len(monitorler) < 2:
+        return monitorler[0]
+    x, y = nokta
+    for monitor in monitorler[1:]:
+        if monitor["left"] <= x < monitor["left"] + monitor["width"] and \
+                monitor["top"] <= y < monitor["top"] + monitor["height"]:
+            return monitor
+    return monitorler[1]
+
+
 def ekran(hedef: Path, kip: str) -> bool:
     """Ekran görüntüsünü PNG olarak yazar. kip: "pencere" ya da "tam"."""
     _dpi_farkinda()
@@ -61,7 +83,7 @@ def ekran(hedef: Path, kip: str) -> bool:
     with contextlib.suppress(Exception):
         with mss.mss() as ekran_:
             alan = _pencere_alani() if kip == "pencere" else None
-            alan = alan or ekran_.monitors[0]
+            alan = alan or monitor_sec(ekran_.monitors, _imlec() or (0, 0))
             goruntu = ekran_.grab(alan)
             mss.tools.to_png(goruntu.rgb, goruntu.size, output=str(hedef))
     return hedef.exists() and hedef.stat().st_size > 0
