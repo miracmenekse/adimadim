@@ -1131,9 +1131,9 @@ def yaziya_dok(oturum: Path, veri: dict, ayar: dict) -> None:
     for adim in veri["adimlar"]:
         if not adim.get("ses") or adim.get("ses_metni") is not None:
             continue
-        dosya = oturum / adim["ses"]
-        if dosya.exists():
-            bekleyen.append((adim, dosya))
+        dosyalar = [oturum / s for s in [adim["ses"], *adim.get("ses_ek", [])] if (oturum / s).exists()]
+        if dosyalar:
+            bekleyen.append((adim, dosyalar))
         else:
             adim["ses_metni"] = ""
     if not bekleyen:
@@ -1141,7 +1141,7 @@ def yaziya_dok(oturum: Path, veri: dict, ayar: dict) -> None:
     bildir(f"{len(bekleyen)} anlatım metne çevriliyor… (model yükleniyor)")
     ad, cevir = cevirici_olustur(ayar)
     print(f"  Kullanılan: {ad}", flush=True)
-    for adim, metin in zip((a for a, _ in bekleyen), adimlara_dagit(cevir, [d for _, d in bekleyen])):
+    for (adim, _), metin in zip(bekleyen, adimlara_dagit(cevir, [d for _, d in bekleyen])):
         adim["ses_metni"] = metin
     kaydet(oturum, veri)
 
@@ -1160,10 +1160,12 @@ def wav_oku(dosya: Path):
 def adimlara_dagit(cevir, dosyalar: list) -> list:
     """Adımların seslerini birleştirip tek seferde çevirir, cümleleri başladıkları adıma dağıtır.
 
+    Her öğe bir adımın dosyası ya da dosya listesidir (mikrofon kapatılıp açılınca adım birden çok parçalı olur).
     Kullanıcı konuşurken Ctrl+Alt+S'ye basınca cümle iki dosyaya bölünür; ayrı ayrı çevrilince
     sınırdaki kelimeler kaybolur ve kısa parçalarda model cümleyi atlar."""
     import numpy as np
-    sesler = [wav_oku(d) for d in dosyalar]
+    gruplar = [[d] if isinstance(d, (str, Path)) else list(d) for d in dosyalar]
+    sesler = [np.concatenate([wav_oku(f) for f in grup]) if grup else np.zeros(0, np.float32) for grup in gruplar]
     sinirlar = np.cumsum([0] + [len(x) for x in sesler]) / 16000
     metinler = [[] for _ in dosyalar]
     for bas, _son, metin in cevir.parcala(np.concatenate(sesler) if sesler else np.zeros(0, np.float32)):
@@ -1565,18 +1567,23 @@ def cmd_cek(args, ayar) -> int:
         if not ekran_goruntusu(oturum / adim["gorsel"], "tam" if args.tam else ayar.get("ekran", "pencere")):
             bildir("Ekran görüntüsü alınamadı. Kurulu mu: sudo apt install gnome-screenshot")
             return 1
-        sessiz = False
+        sessiz = kapali = False
         if veri["mod"] == "ses":
             kayit_durdur(veri.get("kayit_pid"))  # önceki adımın anlatımı burada biter
-            adim["ses"] = f"ses/adim-{no:02d}.wav"
-            hazir = mikrofon_hazirla(veri, ayar)  # Bluetooth düşüp geri geldiyse yeniden alır
-            veri["kayit_pid"] = kayit_baslat(oturum / adim["ses"], ayar) if hazir else None
-            if veri["kayit_pid"] is None:
-                adim["ses"], sessiz = None, True
+            if veri.get("mikrofon_kapali"):  # kullanıcı araya girdi: bu adımın sesi kaydedilmez
+                kapali = True
+            else:
+                adim["ses"] = f"ses/adim-{no:02d}.wav"
+                hazir = mikrofon_hazirla(veri, ayar)  # Bluetooth düşüp geri geldiyse yeniden alır
+                veri["kayit_pid"] = kayit_baslat(oturum / adim["ses"], ayar) if hazir else None
+                if veri["kayit_pid"] is None:
+                    adim["ses"], sessiz = None, True
         veri["adimlar"].append(adim)
         kaydet(oturum, veri)
     if veri["mod"] == "ses":
-        if sessiz:
+        if kapali:
+            bildir(f"Adım {no} çekildi: mikrofon kapalı. Bu adımın sesi kaydedilmiyor. Anlatmak için 'Mikrofonu aç'.")
+        elif sessiz:
             bildir(f"Mikrofon bulunamadı, bu adımın sesi kaydedilmedi (adım {no}).")
         else:
             bildir(f"Adım {no} — anlat 🎙️ (bitince sonraki ekranda Ctrl+Alt+S)")
@@ -1618,11 +1625,55 @@ def cmd_geri(args, ayar) -> int:
         kayit_durdur(veri.get("kayit_pid"))  # süren kayıt silinen adıma aitti
         veri["kayit_pid"] = None
         adim = veri["adimlar"].pop()
-        for anahtar in ("gorsel", "ses"):
-            if adim.get(anahtar):
-                (oturum / adim[anahtar]).unlink(missing_ok=True)
+        for yol in [adim.get("gorsel"), adim.get("ses"), *adim.get("ses_ek", [])]:
+            if yol:
+                (oturum / yol).unlink(missing_ok=True)
         kaydet(oturum, veri)
     bildir(f"Son adım silindi; {len(veri['adimlar'])} adım kaldı.")
+    return 0
+
+
+def cmd_mikrofon(args, ayar) -> int:
+    """Sesli oturumda anlatımı durdurur (araya konuşma) ya da son adımın anlatımına yeni parçayla döner."""
+    with kilit():
+        oturum = aktif_oturum()
+        if not oturum:
+            bildir("Açık doküman yok.")
+            return 1
+        veri = yukle(oturum)
+        if veri["mod"] != "ses":
+            bildir("Mikrofon yalnız sesli oturumda kapatılıp açılır.")
+            return 1
+        kayit_durdur(veri.get("kayit_pid"))  # 0.5 sn tampon: yarım kalan cümle kaybolmaz
+        veri["kayit_pid"] = None
+        if args.durum == "kapat":
+            veri["mikrofon_kapali"] = True
+            kaydet(oturum, veri)
+            bildir("Mikrofon kapalı; ses kaydedilmiyor.")
+            return 0
+        veri["mikrofon_kapali"] = False
+        if not veri["adimlar"]:
+            kaydet(oturum, veri)
+            return 0
+        adim, no = veri["adimlar"][-1], len(veri["adimlar"])
+        if adim.get("ses") is None:
+            yeni = f"ses/adim-{no:02d}.wav"
+            adim["ses"] = yeni
+        else:
+            yeni = f"ses/adim-{no:02d}-{len(adim.get('ses_ek', [])) + 2}.wav"
+            adim.setdefault("ses_ek", []).append(yeni)
+        hazir = mikrofon_hazirla(veri, ayar)
+        veri["kayit_pid"] = kayit_baslat(oturum / yeni, ayar) if hazir else None
+        if veri["kayit_pid"] is None:  # kayıt açılmadı: eklenen yol geri alınır, mikrofon kapalı kalır
+            if adim["ses"] == yeni:
+                adim["ses"] = None
+            else:
+                adim["ses_ek"].pop()
+            kaydet(oturum, veri)
+            bildir("Mikrofon bulunamadı; kayıt başlamadı.")
+            return 1
+        kaydet(oturum, veri)
+    bildir(f"Mikrofon açık — Adım {no} anlatımına devam")
     return 0
 
 
@@ -1633,8 +1684,9 @@ def cmd_durum(args, ayar) -> int:
         return 0
     veri = yukle(oturum)
     tur = "sesli" if veri["mod"] == "ses" else "yazılı"
+    kapali = ", mikrofon kapalı" if veri.get("mikrofon_kapali") else ""
     kayit = ", kayıt sürüyor 🎙️" if surec_calisiyor(veri.get("kayit_pid")) else ""
-    bildir(f"{veri['baslik']}: {len(veri['adimlar'])} adım ({tur}{kayit})")
+    bildir(f"{veri['baslik']}: {len(veri['adimlar'])} adım ({tur}{kapali}{kayit})")
     print(f"Klasör: {oturum}")
     return 0
 
@@ -1884,6 +1936,8 @@ def main(argv: list[str] | None = None) -> int:
     alt.add_parser("not", help="son adımın notunu yaz/düzenle (Ctrl+Alt+N)")
     alt.add_parser("geri", help="son adımı sil")
     alt.add_parser("durum", help="açık dokümanı göster")
+    p = alt.add_parser("mikrofon", help="sesli oturumda mikrofonu kapat / aç")
+    p.add_argument("durum", choices=["kapat", "ac"])
     alt.add_parser("bitir", help="bitir; .md ve .docx üret")
     p = alt.add_parser("word", help="düzenlenmiş .md'den .docx'i yeniden üret")
     p.add_argument("klasor", nargs="?", help="doküman klasörü (varsayılan: en son biten)")
@@ -1901,7 +1955,7 @@ def main(argv: list[str] | None = None) -> int:
     alt.add_parser("arayuz", help="düğmeli pencereyi aç")
     args = ap.parse_args(argv)
     komutlar = {"basla": cmd_basla, "cek": cmd_cek, "not": cmd_not, "geri": cmd_geri,
-                "durum": cmd_durum, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden, "api": cmd_api, "komutlar": cmd_komutlar,
+                "durum": cmd_durum, "mikrofon": cmd_mikrofon, "bitir": cmd_bitir, "word": cmd_word, "yeniden": cmd_yeniden, "api": cmd_api, "komutlar": cmd_komutlar,
                 "cevir": cmd_cevir, "kisayol": cmd_kisayol,
                 "arayuz": lambda args, ayar: __import__("arayuz").main()}
     return komutlar[args.komut](args, ayarlari_oku())

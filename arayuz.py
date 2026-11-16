@@ -48,6 +48,8 @@ def son_satir() -> str:
 
 def ipucu(veri: dict, kayit: bool) -> str:
     """Kayıt ekranında o anki duruma göre ne yapılacağı."""
+    if veri.get("mikrofon_kapali"):
+        return "Mikrofon kapalı, ses kaydedilmiyor. Anlatmak için 'Mikrofonu aç'."
     if not veri["adimlar"]:
         return "Adım 0: belgeleyeceğin ilk ekrana geç ve Ctrl+Alt+S'ye bas (ya da 'Ekranı çek')."
     if kayit:
@@ -231,11 +233,14 @@ class Duzenleyici(tk.Toplevel):
             self.bitince()
 
 
-def dugmeler(ust, satirlar) -> None:
-    """Düğme sırası; her düğmenin altında ne işe yaradığı."""
+def dugmeler(ust, satirlar) -> list:
+    """Düğme sırası; her düğmenin altında ne işe yaradığı. Düğmeleri sırayla döndürür."""
+    botlar = []
     for sira, (metin, komut, aciklama) in enumerate(satirlar):
-        ttk.Button(ust, text=metin, command=komut).grid(row=0, column=sira, sticky="we", padx=2)
+        botlar.append(ttk.Button(ust, text=metin, command=komut))
+        botlar[-1].grid(row=0, column=sira, sticky="we", padx=2)
         ttk.Label(ust, text=aciklama, foreground="#666", font=("", 8)).grid(row=1, column=sira, padx=2)
+    return botlar
 
 
 class Pencere:
@@ -291,11 +296,14 @@ class Pencere:
         kaydir.grid(row=2, column=0, columnspan=2, sticky="we")
         d = ttk.Frame(f)
         d.grid(row=3, column=0, columnspan=2, sticky="w", pady=(6, 0))
-        dugmeler(d, (("Ekranı çek", self.cek, "Ctrl+Alt+S ile aynı"),
+        botlar = dugmeler(d, (("Ekranı çek", self.cek, "Ctrl+Alt+S ile aynı"),
+                     ("Mikrofonu kapat", self.mikrofon, "Araya konuşma girerse"),
                      ("Bölge çek", lambda: self.cek(bolge=True), "Alanı seç, işaretle"),
                      ("Son adıma not yaz", lambda: self.calistir("not"), "Son ekrana yazılı açıklama ekler"),
                      ("Son adımı sil", lambda: self.calistir("geri"), "Yanlış çekilen son ekranı siler"),
                      ("Bitir", lambda: self.calistir("bitir"), "Dokümanı üretir")))
+        self.mik_dugme = botlar[1]  # sesli oturumda görünür; metni kapalıyken "Mikrofonu aç"
+        self.mik_aciklama = d.grid_slaves(row=1, column=1)[0]
 
         # --- Bitiş ekranı: dokümanın önizlemesi ve sonrası
         self.bitis_f = f = ttk.Frame(c)
@@ -360,6 +368,11 @@ class Pencere:
                                           env={**os.environ, "ADIMADIM_ARAYUZ": "1"})
         self.bekle_cubuk.start(15)
         self.guncelle(tekrar=False)
+
+    def mikrofon(self) -> None:
+        oturum = a.aktif_oturum()
+        kapali = bool(oturum and a.yukle(oturum).get("mikrofon_kapali"))
+        self.calistir("mikrofon", "ac" if kapali else "kapat")
 
     def basla(self) -> None:
         baslik = self.baslik.get().strip()
@@ -573,7 +586,7 @@ class Pencere:
             self.son_listeyi_yenile()  # başla ekranına her dönüşte liste tazelenir (seçim de sıfırlanır)
 
     def seridi_yenile(self, oturum: Path, veri: dict) -> None:
-        imza = (oturum, tuple((x["gorsel"], bool(x.get("not")), mtime(oturum / x["gorsel"])) for x in veri["adimlar"]))
+        imza = (oturum, tuple((x["gorsel"], bool(x.get("not")), bool(x.get("ses")), mtime(oturum / x["gorsel"])) for x in veri["adimlar"]))
         if imza == self.onizlenen:  # yalnızca adım değişince görseller yeniden yüklenir
             return
         self.onizlenen = imza
@@ -588,7 +601,13 @@ class Pencere:
             gorsel = ttk.Label(kutu, image=resim or "", text="" if resim else "(görsel yok)", cursor="hand2")
             gorsel.pack()
             gorsel.bind("<Button-1>", lambda _, i=no - 1: self.duzenle(i))
-            ek = " · not var" if adim.get("not") else (" · ses" if adim.get("ses") else "")
+            ek = ""
+            if adim.get("not"):
+                ek = " · not var"
+            elif adim.get("ses"):
+                ek = " · ses"
+            elif veri["mod"] == "ses":
+                ek = " · ses yok"
             ttk.Label(kutu, text=f"Adım {no}{ek}", font=("", 9)).pack()
         self.kok.update_idletasks()
         self.tuval.xview_moveto(1.0)  # en son çekilen görünsün
@@ -627,12 +646,24 @@ class Pencere:
         if veri:
             self.goster("kayit")
             kayit = a.surec_calisiyor(veri.get("kayit_pid"))
+            kapali = bool(veri.get("mikrofon_kapali"))
             tur = "sesli" if veri["mod"] == "ses" else "yazılı"
             self.kayit_baslik["text"] = f"{veri['baslik']} ({tur}) · Adım {len(veri['adimlar'])}"
-            if kayit:
+            if kapali:
+                self.kayit_isaret.configure(text="⏸ MİKROFON KAPALI", fg="#e65100")
+                self.kayit_isaret.grid(row=0, column=1, sticky="e")
+            elif kayit:
+                self.kayit_isaret.configure(text="● KAYIT", fg="#c62828")
                 self.kayit_isaret.grid(row=0, column=1, sticky="e")
             else:
                 self.kayit_isaret.grid_remove()
+            if veri["mod"] == "ses":
+                self.mik_dugme.configure(text="Mikrofonu aç" if kapali else "Mikrofonu kapat")
+                self.mik_dugme.grid(row=0, column=1, sticky="we", padx=2)
+                self.mik_aciklama.grid(row=1, column=1, padx=2)
+            else:
+                self.mik_dugme.grid_remove()
+                self.mik_aciklama.grid_remove()
             self.seridi_yenile(oturum, veri)
             self.ipucu["text"] = self.mesaj or ipucu(veri, kayit)
         elif self.bitmis:
