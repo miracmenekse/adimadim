@@ -110,12 +110,34 @@ def sonlandir(pid: int | None) -> None:
         kernel32.CloseHandle(surec)
 
 
-def kaydet(dosya: Path) -> int:
-    """16 kHz mono int16 WAV kaydeder; dur dosyası belirince düzgün kapatıp çıkar."""
+def giris_cihazi(sd, mikrofon: str) -> int | None:
+    """Adında `mikrofon` parçası geçen ilk giriş cihazının numarası; boşsa ya da yoksa None (varsayılan)."""
+    parca = (mikrofon or "").strip().lower()
+    if not parca:
+        return None
+    with contextlib.suppress(Exception):
+        for no, cihaz in enumerate(sd.query_devices()):
+            if cihaz.get("max_input_channels", 0) > 0 and parca in str(cihaz.get("name", "")).lower():
+                return no
+    return None
+
+
+def kaydet(dosya: Path, mikrofon: str = "") -> int:
+    """16 kHz mono int16 WAV kaydeder; dur dosyası belirince düzgün kapatıp çıkar.
+
+    mikrofon doluysa adında bu parça geçen giriş cihazı kullanılır; bulunamaz ya da 16 kHz açılamazsa
+    sistem varsayılan girişine düşülür.
+    """
     try:
         import sounddevice as sd
     except ImportError:
         return 1
+    cihaz = giris_cihazi(sd, mikrofon)
+    if cihaz is not None:
+        try:
+            sd.check_input_settings(device=cihaz, samplerate=16000, channels=1, dtype="int16")
+        except Exception:
+            cihaz = None
     dur = Path(tempfile.gettempdir()) / f"adimadim-kayit-{os.getpid()}.dur"
     dur.unlink(missing_ok=True)
     try:
@@ -123,7 +145,7 @@ def kaydet(dosya: Path) -> int:
             w.setnchannels(1)
             w.setsampwidth(2)
             w.setframerate(16000)
-            with sd.InputStream(samplerate=16000, channels=1, dtype="int16") as akis:
+            with sd.InputStream(device=cihaz, samplerate=16000, channels=1, dtype="int16") as akis:
                 while not dur.exists():
                     veri, _ = akis.read(1024)
                     w.writeframes(veri.tobytes())
@@ -186,5 +208,5 @@ def metin_iste(baslik: str, mevcut: str = "", coklu: bool = True,
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "kaydet":
-        sys.exit(kaydet(Path(sys.argv[2])))
+        sys.exit(kaydet(Path(sys.argv[2]), sys.argv[3] if len(sys.argv) >= 4 else ""))
     sys.exit(1)

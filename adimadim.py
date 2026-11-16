@@ -33,7 +33,8 @@ Ayarlar: ~/.config/adimadim/ayar.json (kur.sh oluşturur; varsayılanlar ayar.or
   duzeltme        duzeltmeler.txt (+ .local) kurallarını çıktıya uygula (true/false)
   api_filtre      yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. ["/api/"]); boşsa JSON/XML olanlar
   api_gizle       istek/yanıt gövdesi ve sorguda adında bunlar geçen alanlar *** yazılır
-  mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"); boşsa sistem varsayılanı (arecord)
+  mikrofon        kayıt kaynağının adında geçen parça (ör. "bluez_input"; Windows'ta cihaz adı parçası,
+                  ör. "Microphone Array"); boşsa sistem varsayılanı (arecord / Windows varsayılan girişi)
   mikrofon_profil kulaklığın mikrofon profili (ör. "headset-head-unit-msbc"); yalnız sesli oturum boyunca
                   geçilir, bitince eski profile döner; boşsa profile dokunulmaz
   son_ekran_durumu son ekranın iş akışı durumu (ör. "orderSubmit"); bu duruma geçilirken ekran
@@ -1012,7 +1013,7 @@ def kaynak_bul(parca: str) -> str | None:
 def mikrofon_hazirla(veri: dict, ayar: dict) -> bool:
     """Kulaklığı mikrofon profiline geçirir (eski profil veri["kulaklik"]'e, yalnız ilk seferde) ve kaynağı bekler."""
     profil = ayar.get("mikrofon_profil")
-    if not profil:
+    if not profil or os.name == "nt":  # Windows'ta cihazı platform_win.kaydet seçer
         return True
     kart = kart_bul(profil)
     if kart is None:
@@ -1045,7 +1046,8 @@ def mikrofon_birak(veri: dict) -> None:
 def kayit_baslat(dosya: Path, ayar: dict) -> int | None:
     if os.name == "nt":
         dosya.parent.mkdir(parents=True, exist_ok=True)
-        komut = [sys.executable, str(REPO_DIZINI / "platform_win.py"), "kaydet", str(dosya)]
+        komut = [sys.executable, str(REPO_DIZINI / "platform_win.py"), "kaydet", str(dosya),
+                 str(ayar.get("mikrofon") or "")]
         surec = subprocess.Popen(komut, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                                  stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
         return surec.pid
@@ -1526,7 +1528,7 @@ def cmd_basla(args, ayar) -> int:
     veri = {"baslik": baslik, "dosya": dosya_adi(baslik), "tarih": f"{simdi:%d.%m.%Y}",
             "mod": "ses" if args.ses else "yazi", "adimlar": [], "kayit_pid": None,
             "baslangic": zaman_damgasi()}
-    if args.ses and ayar.get("mikrofon"):  # klasör açılmadan önce: hata varsa oturum oluşmaz
+    if args.ses and ayar.get("mikrofon") and os.name != "nt":  # klasör açılmadan önce: hata varsa oturum oluşmaz
         if not shutil.which("parecord"):
             bildir("Mikrofon ayarı için parecord gerekli: sudo apt install pulseaudio-utils")
             return 1

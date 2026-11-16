@@ -287,6 +287,7 @@ class Pencere:
         d.grid(row=2, column=0, columnspan=2, sticky="w")
         dugmeler(d, (("Anlatımı kopyala", self.md_kopyala, "Rovo'ya yapıştırılacak yalnız anlatım"),
                      ("Word'ü aç", lambda: self.ac(".docx"), "Hazır Word dosyası"),
+                     ("Sayfayı aç", lambda: self.ac(".html"), "Yolculuk sayfası (tarayıcı)"),
                      ("Klasörü aç", lambda: self.ac(""), "Görseller, sesler, .md"),
                      ("Word'ü yenile", lambda: self.calistir("word", str(self.bitmis)), ".md'yi elle düzelttiysen"),
                      ("Sesi baştan çevir", lambda: self.calistir("yeniden", str(self.bitmis)), "Metni sesten yeniden yazar"),

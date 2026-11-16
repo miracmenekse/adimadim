@@ -100,7 +100,7 @@ overwrite existing values. To update on Windows: `git pull; .\kur.ps1; .\test.ps
 `git pull && ./kur.sh && ./test.sh`, or the **adımadım güncelle** dock button that `kur.sh` adds (pull,
 reinstall if changed, open).
 
-Bluetooth headset microphone: set `mikrofon` (part of the source name, e.g. `bluez_input`) and `mikrofon_profil` (e.g. `headset-head-unit-msbc`). During a voice session the headset switches to that microphone profile and back to its previous profile at the end; the system default input is never changed. Both empty keeps the old behaviour.
+Bluetooth headset microphone: set `mikrofon` (part of the source name, e.g. `bluez_input`) and `mikrofon_profil` (e.g. `headset-head-unit-msbc`). During a voice session the headset switches to that microphone profile and back to its previous profile at the end; the system default input is never changed. Both empty keeps the old behaviour. On Windows `mikrofon` is part of the input device name (e.g. `FreeBuds` or `Microphone Array`); if no input device matches, the system default input is used and `mikrofon_profil` is ignored.
 
 ## 💡 Usage & Examples
 
@@ -212,3 +212,4 @@ How the product evolved, one entry per release. Each pull request adds a row her
 | v0.9.7 | 2026-10-30 | The narration copy now names each step's image; those lines in Rovo's reply are not written into the narration. |
 | v0.9.8 | 2026-10-30 | Workflow headings and running commands in the copy; internal guide agent; copy images in groups of five from the finish screen. |
 | v0.9.9 | 2026-10-30 | Called API names added to the copy and the internal guide; bodies and query strings stay out. |
+| v0.11.1 | 2026-11-16 | Windows voice input picks the microphone by device-name part (`mikrofon`); finish screen gets an **Open page** button for the HTML journey page. |

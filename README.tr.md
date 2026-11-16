@@ -117,7 +117,7 @@ kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 | `ipucu`          | terimleri Whisper'a ipucu olarak ver: `prompt`, `hotwords` ya da boş (kapalı) |
 | `duzeltme`       | `duzeltmeler.txt` (+ `.local`) kurallarını çıktıya uygula (`true`/`false`) |
 | `api_filtre`     | yalnızca URL'sinde bu parçalardan biri geçen API çağrıları (ör. `["/api/"]`); boşsa JSON/XML olanlar |
-| `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`); boşsa sistem varsayılanı (arecord) |
+| `mikrofon`       | kayıt kaynağının adında geçen parça (ör. `bluez_input`; Windows'ta giriş cihazı adının parçası, ör. `FreeBuds`, `Microphone Array`); boşsa ya da eşleşmezse sistem varsayılanı |
 | `mikrofon_profil` | kulaklığın mikrofon profili (ör. `headset-head-unit-msbc`): yalnız sesli oturum boyunca geçilir, bitince eski profile döner; boşsa profile dokunulmaz |
 | `api_haric`      | URL'sinde bu parçalardan biri geçen çağrılar (ortam dosyası, feature flag…) dokümana girmez |
 | `durum_adlari`   | iş akışı durum kodu → iş dilinde aşama adı (ör. `{"paymentBilling": "Ödeme ve Fatura"}`); boşsa kod yazılır |
@@ -135,7 +135,7 @@ kurulumu: [CALISMA_DUZENI.md](CALISMA_DUZENI.md).
 
 Uygulama menüsünden **adımadım**'ı aç: **Başla** (ad, sesli/yazılı, son dokümanlar) → **Kayıt** (çek, not, geri al,
 bölge çek, önizlemeler) → **Bitiş** (bekleme çubuğu, doküman önizlemesi, Anlatımı kopyala, Rovo alanı,
-Word'ü aç, HAR'dan API ekle). Ya da komut satırı:
+Word'ü aç, Sayfayı aç (HTML yolculuk sayfası), HAR'dan API ekle). Ya da komut satırı:
 
 ```bash
 adimadim basla "Sipariş iptal akışı" --ses   # sesli oturum başlat
@@ -244,3 +244,4 @@ Ayrıntı: `CLAUDE.md`, `CALISMA_DUZENI.md`.
 | v0.9.7 | 2026-10-30 | Anlatım kopyasına görsel adı eklendi; Rovo yanıtındaki bu satırlar anlatıma yazılmaz. |
 | v0.9.8 | 2026-10-30 | Kopyada iş akışı başlıkları ve çalışan komutlar; iç kullanım kılavuz agent'ı; bitiş ekranında 5'li görsel kopyalama. |
 | v0.9.9 | 2026-10-30 | Anlatım kopyasına ve iç kılavuza çağrılan API adları eklendi; gövde ve sorgu dizesi girmez. |
+| v0.11.1 | 2026-11-16 | Windows'ta sesli anlatım mikrofonu cihaz adı parçasıyla seçer (`mikrofon`); bitiş ekranında HTML yolculuk sayfası için **Sayfayı aç** düğmesi. |

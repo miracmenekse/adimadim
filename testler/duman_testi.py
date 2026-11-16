@@ -738,6 +738,24 @@ kok.destroy(); print("pencere tamam")
     print("    " + r.stdout.strip())
 
 
+def windows_mikrofon() -> None:
+    """platform_win.giris_cihazi: ad parçasıyla giriş cihazı seçer, çıkış cihazını ve eşleşmeyeni almaz."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    import platform_win
+
+    class SahteSd:
+        @staticmethod
+        def query_devices():
+            return [{"name": "Hoparlör (HUAWEI FreeBuds SE)", "max_input_channels": 0},
+                    {"name": "Microphone Array (Intel)", "max_input_channels": 2},
+                    {"name": "Kulaklık (HUAWEI FreeBuds SE)", "max_input_channels": 1}]
+
+    sd = SahteSd()
+    kontrol(platform_win.giris_cihazi(sd, "freebuds") == 2, "Windows mikrofonu: ad parçasıyla giriş cihazı seçiliyor")
+    kontrol(platform_win.giris_cihazi(sd, "") is None and platform_win.giris_cihazi(sd, "yok") is None,
+            "Windows mikrofonu: boş ya da eşleşmeyen ad varsayılan girişe düşüyor")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="adimadim-test-") as gecici:
         kok = Path(gecici)
@@ -753,6 +771,7 @@ def main() -> int:
             goreli_klasor(env, kok)
             kisayollar(env, kok)
             arayuz(env)
+            windows_mikrofon()
         finally:
             kayitcilari_temizle(kok)
     if BASARISIZ:

@@ -2,6 +2,18 @@
 
 Her sürümde: ne değişti, ölçüm sonucu (varsa) ve **Ana makinede yapılacaklar**.
 
+## v0.11.1 — Windows'ta mikrofon seçimi (2026-11-16)
+
+- **Mikrofon seçimi (Windows):** `mikrofon` ayarı giriş cihazı adının bir parçası olabilir (ör. `FreeBuds`,
+  `Microphone Array`); eşleşen cihaz 16 kHz açılamazsa ya da bulunamazsa varsayılan girişe düşülür. Önceden
+  Windows'ta ayar yok sayılıyordu; dolu bir `mikrofon` ayarı da Linux'taki parecord denetimi yüzünden oturumu açtırmıyordu.
+- **Sayfayı aç:** bitiş ekranında `<Başlık>.html` yolculuk sayfasını tarayıcıda açan düğme.
+- Ana makinede denendi: varsayılan mikrofonla kayıt alınıyor; `testler/ses/01.wav` GPU'da 5,2 sn'de çevrildi
+  (tek hata: "faturalı" → "Fatrıola").
+
+**Ana makinede yapılacaklar:** masaüstündeki **adimadim guncelle** düğmesi yeterli. Kulaklık mikrofonu için
+`%APPDATA%\adimadim\ayar.json`'da `"mikrofon": "FreeBuds"` yap (boşsa Windows'un varsayılan girişi kullanılır).
+
 ## v0.11.0 — şirket kılavuzlarına uyum (2026-11-16)
 
 Şirket içi kullanıcı kılavuzları ve iki örnek doküman incelendi; çıktı onların güçlü yanlarına göre geliştirildi.
