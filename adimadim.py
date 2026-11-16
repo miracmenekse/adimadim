@@ -240,7 +240,8 @@ def markdown(veri: dict) -> str:
                 blok += [paragraf, ""]
         if adim.get("api"):
             blok += ["#### API çağrıları", "", "| Yön | Metot | Uç nokta | Durum |", "|---|---|---|---|"]
-            blok += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']} |" for c in adim["api"]]
+            blok += [f"| {c['yon']} | {c['metot']} | `{c['uc']}` | {c['durum']}{f' ×{n}' if (n := c.get('adet', 1)) > 1 else ''} |"
+                     for c in adim["api"]]
             blok.append("")
             for c in adim["api"]:
                 for ad, govde_ in (("İstek", c["istek"]), ("Yanıt", c["yanit"])):
@@ -713,7 +714,7 @@ def html_uret(oturum: Path) -> Path | None:
         diger = []
         if adim.get("api"):
             diger.append("<b>API çağrıları</b>" + tablo(["Yön", "Metot", "Uç nokta", "Durum"], [
-                [esc(c["yon"]), esc(c["metot"]), f"<code>{esc(c['uc'])}</code>", esc(str(c["durum"]))]
+                [esc(c["yon"]), esc(c["metot"]), f"<code>{esc(c['uc'])}</code>", esc(str(c["durum"])) + (f" ×{c['adet']}" if c.get('adet', 1) > 1 else "")]
                 for c in adim["api"]]))
         if veri.get("komutlar"):
             for c in adim.get("api") or []:
@@ -1206,6 +1207,19 @@ def zaman_oku(metin: str) -> dt.datetime:
     return dt.datetime.fromisoformat(metin).astimezone()
 
 
+def gizle_yol(yol: str) -> str:
+    """Uç noktadaki kimlikler: 4+ haneli sayı, UUID ya da 16+ karakter hex yol parçası {id} olur;
+    sorguda değeri 6+ haneli sayı olan parametrenin değeri *** olur (msisdn=***)."""
+    yol_, _, sorgu = yol.partition("?")
+    kimlik = re.compile(r"\d{4,}|[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+                        r"|[0-9a-fA-F]{16,}")
+    yol_ = "/".join("{id}" if kimlik.fullmatch(p) else p for p in yol_.split("/"))
+    if sorgu:
+        sorgu = re.sub(r"(^|&)([^=&]+)=\d{6,}(?=&|$)", r"\1\2=***", sorgu)
+        return f"{yol_}?{sorgu}"
+    return yol_
+
+
 def gizle_metin(metin: str, kalip: re.Pattern) -> str:
     """JSON olmayan gövde ve sorgu: <...password...>değer ve password=değer biçimlerinde değer *** olur."""
     k = kalip.pattern
@@ -1246,13 +1260,16 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
     zamanlar = [zaman_oku(a["zaman"]) for a in adimlar]
     bas, son = zaman_oku(veri["baslangic"]), zaman_oku(veri["bitis"])
     filtre = ayar.get("api_filtre") or []
+    haric = ayar.get("api_haric") or []
     kalip = re.compile("|".join(map(re.escape, ayar.get("api_gizle") or [])) or "(?!)", re.I)
     for adim in adimlar:
         adim["api"] = []
-    gorulen, sayi = set(), 0
+    gorulen, sayi = {}, 0
     for zaman, g in sorted(((zaman_oku(g["startedDateTime"]), g) for g in girdiler), key=lambda x: x[0]):
         istek, yanit = g["request"], g["response"]
         gonderilen, icerik = istek.get("postData") or {}, yanit.get("content") or {}
+        if any(p in istek["url"] for p in haric):  # altyapı çağrısı (ortam dosyası, feature flag…)
+            continue
         if filtre:
             uygun = any(p in istek["url"] for p in filtre)
         else:
@@ -1263,18 +1280,20 @@ def api_ekle(veri: dict, girdiler: list, ayar: dict) -> int:
         yazan = metot in YAZAN_METOTLAR
         sira = min(max(k - 1, 0) if yazan else k, len(adimlar) - 1)
         url = urlsplit(istek["url"])
-        uc = gizle_metin(url.path + (f"?{url.query}" if url.query else ""), kalip).replace("|", "%7C")
+        uc = gizle_yol(gizle_metin(url.path + (f"?{url.query}" if url.query else ""), kalip)).replace("|", "%7C")
         istek_metni = gonderilen.get("text") or ""
-        if (sira, metot, uc, istek_metni) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır
+        if (sira, metot, uc) in gorulen:  # aynı ekranda tekrarlanan çağrı (yoklama vb.) tek satır + adet
+            gorulen[(sira, metot, uc)]["adet"] += 1
             continue
-        gorulen.add((sira, metot, uc, istek_metni))
         yanit_metni = icerik.get("text") or ""
         if icerik.get("encoding") == "base64":
             yanit_metni = base64.b64decode(yanit_metni).decode("utf-8", "replace")
-        adimlar[sira]["api"].append({
+        kayit = {
             "yon": "Butonla giden" if yazan else "Ekrana gelen", "metot": metot, "uc": uc,
             "durum": yanit["status"], "istek": govde(istek_metni, kalip),
-            "yanit": govde(yanit_metni, kalip), "akis": is_akisi(istek_metni, yanit_metni)})
+            "yanit": govde(yanit_metni, kalip), "akis": is_akisi(istek_metni, yanit_metni), "adet": 1}
+        gorulen[(sira, metot, uc)] = kayit
+        adimlar[sira]["api"].append(kayit)
         sayi += 1
     return sayi
 

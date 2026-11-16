@@ -10,6 +10,7 @@
   "ipucu": "prompt",
   "duzeltme": true,
   "api_filtre": [],
+  "api_haric": [],
   "api_gizle": ["password", "parola", "sifre", "token", "secret"],
   "son_ekran_durumu": "orderSubmit",
   "sabit_gecisler": {
